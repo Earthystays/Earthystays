@@ -1,26 +1,448 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
+@custom-variant dark (&:is(.dark *));
+
+/* ==========================================
+   EARTHY STAYS DESIGN SYSTEM
+   ========================================== */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Primary Brand Colors */
+  --forest-green: #3E4A3A;
+  --olive-green:  #5D6B4A;
+  --sage-green:   #7F8F6F;
+
+  /* Neutrals */
+  --sand:        #F2EEE6;
+  --warm-beige:  #DCCBB1;
+  --stone:       #B8B2A6;
+
+  /* Accent */
+  --terracotta:  #A4553A;
+
+  /* Dark Mode anchors */
+  --charcoal:    #1E1E1E;
+  --deep-black:  #111111;
+
+  /* Text */
+  --text-primary:   #2A2A2A;
+  --text-secondary: #666666;
+  --text-light:     #FFFFFF;
+
+  /* Borders */
+  --border-light: #EAE6DD;
 }
 
+/* ----- shadcn semantic mapping (light) ----- */
+:root {
+  --background: #FFFFFF;
+  --foreground: var(--text-primary);
+
+  /* Chrome surfaces (header/footer/special bands) keep the warm sand */
+  --chrome: var(--sand);
+
+  --card: #FFFFFF;
+  --card-foreground: var(--text-primary);
+
+  --popover: #FFFFFF;
+  --popover-foreground: var(--text-primary);
+
+  --primary: var(--forest-green);
+  --primary-foreground: var(--sand);
+
+  --secondary: var(--warm-beige);
+  --secondary-foreground: var(--text-primary);
+
+  --muted: var(--border-light);
+  --muted-foreground: var(--text-secondary);
+
+  --accent: var(--warm-beige);
+  --accent-foreground: var(--text-primary);
+
+  --destructive: #B23A2B;
+
+  --border: var(--border-light);
+  --input:  var(--border-light);
+  --ring:   var(--forest-green);
+
+  --chart-1: var(--forest-green);
+  --chart-2: var(--olive-green);
+  --chart-3: var(--sage-green);
+  --chart-4: var(--terracotta);
+  --chart-5: var(--warm-beige);
+
+  --radius: 0.5rem;
+
+  --sidebar: var(--sand);
+  --sidebar-foreground: var(--text-primary);
+  --sidebar-primary: var(--forest-green);
+  --sidebar-primary-foreground: var(--sand);
+  --sidebar-accent: var(--warm-beige);
+  --sidebar-accent-foreground: var(--text-primary);
+  --sidebar-border: var(--border-light);
+  --sidebar-ring: var(--forest-green);
+}
+
+/* ----- dark mode ----- */
+.dark {
+  --background: var(--deep-black);
+  --foreground: var(--sand);
+
+  --card: var(--charcoal);
+  --card-foreground: var(--sand);
+
+  --popover: var(--charcoal);
+  --popover-foreground: var(--sand);
+
+  --primary: var(--sage-green);
+  --primary-foreground: var(--deep-black);
+
+  --secondary: #2A2E29;
+  --secondary-foreground: var(--sand);
+
+  --muted: #2A2E29;
+  --muted-foreground: var(--stone);
+
+  --accent: #2A2E29;
+  --accent-foreground: var(--sand);
+
+  --destructive: #D9573F;
+
+  --border: rgba(255,255,255,0.1);
+  --input:  rgba(255,255,255,0.15);
+  --ring:   var(--sage-green);
+
+  --chart-1: var(--sage-green);
+  --chart-2: var(--olive-green);
+  --chart-3: var(--forest-green);
+  --chart-4: var(--terracotta);
+  --chart-5: var(--warm-beige);
+
+  --sidebar: var(--charcoal);
+  --sidebar-foreground: var(--sand);
+  --sidebar-primary: var(--sage-green);
+  --sidebar-primary-foreground: var(--deep-black);
+  --sidebar-accent: #2A2E29;
+  --sidebar-accent-foreground: var(--sand);
+  --sidebar-border: rgba(255,255,255,0.1);
+  --sidebar-ring: var(--sage-green);
+}
+
+/* ----- Tailwind v4 theme registration ----- */
 @theme inline {
+  /* Semantic (shadcn) */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Brand utilities — usable as bg-forest, text-terracotta, etc. */
+  --color-forest: var(--forest-green);
+  --color-olive: var(--olive-green);
+  --color-sage: var(--sage-green);
+  --color-sand: var(--sand);
+  --color-beige: var(--warm-beige);
+  --color-stone: var(--stone);
+  --color-terracotta: var(--terracotta);
+  --color-chrome: var(--chrome);
+
+  /* Typography */
+  --font-sans: var(--font-dm-sans);
+  --font-display: var(--font-inter);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-heading: var(--font-inter);
+  --font-numeric: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  /* Radius scale */
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.018em;
   }
 }
 
-body {
-  background: var(--background);
+/* ------- Date-range picker calendar (StayVista-style bordered grid) ------- */
+.rdp-popover {
+  --rdp-cell-size: 50px;
+  --rdp-accent-color: var(--primary);
+  --rdp-background-color: var(--primary);
+  --rdp-grid-border: color-mix(in oklch, var(--foreground) 18%, transparent);
+}
+
+/* Month caption (e.g. "Jun 2026") */
+.rdp-popover .rdp-month_caption,
+.rdp-popover .rdp-caption_label {
+  font-size: 16px;
+  font-weight: 600;
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-feature-settings: "tnum";
+}
+
+/* Weekday header cells (Mon Tue Wed …) */
+.rdp-popover .rdp-weekday {
+  border: 1px solid var(--rdp-grid-border);
+  width: var(--rdp-cell-size);
+  height: var(--rdp-cell-size);
+  text-align: center;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--foreground);
+  vertical-align: middle;
+  text-transform: none;
+}
+
+/* Day cells */
+.rdp-popover .rdp-day {
+  border: 1px solid var(--rdp-grid-border);
+  width: var(--rdp-cell-size);
+  height: var(--rdp-cell-size);
+  text-align: center;
+  vertical-align: middle;
+  padding: 0;
+}
+
+/* The clickable day number */
+.rdp-popover .rdp-day_button {
+  font-family: var(--font-numeric);
+  font-feature-settings: "tnum";
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--foreground);
+  width: 100%;
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+.rdp-popover .rdp-day_button:hover:not(:disabled) {
+  background: var(--muted);
+}
+.rdp-popover .rdp-day_button:disabled {
+  color: var(--muted-foreground);
+  opacity: 0.4;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+/* Today */
+.rdp-popover .rdp-today .rdp-day_button {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/* Outside-month days */
+.rdp-popover .rdp-outside .rdp-day_button {
+  color: var(--muted-foreground);
+  opacity: 0.4;
+}
+
+/* Range selection */
+.rdp-popover .rdp-range_start .rdp-day_button,
+.rdp-popover .rdp-range_end .rdp-day_button,
+.rdp-popover .rdp-selected .rdp-day_button {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+.rdp-popover .rdp-range_middle {
+  background: color-mix(in oklch, var(--primary) 10%, transparent);
+}
+.rdp-popover .rdp-range_middle .rdp-day_button {
+  color: var(--foreground);
+  background: transparent;
+}
+
+/* Saturday / Sunday in red — weekday headers (cols 6 and 7 when weekStartsOn=Mon) */
+.rdp-popover .rdp-weekday:nth-child(6),
+.rdp-popover .rdp-weekday:nth-child(7) {
+  color: var(--destructive);
+}
+/* Sat/Sun day numbers via modifier */
+.rdp-popover .rdp-weekend .rdp-day_button {
+  color: var(--destructive);
+}
+.rdp-popover .rdp-weekend.rdp-range_start .rdp-day_button,
+.rdp-popover .rdp-weekend.rdp-range_end .rdp-day_button,
+.rdp-popover .rdp-weekend.rdp-selected .rdp-day_button {
+  color: var(--primary-foreground);
+}
+
+/* Nav chevrons — keep them clean */
+.rdp-popover .rdp-nav button {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--foreground);
+}
+.rdp-popover .rdp-nav button:hover {
+  background: var(--muted);
+}
+
+@utility container-page {
+  width: 100%;
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+  max-width: 80rem;
+  @media (min-width: 640px) { padding-inline: 1.5rem; }
+  @media (min-width: 1024px) { padding-inline: 2rem; }
+}
+
+/* ----------------------------------------------------------
+   react-day-picker (v10) — brand theming for date range
+   ---------------------------------------------------------- */
+.rdp-popover {
+  /* CSS variables consumed by react-day-picker */
+  --rdp-accent-color: var(--primary);
+  --rdp-accent-background-color: color-mix(in oklch, var(--primary) 10%, transparent);
+  --rdp-background-color: var(--card);
+  --rdp-day-height: 40px;
+  --rdp-day-width: 40px;
+  --rdp-day_button-border-radius: 8px;
+  --rdp-day_button-height: 36px;
+  --rdp-day_button-width: 36px;
+  --rdp-range_start-color: var(--primary-foreground);
+  --rdp-range_end-color: var(--primary-foreground);
+  --rdp-range_start-background: var(--primary);
+  --rdp-range_end-background: var(--primary);
+  --rdp-range_middle-background-color: color-mix(in oklch, var(--primary) 12%, transparent);
+  --rdp-selected-border: 2px solid var(--primary);
+  --rdp-today-color: var(--terracotta);
+  --rdp-disabled-opacity: 0.3;
+  --rdp-outside-opacity: 0.4;
+  --rdp-nav_button-height: 32px;
+  --rdp-nav_button-width: 32px;
+  --rdp-week_number-foreground-color: var(--muted-foreground);
+  --rdp-weekday-opacity: 1;
+  --rdp-weekday-text-transform: uppercase;
+  --rdp-weekday-font-size: 11px;
+}
+
+.rdp-popover .rdp-root {
+  font-family: inherit;
+  color: var(--foreground);
+}
+
+.rdp-popover .rdp-months {
+  gap: 1.75rem;
+}
+
+.rdp-popover .rdp-month_caption {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.5rem;
+}
+
+.rdp-popover .rdp-caption_label {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+}
+
+.rdp-popover .rdp-nav button {
+  border-radius: 9999px;
+  border: 1px solid var(--border);
+  background: var(--background);
+}
+.rdp-popover .rdp-nav button:hover {
+  background: var(--muted);
+}
+
+.rdp-popover .rdp-weekday {
+  color: var(--muted-foreground);
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
+
+/* Sat/Sun column headers — pull from the position because rdp doesn't expose modifiers on weekday cells */
+.rdp-popover .rdp-weekdays .rdp-weekday:nth-child(6),
+.rdp-popover .rdp-weekdays .rdp-weekday:nth-child(7) {
+  color: var(--destructive);
+}
+
+/* Sat/Sun day cells (via modifier) */
+.rdp-popover .rdp-weekend .rdp-day_button {
+  color: var(--destructive);
+}
+
+.rdp-popover .rdp-day_button {
+  font-size: 0.875rem;
+}
+.rdp-popover .rdp-day_button:hover:not([disabled]) {
+  background: var(--muted);
+}
+
+.rdp-popover .rdp-today .rdp-day_button {
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.rdp-popover .rdp-selected .rdp-day_button {
+  color: var(--primary-foreground);
+  background: var(--primary);
+  border-radius: 8px;
+}
+.rdp-popover .rdp-range_middle .rdp-day_button {
+  color: var(--foreground);
+  background: transparent;
+}
+.rdp-popover .rdp-range_middle {
+  background: color-mix(in oklch, var(--primary) 12%, transparent);
 }

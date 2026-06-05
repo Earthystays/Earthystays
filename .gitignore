@@ -33,6 +33,17 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# Local data store — JSON files written by the admin (villas, banners,
+# inquiries, reviews, amenities, location covers). These hold customer
+# data on production (phone numbers, names) and should never be committed.
+/data/*.json
+
+# User-uploaded photos go straight to disk via /api/admin/upload.
+# They live alongside the running server; bundling them into git would
+# bloat the repo and let one environment overwrite another.
+/public/uploads/*
+!/public/uploads/.gitkeep
+
 # vercel
 .vercel
 

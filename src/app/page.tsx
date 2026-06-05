@@ -106,7 +106,7 @@ export default async function HomePage() {
             ctaLabel="All destinations"
             ctaHref="/locations"
           />
-          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-10 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3">
             {destinations.slice(0, 6).map((d) => (
               <Link
                 key={d.slug}
@@ -121,12 +121,16 @@ export default async function HomePage() {
                   className="object-cover transition-transform duration-700 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 p-6 text-white">
-                  <p className="text-[10px] uppercase tracking-[0.18em] text-white/80">
+                <div className="absolute inset-x-0 bottom-0 p-4 text-white sm:p-6">
+                  <p className="text-[9px] uppercase tracking-[0.18em] text-white/80 sm:text-[10px]">
                     {d.region}
                   </p>
-                  <h3 className="mt-1 font-display text-2xl">{d.name}</h3>
-                  <p className="mt-1 text-sm text-white/85 line-clamp-2">{d.blurb}</p>
+                  <h3 className="mt-1 font-display text-lg sm:text-2xl">
+                    {d.name}
+                  </h3>
+                  <p className="mt-0.5 line-clamp-2 text-xs text-white/85 sm:mt-1 sm:text-sm">
+                    {d.blurb}
+                  </p>
                 </div>
               </Link>
             ))}

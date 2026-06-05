@@ -39,7 +39,7 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
 
   return (
     <section
-      className="relative h-[88vh] min-h-[620px]"
+      className="relative h-[58vh] min-h-[420px] md:h-[88vh] md:min-h-[620px]"
       onMouseEnter={() => {
         playing.current = false;
       }}

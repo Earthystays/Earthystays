@@ -18,7 +18,18 @@ type Props = {
 export function DateRangePicker({ value, onChange, className = "" }: Props) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<DateRange | undefined>(value);
+  const [isMobile, setIsMobile] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
+
+  // Detect mobile viewport so we can switch the calendar to a single month
+  // (two months don't fit horizontally on a phone screen).
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 640px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
 
   // Prime the draft range when the popover opens — same pattern as guests-picker.
   useEffect(() => {
@@ -73,11 +84,19 @@ export function DateRangePicker({ value, onChange, className = "" }: Props) {
       </div>
 
       {open && (
-        <div className="rdp-popover absolute left-1/2 top-full z-50 mt-3 w-max max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-2xl border border-border/60 bg-card shadow-2xl">
-          <div className="p-4 sm:p-5">
+        <div
+          className="
+            rdp-popover absolute top-full z-50 mt-3 rounded-2xl border border-border/60 bg-card shadow-2xl
+            /* Mobile: anchor to left edge, full visible width */
+            left-0 right-0 w-auto
+            /* Desktop: centred popover, content-sized */
+            sm:left-1/2 sm:right-auto sm:w-max sm:max-w-[calc(100vw-2rem)] sm:-translate-x-1/2
+          "
+        >
+          <div className="p-3 sm:p-5">
             <DayPicker
               mode="range"
-              numberOfMonths={2}
+              numberOfMonths={isMobile ? 1 : 2}
               weekStartsOn={1}
               selected={draft}
               onSelect={setDraft}
@@ -86,7 +105,9 @@ export function DateRangePicker({ value, onChange, className = "" }: Props) {
               modifiersClassNames={{ weekend: "rdp-weekend" }}
               classNames={{
                 // Keep the default rdp classes for everything else — we only
-                // change the months direction so the two months sit side-by-side.
+                // change the months direction so the two months sit side-by-side
+                // on desktop. On mobile there's only one month so flex order
+                // doesn't matter.
                 months: "rdp-months flex flex-row flex-nowrap gap-8",
               }}
               components={{

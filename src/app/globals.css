@@ -210,10 +210,17 @@
 
 /* ------- Date-range picker calendar (StayVista-style bordered grid) ------- */
 .rdp-popover {
-  --rdp-cell-size: 50px;
+  /* Smaller cells on mobile so a single month fits comfortably on phone screens. */
+  --rdp-cell-size: 40px;
   --rdp-accent-color: var(--primary);
   --rdp-background-color: var(--primary);
   --rdp-grid-border: color-mix(in oklch, var(--foreground) 18%, transparent);
+}
+
+@media (min-width: 640px) {
+  .rdp-popover {
+    --rdp-cell-size: 50px;
+  }
 }
 
 /* Month caption (e.g. "Jun 2026") */

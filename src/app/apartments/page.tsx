@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { VillaListItem } from "@/components/villa-list-item";
 import { VillaFiltersSidebar } from "@/components/villa-filters-sidebar";
+import { MobileFiltersDrawer } from "@/components/mobile-filters-drawer";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import {
   searchVillas,
@@ -87,11 +88,18 @@ export default async function ApartmentsPage({
             {results.length} {results.length === 1 ? "apartment" : "apartments"} match your filters.
           </p>
         </div>
-        <SortDropdown currentSort={filters.sort ?? "featured"} />
+        <div className="flex items-center gap-2">
+          <MobileFiltersDrawer
+            amenities={amenities}
+            priceMin={bounds.min}
+            priceMax={bounds.max}
+          />
+          <SortDropdown currentSort={filters.sort ?? "featured"} />
+        </div>
       </header>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[260px_1fr]">
-        <div className="lg:sticky lg:top-32 lg:self-start">
+        <div className="hidden lg:sticky lg:top-32 lg:block lg:self-start">
           <VillaFiltersSidebar
             amenities={amenities}
             priceMin={bounds.min}

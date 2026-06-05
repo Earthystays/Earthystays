@@ -27,7 +27,7 @@ export function VillaCard({
       href={`/villas/${villa.slug}`}
       className="group block overflow-hidden rounded-xl bg-card border border-border/60 transition-all hover:shadow-lg hover:-translate-y-0.5"
     >
-      <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+      <div className="relative aspect-[16/10] overflow-hidden bg-muted sm:aspect-[4/3]">
         <PhotoCarousel images={villa.images} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" />
         <div className="absolute right-3 top-3 z-10">
           <WishlistButton slug={villa.slug} loggedIn={loggedIn} initialActive={inWishlist} />

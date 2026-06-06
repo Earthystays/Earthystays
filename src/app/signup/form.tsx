@@ -36,7 +36,6 @@ export function SignupForm({
             autoFocus
             autoComplete="name"
             defaultValue={state.values?.name ?? ""}
-            placeholder="Aanya Sharma"
           />
         </div>
         <div className="grid gap-1.5">

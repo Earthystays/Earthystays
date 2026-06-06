@@ -99,7 +99,7 @@ export function InquiryForm({
       )}
 
       <Field id="name" label="Your Name *" error={errors.name?.message}>
-        <Input id="name" {...register("name")} placeholder="Aanya Sharma" autoComplete="name" />
+        <Input id="name" {...register("name")} autoComplete="name" />
       </Field>
 
       <Field id="phone" label="Phone *" error={errors.phone?.message}>

@@ -1,26 +1,35 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CallbackModal } from "@/components/callback-modal";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { InquiryForm } from "@/components/inquiry-form";
 
 /**
- * Mobile-only sticky bottom bar on villa detail pages: shows the price
- * + "Enquire" button so guests don't have to scroll all the way down to
- * the inquiry form. The button opens the same callback modal used on the
- * home page Request Callback CTA.
+ * Mobile-only sticky bottom bar on villa detail pages: shows the price +
+ * "Enquire" button. Tapping the button opens the full InquiryForm (same
+ * one that lives in the desktop sidebar — name, phone, check-in/out, guests)
+ * inside a bottom-anchored sheet, so mobile and desktop use identical fields.
  *
  * Hides on desktop (lg:hidden).
  */
 export function MobileInquireBar({
+  villaSlug,
+  villaName,
   pricePerNight,
 }: {
+  villaSlug: string;
+  villaName: string;
   pricePerNight: number;
 }) {
   const [open, setOpen] = useState(false);
-  // Hide on initial render until we're hydrated (avoids flash above SSR fold).
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- post-hydration mount flag, intentional
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- post-hydration mount flag
     setMounted(true);
   }, []);
   if (!mounted) return null;
@@ -37,16 +46,31 @@ export function MobileInquireBar({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="inline-flex h-12 flex-1 max-w-[200px] items-center justify-center rounded-md bg-primary text-sm font-semibold uppercase tracking-[0.12em] text-primary-foreground transition-colors hover:bg-primary/90"
+          className="inline-flex h-12 max-w-[200px] flex-1 items-center justify-center rounded-md bg-primary text-sm font-semibold uppercase tracking-[0.12em] text-primary-foreground transition-colors hover:bg-primary/90"
         >
           Enquire
         </button>
       </div>
 
-      <CallbackModal open={open} onOpenChange={setOpen} />
+      <Sheet open={open} onOpenChange={setOpen}>
+        {/* Bottom-anchored sheet on mobile, full height up to 95vh.
+            Holds the same InquiryForm desktop users see in the sidebar. */}
+        <SheetContent
+          side="bottom"
+          className="h-[95vh] overflow-y-auto rounded-t-2xl p-0"
+        >
+          <SheetHeader className="border-b border-border/60 px-5 py-4">
+            <SheetTitle className="font-display text-xl font-bold tracking-tight">
+              Send Inquiry
+            </SheetTitle>
+          </SheetHeader>
+          <div className="px-5 py-5">
+            <InquiryForm villaSlug={villaSlug} villaName={villaName} />
+          </div>
+        </SheetContent>
+      </Sheet>
 
-      {/* Leave space at the bottom of the page so the sticky bar doesn't
-          cover the last bit of content. */}
+      {/* Spacer so the sticky bar doesn't cover the last bit of content */}
       <div aria-hidden className="h-20 lg:hidden" />
     </>
   );

@@ -446,7 +446,11 @@ export default async function VillaDetailPage({ params }: PageProps) {
       )}
 
       {/* Mobile-only sticky bottom bar with price + Enquire CTA */}
-      <MobileInquireBar pricePerNight={villa.pricePerNight} />
+      <MobileInquireBar
+        villaSlug={villa.slug}
+        villaName={villa.name}
+        pricePerNight={villa.pricePerNight}
+      />
     </div>
   );
 }

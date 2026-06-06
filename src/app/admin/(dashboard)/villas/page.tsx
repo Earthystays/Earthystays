@@ -59,7 +59,7 @@ export default async function AdminVillasPage({
       <VillasTable villas={villas} />
 
       <p className="mt-4 text-xs text-muted-foreground">
-        Seed properties (bundled in <code className="rounded bg-muted px-1 py-0.5">src/lib/data/villas.ts</code>) can be edited but reappear if you delete them. Properties you add or override go to <code className="rounded bg-muted px-1 py-0.5">data/villas.json</code>.
+        Deletions stick — bundled seed villas you delete are recorded in <code className="rounded bg-muted px-1 py-0.5">data/deleted-villas.json</code> so they don&apos;t reappear. Properties you add go to <code className="rounded bg-muted px-1 py-0.5">data/villas.json</code>.
       </p>
     </div>
   );

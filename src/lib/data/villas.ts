@@ -347,12 +347,20 @@ const SEED: Villa[] = [
 /**
  * Load villas — merge bundled SEED with anything added via the admin
  * dashboard (data/villas.json). Admin entries override seed entries with
- * the same slug.
+ * the same slug. Slugs listed in deleted-villas.json are excluded entirely,
+ * which lets admins delete bundled seed villas permanently (otherwise the
+ * SEED would just bring them back on every page load).
  */
 function loadVillas(): Villa[] {
   const added = readJsonSync<Villa[]>("villas.json", []);
-  const bySlug = new Map<string, Villa>(SEED.map((v) => [v.slug, v]));
-  for (const v of added) bySlug.set(v.slug, v);
+  const deleted = new Set(readJsonSync<string[]>("deleted-villas.json", []));
+  const bySlug = new Map<string, Villa>(
+    SEED.filter((v) => !deleted.has(v.slug)).map((v) => [v.slug, v]),
+  );
+  for (const v of added) {
+    if (deleted.has(v.slug)) continue;
+    bySlug.set(v.slug, v);
+  }
   return Array.from(bySlug.values());
 }
 

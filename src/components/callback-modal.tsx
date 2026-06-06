@@ -122,7 +122,7 @@ export function CallbackModal({
               autoComplete="given-name"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              placeholder="Aanya"
+              placeholder=""
               className="h-11"
               autoFocus
             />
@@ -140,7 +140,7 @@ export function CallbackModal({
               autoComplete="family-name"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              placeholder="Mehta"
+              placeholder=""
               className="h-11"
             />
           </div>
@@ -164,7 +164,7 @@ export function CallbackModal({
                 autoComplete="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="9876543210"
+                placeholder=""
                 className="h-11 font-numeric tabular-nums"
               />
             </div>

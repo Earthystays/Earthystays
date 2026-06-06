@@ -108,7 +108,6 @@ export function InquiryForm({
           type="tel"
           inputMode="tel"
           {...register("phone")}
-          placeholder="+91 9XXXXXXXXX"
           autoComplete="tel"
         />
       </Field>

@@ -119,7 +119,7 @@ export default async function VillaDetailPage({ params }: PageProps) {
 
       {/* Title block BELOW the tabs */}
       <div className="container-page mt-8">
-        <h1 className="font-display text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
+        <h1 className="font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl lg:text-4xl">
           {villa.name}
         </h1>
         <p className="mt-1 inline-flex items-center gap-1 text-sm text-muted-foreground sm:text-base">

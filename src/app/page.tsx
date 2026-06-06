@@ -54,7 +54,7 @@ export default async function HomePage() {
       </div>
 
       {/* Best rated villas */}
-      <section className="container-page py-20">
+      <section className="container-page py-12 sm:py-20">
         <SectionHeader
           eyebrow="Guest favourites"
           title="Best Rated Villas"
@@ -63,7 +63,7 @@ export default async function HomePage() {
           ctaHref="/villas"
         />
         {/* Mobile: horizontal swipe-slider. Desktop: grid. Max 8 cards. */}
-        <div className="mt-10 -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-6 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
+        <div className="mt-10 -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-6 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
           {featured.slice(0, 8).map((villa) => (
             <div
               key={villa.slug}
@@ -81,7 +81,7 @@ export default async function HomePage() {
 
       {/* Best rated apartments — only rendered if any apartments are marked featured */}
       {featuredApartments.length > 0 && (
-        <section className="container-page pb-20">
+        <section className="container-page pb-12 sm:pb-20">
           <SectionHeader
             eyebrow="Guest favourites"
             title="Best Rated Apartments"
@@ -90,7 +90,7 @@ export default async function HomePage() {
             ctaHref="/apartments"
           />
           {/* Same mobile slider pattern */}
-          <div className="mt-10 -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-6 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
+          <div className="mt-10 -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-6 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
             {featuredApartments.slice(0, 8).map((apt) => (
               <div
                 key={apt.slug}
@@ -118,7 +118,7 @@ export default async function HomePage() {
             ctaHref="/locations"
           />
           {/* Mobile: horizontal snap-scroll. Desktop: grid (unchanged). */}
-          <div className="mt-10 -mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
+          <div className="mt-10 -mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
             {destinations.slice(0, 6).map((d) => (
               <Link
                 key={d.slug}

@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { destinations } from "@/lib/data/locations";
 import { getVillasByDestination } from "@/lib/data/villas";
+import { getStateCover } from "@/lib/data/location-covers";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 
 export const metadata: Metadata = {
@@ -33,7 +34,7 @@ export default function LocationsPage() {
             >
               <div className="relative aspect-square overflow-hidden">
                 <Image
-                  src={d.image.src}
+                  src={getStateCover(d.slug) ?? d.image.src}
                   alt={d.image.alt}
                   fill
                   sizes="(min-width: 768px) 25vw, 50vw"

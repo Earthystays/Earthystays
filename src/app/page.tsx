@@ -5,6 +5,7 @@ import { SearchBar } from "@/components/search-bar";
 import { SectionHeader } from "@/components/section-header";
 import { VillaCard } from "@/components/villa-card";
 import { destinations } from "@/lib/data/locations";
+import { getStateCover } from "@/lib/data/location-covers";
 import {
   getFeaturedVillas,
   getFeaturedApartments,
@@ -114,7 +115,7 @@ export default async function HomePage() {
                 className="group relative aspect-[4/5] overflow-hidden rounded-xl"
               >
                 <Image
-                  src={d.image.src}
+                  src={getStateCover(d.slug) ?? d.image.src}
                   alt={d.image.alt}
                   fill
                   sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"

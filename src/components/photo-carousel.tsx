@@ -1,10 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Image as VillaImage } from "@/lib/types";
 
+/**
+ * Card photo carousel with native swipe support.
+ * Uses CSS scroll-snap so phone users can swipe naturally — no JS needed
+ * for the gesture itself. The visible page index is derived from
+ * scrollLeft, so dots and "X / Y" counter stay accurate as the user swipes.
+ */
 export function PhotoCarousel({
   images,
   sizes,
@@ -17,62 +23,91 @@ export function PhotoCarousel({
   sizes?: string;
   priority?: boolean;
   className?: string;
-  /** Cap the number of photos shown in the preview. Defaults to 5 so
-   *  listing cards don't drown the user in 20 dots. Set to a large number
-   *  (or Infinity) to show everything. */
+  /** Cap the number of photos in the preview. Defaults to 5. */
   maxImages?: number;
-  /** "dots" = pip pagination at bottom centre (default).
-   *  "text" = small "X / Y" pill at bottom-left (StayVista-style listing card). */
+  /** "dots" = pip pagination centre-bottom; "text" = "X / Y" pill bottom-left. */
   counterStyle?: "dots" | "text";
 }) {
   const shown = images.slice(0, Math.max(1, maxImages));
   const [i, setI] = useState(0);
-  if (shown.length === 0) return null;
+  const scrollerRef = useRef<HTMLDivElement>(null);
 
-  function stopAndGo(fn: () => void) {
+  // Sync visible index to scroll position (handles swipe + button-driven scroll)
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    let raf = 0;
+    function onScroll() {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        if (!el || el.clientWidth === 0) return;
+        const idx = Math.round(el.scrollLeft / el.clientWidth);
+        setI((prev) => (prev === idx ? prev : idx));
+      });
+    }
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  function goTo(idx: number) {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const clamped = Math.max(0, Math.min(shown.length - 1, idx));
+    el.scrollTo({ left: clamped * el.clientWidth, behavior: "smooth" });
+  }
+
+  function stopAndGo(toIdx: number) {
     return (e: React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      fn();
+      goTo(toIdx);
     };
   }
 
+  if (shown.length === 0) return null;
+
   return (
     <div className={`group/carousel relative h-full w-full overflow-hidden ${className}`}>
-      {shown.map((img, idx) => (
-        <div
-          key={img.src + idx}
-          className={`absolute inset-0 transition-opacity duration-300 ${
-            idx === i ? "opacity-100" : "opacity-0"
-          }`}
-          aria-hidden={idx !== i}
-        >
-          <Image
-            src={img.src}
-            alt={img.alt}
-            fill
-            sizes={sizes}
-            priority={idx === 0 && priority}
-            className="object-cover"
-          />
-        </div>
-      ))}
+      <div
+        ref={scrollerRef}
+        className="flex h-full snap-x snap-mandatory overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {shown.map((img, idx) => (
+          <div
+            key={img.src + idx}
+            className="relative h-full w-full shrink-0 snap-center"
+          >
+            <Image
+              src={img.src}
+              alt={img.alt}
+              fill
+              sizes={sizes}
+              priority={idx === 0 && priority}
+              className="object-cover"
+            />
+          </div>
+        ))}
+      </div>
 
       {shown.length > 1 && (
         <>
+          {/* Arrows — visible on desktop hover, hidden on mobile (swipe instead) */}
           <button
             type="button"
             aria-label="Previous photo"
-            onClick={stopAndGo(() => setI((p) => (p - 1 + shown.length) % shown.length))}
-            className="absolute left-2 top-1/2 z-10 -translate-y-1/2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-foreground opacity-0 shadow-sm transition-all hover:bg-white group-hover/carousel:opacity-100"
+            onClick={stopAndGo(i - 1)}
+            className="absolute left-2 top-1/2 z-10 hidden h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-foreground opacity-0 shadow-sm transition-all hover:bg-white group-hover/carousel:opacity-100 sm:inline-flex"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
           <button
             type="button"
             aria-label="Next photo"
-            onClick={stopAndGo(() => setI((p) => (p + 1) % shown.length))}
-            className="absolute right-2 top-1/2 z-10 -translate-y-1/2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-foreground opacity-0 shadow-sm transition-all hover:bg-white group-hover/carousel:opacity-100"
+            onClick={stopAndGo(i + 1)}
+            className="absolute right-2 top-1/2 z-10 hidden h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-foreground opacity-0 shadow-sm transition-all hover:bg-white group-hover/carousel:opacity-100 sm:inline-flex"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
@@ -84,7 +119,7 @@ export function PhotoCarousel({
                   key={idx}
                   type="button"
                   aria-label={`Go to photo ${idx + 1}`}
-                  onClick={stopAndGo(() => setI(idx))}
+                  onClick={stopAndGo(idx)}
                   className={`h-1.5 rounded-full transition-all ${
                     idx === i ? "w-5 bg-white" : "w-1.5 bg-white/60 hover:bg-white/80"
                   }`}

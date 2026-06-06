@@ -62,14 +62,19 @@ export default async function HomePage() {
           ctaLabel="See all villas"
           ctaHref="/villas"
         />
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {featured.map((villa) => (
-            <VillaCard
+        {/* Mobile: horizontal swipe-slider. Desktop: grid. Max 8 cards. */}
+        <div className="mt-10 -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-6 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
+          {featured.slice(0, 8).map((villa) => (
+            <div
               key={villa.slug}
-              villa={villa}
-              loggedIn={!!user}
-              inWishlist={wishlist.has(villa.slug)}
-            />
+              className="w-[80vw] shrink-0 snap-start sm:w-auto sm:shrink"
+            >
+              <VillaCard
+                villa={villa}
+                loggedIn={!!user}
+                inWishlist={wishlist.has(villa.slug)}
+              />
+            </div>
           ))}
         </div>
       </section>
@@ -84,14 +89,19 @@ export default async function HomePage() {
             ctaLabel="See all apartments"
             ctaHref="/apartments"
           />
-          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {featuredApartments.map((apt) => (
-              <VillaCard
+          {/* Same mobile slider pattern */}
+          <div className="mt-10 -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-6 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
+            {featuredApartments.slice(0, 8).map((apt) => (
+              <div
                 key={apt.slug}
-                villa={apt}
-                loggedIn={!!user}
-                inWishlist={wishlist.has(apt.slug)}
-              />
+                className="w-[80vw] shrink-0 snap-start sm:w-auto sm:shrink"
+              >
+                <VillaCard
+                  villa={apt}
+                  loggedIn={!!user}
+                  inWishlist={wishlist.has(apt.slug)}
+                />
+              </div>
             ))}
           </div>
         </section>

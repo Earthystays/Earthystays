@@ -107,12 +107,13 @@ export default async function HomePage() {
             ctaLabel="All destinations"
             ctaHref="/locations"
           />
-          <div className="mt-10 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3">
+          {/* Mobile: horizontal snap-scroll. Desktop: grid (unchanged). */}
+          <div className="mt-10 -mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
             {destinations.slice(0, 6).map((d) => (
               <Link
                 key={d.slug}
                 href={`/locations/${d.slug}`}
-                className="group relative aspect-[4/5] overflow-hidden rounded-xl"
+                className="group relative aspect-[4/5] w-[68vw] shrink-0 snap-start overflow-hidden rounded-xl sm:aspect-[4/5] sm:w-auto sm:shrink"
               >
                 <Image
                   src={getStateCover(d.slug) ?? d.image.src}

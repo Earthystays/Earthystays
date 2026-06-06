@@ -39,7 +39,11 @@ export function VillaFiltersSidebar({
   const [maxP, setMaxP] = useState<string>(String(range[1]));
   const [rooms, setRooms] = useState<number>(initialRooms);
   const [selected, setSelected] = useState<string[]>(initialAmens);
-  const [openAmen, setOpenAmen] = useState(true);
+  // All collapsible sections default to closed — the user can expand what
+  // they actually want to filter on. Especially important on mobile where
+  // the sidebar lives in a drawer.
+  const [openPrice, setOpenPrice] = useState(false);
+  const [openAmen, setOpenAmen] = useState(false);
 
   function push(mutator: (p: URLSearchParams) => void) {
     const next = new URLSearchParams(sp.toString());
@@ -138,53 +142,72 @@ export function VillaFiltersSidebar({
         )}
       </div>
 
-      {/* PRICE RANGE */}
+      {/* PRICE RANGE — collapsible */}
       <section className="grid gap-4 border-t border-border/60 pt-5">
-        <header className="flex items-baseline justify-between">
-          <h3 className="text-sm font-medium text-foreground">Price Range</h3>
-          <span className="text-xs text-muted-foreground">per night</span>
-        </header>
-
-        <div className="px-1">
-          <Slider
-            min={sliderMin}
-            max={sliderMax}
-            step={STEP}
-            value={range}
-            onValueChange={onSliderChange}
-            onValueCommitted={onSliderCommit}
-            aria-label="Price range"
-            className="my-2"
+        <button
+          type="button"
+          onClick={() => setOpenPrice((v) => !v)}
+          className="flex items-baseline justify-between"
+        >
+          <h3 className="text-sm font-medium text-foreground">
+            Price Range
+            {priceActive && (
+              <span className="ml-2 text-xs font-normal text-terracotta">
+                ₹{range[0].toLocaleString("en-IN")} – ₹{range[1].toLocaleString("en-IN")}
+              </span>
+            )}
+          </h3>
+          <ChevronDown
+            className={`h-4 w-4 text-muted-foreground transition-transform ${
+              openPrice ? "rotate-180" : ""
+            }`}
           />
-          <div className="mt-2 flex justify-between text-[11px] text-muted-foreground">
-            <span>₹{sliderMin.toLocaleString("en-IN")}</span>
-            <span>₹{sliderMax.toLocaleString("en-IN")}</span>
-          </div>
-        </div>
+        </button>
 
-        <div className="grid grid-cols-2 gap-2">
-          <label className="grid gap-1">
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Min</span>
-            <Input
-              inputMode="numeric"
-              value={minP}
-              onChange={(e) => setMinP(e.target.value.replace(/[^\d]/g, ""))}
-              placeholder={`₹${sliderMin}`}
-            />
-          </label>
-          <label className="grid gap-1">
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Max</span>
-            <Input
-              inputMode="numeric"
-              value={maxP}
-              onChange={(e) => setMaxP(e.target.value.replace(/[^\d]/g, ""))}
-              placeholder={`₹${sliderMax}`}
-            />
-          </label>
-        </div>
-        <Button variant="outline" onClick={applyInputs} className="w-full rounded-md">
-          Apply
-        </Button>
+        {openPrice && (
+          <>
+            <div className="px-1">
+              <Slider
+                min={sliderMin}
+                max={sliderMax}
+                step={STEP}
+                value={range}
+                onValueChange={onSliderChange}
+                onValueCommitted={onSliderCommit}
+                aria-label="Price range"
+                className="my-2"
+              />
+              <div className="mt-2 flex justify-between text-[11px] text-muted-foreground">
+                <span>₹{sliderMin.toLocaleString("en-IN")}</span>
+                <span>₹{sliderMax.toLocaleString("en-IN")}</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <label className="grid gap-1">
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Min</span>
+                <Input
+                  inputMode="numeric"
+                  value={minP}
+                  onChange={(e) => setMinP(e.target.value.replace(/[^\d]/g, ""))}
+                  placeholder={`₹${sliderMin}`}
+                />
+              </label>
+              <label className="grid gap-1">
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Max</span>
+                <Input
+                  inputMode="numeric"
+                  value={maxP}
+                  onChange={(e) => setMaxP(e.target.value.replace(/[^\d]/g, ""))}
+                  placeholder={`₹${sliderMax}`}
+                />
+              </label>
+            </div>
+            <Button variant="outline" onClick={applyInputs} className="w-full rounded-md">
+              Apply
+            </Button>
+          </>
+        )}
       </section>
 
       {/* ROOMS */}

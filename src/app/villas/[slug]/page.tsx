@@ -13,6 +13,7 @@ import { SpacesGrid } from "@/components/spaces-grid";
 import { ExternalReviews } from "@/components/external-reviews";
 import { AmenitiesViewer } from "@/components/amenities-viewer";
 import { RecentlyVisitedTracker } from "@/components/recently-visited-tracker";
+import { MobileInquireBar } from "@/components/mobile-inquire-bar";
 import { getVillaBySlug, getVillas } from "@/lib/data/villas";
 import { getStateBySlug } from "@/lib/data/locations";
 import { formatNight } from "@/lib/format";
@@ -443,6 +444,9 @@ export default async function VillaDetailPage({ params }: PageProps) {
           </div>
         </section>
       )}
+
+      {/* Mobile-only sticky bottom bar with price + Enquire CTA */}
+      <MobileInquireBar pricePerNight={villa.pricePerNight} />
     </div>
   );
 }

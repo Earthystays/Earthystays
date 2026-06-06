@@ -13,8 +13,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { destinations } from "@/lib/data/locations";
-import { DateRangePicker, type DateRange } from "@/components/date-range-picker";
+import { SingleDatePicker } from "@/components/single-date-picker";
 import { GuestsPicker, DEFAULT_GUESTS, type Guests } from "@/components/guests-picker";
+
+// Local DateRange shape — replaces the range-picker import.
+type DateRange = { from?: Date; to?: Date };
 
 function toISO(d: Date | undefined): string | undefined {
   if (!d) return undefined;
@@ -70,7 +73,7 @@ export function SearchBar() {
       <div className="overflow-visible rounded-2xl border border-border/60 bg-card shadow-2xl">
         <form
           onSubmit={submit}
-          className="grid grid-cols-1 divide-y divide-border/60 md:grid-cols-[1.4fr_2fr_1.1fr_auto] md:divide-x md:divide-y-0"
+          className="grid grid-cols-1 divide-y divide-border/60 md:grid-cols-[1.4fr_1fr_1fr_1.1fr_auto] md:divide-x md:divide-y-0"
         >
           <Field label="Location/Villas/Landmark">
             <Select value={destination} onValueChange={(v) => setDestination(v ?? "")}>
@@ -92,8 +95,30 @@ export function SearchBar() {
             </Select>
           </Field>
 
-          {/* Date range — spans 2 logical columns */}
-          <DateRangePicker value={range} onChange={setRange} />
+          {/* Check-in — its own calendar */}
+          <SingleDatePicker
+            label="Check-in"
+            value={range?.from}
+            onChange={(d) =>
+              setRange((r) => ({
+                from: d,
+                // If new check-in is after current check-out, clear check-out
+                to: r?.to && d && r.to <= d ? undefined : r?.to,
+              }))
+            }
+          />
+
+          {/* Check-out — its own calendar, min = check-in + 1 day */}
+          <SingleDatePicker
+            label="Check-out"
+            value={range?.to}
+            minDate={
+              range?.from
+                ? new Date(range.from.getTime() + 24 * 60 * 60 * 1000)
+                : undefined
+            }
+            onChange={(d) => setRange((r) => ({ ...r, to: d }))}
+          />
 
           {/* Guests picker */}
           <GuestsPicker

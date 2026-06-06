@@ -4,6 +4,7 @@ import type { Image as VillaImage } from "@/lib/types";
 import { Images, Star, PlayCircle } from "lucide-react";
 import { ShareButton } from "@/components/share-button";
 import { WishlistButton } from "@/components/wishlist-button";
+import { PhotoCarousel } from "@/components/photo-carousel";
 
 export function VillaGallery({
   images,
@@ -37,7 +38,45 @@ export function VillaGallery({
   const isLuxury = typeof pricePerNight === "number" && pricePerNight >= 50000;
 
   return (
-    <div className="grid h-[78vh] min-h-[560px] gap-2.5 sm:grid-cols-[1.6fr_1fr] sm:grid-rows-2">
+    <>
+      {/* MOBILE — swipeable carousel of all images, with share/wishlist
+          overlay and a "View Photos" CTA. Hidden on desktop. */}
+      <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-muted sm:hidden">
+        <PhotoCarousel
+          images={images}
+          sizes="100vw"
+          priority
+          maxImages={Math.min(images.length, 8)}
+          counterStyle="text"
+        />
+        <div className="absolute right-3 top-3 z-10 flex items-center gap-2">
+          <ShareButton
+            title={villaName ?? "Earthy Stays villa"}
+            description={villaName ? `${villaName} — book on Earthy Stays` : "Earthy Stays"}
+          />
+          <WishlistButton
+            slug={slug}
+            loggedIn={loggedIn}
+            initialActive={inWishlist}
+          />
+        </div>
+        {isBestRated && (
+          <span className="absolute left-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-medium text-foreground shadow-sm backdrop-blur">
+            <Star className="h-3 w-3 fill-terracotta text-terracotta" />
+            Best Rated
+          </span>
+        )}
+        <Link
+          href={photosUrl}
+          className="absolute bottom-3 right-3 z-10 inline-flex items-center gap-1.5 rounded-md bg-white/95 px-3 py-1.5 text-xs font-medium text-foreground shadow-md backdrop-blur"
+        >
+          <Images className="h-3.5 w-3.5" />
+          All {images.length} photos
+        </Link>
+      </div>
+
+      {/* DESKTOP — original 1+2 grid */}
+      <div className="hidden h-[78vh] min-h-[560px] gap-2.5 sm:grid sm:grid-cols-[1.6fr_1fr] sm:grid-rows-2">
       {/* MAIN — left, spans 2 rows */}
       <Link
         href={photosUrl}
@@ -143,6 +182,7 @@ export function VillaGallery({
           <span className="sr-only">{reviewCount} reviews</span>
         )}
       </Link>
-    </div>
+      </div>
+    </>
   );
 }

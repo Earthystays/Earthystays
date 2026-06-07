@@ -2,8 +2,14 @@ import { NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
 import crypto from "crypto";
+import sharp from "sharp";
 import { cookies } from "next/headers";
 import { ADMIN_COOKIE, adminToken } from "@/lib/admin-auth";
+
+/** Max edge of a saved image. Anything bigger gets resized down. */
+const MAX_IMAGE_EDGE_PX = 1800;
+/** JPEG quality (0-100). 80 = near-lossless to the eye, ~10× smaller files. */
+const JPEG_QUALITY = 80;
 
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
 const MAX_IMAGE_BYTES = 25 * 1024 * 1024; // 25MB per image
@@ -70,17 +76,61 @@ export async function POST(req: Request) {
         { status: 413 },
       );
     }
-    const ext = path.extname(file.name) || ".jpg";
     const base = path.basename(file.name, path.extname(file.name));
     const id = crypto.randomBytes(4).toString("hex");
-    const filename = `${Date.now()}-${id}-${safeName(base)}${ext}`;
+    const inputBuffer = Buffer.from(await file.arrayBuffer());
+
+    if (isVideo) {
+      // Videos are saved as-is — no transcoding.
+      const ext = path.extname(file.name) || ".mp4";
+      const filename = `${Date.now()}-${id}-${safeName(base)}${ext}`;
+      const filepath = path.join(UPLOAD_DIR, filename);
+      await fs.writeFile(filepath, inputBuffer);
+      uploaded.push({
+        url: `/uploads/${filename}`,
+        name: file.name,
+        size: inputBuffer.length,
+      });
+      continue;
+    }
+
+    // Images: resize down to MAX_IMAGE_EDGE_PX (preserving aspect) and
+    // re-encode as JPEG at JPEG_QUALITY. A 5MB DSLR photo typically becomes
+    // ~300-600KB at this setting with no perceptible quality loss.
+    //
+    // We also strip EXIF/orientation metadata (sharp's rotate() bakes
+    // orientation into the pixels so the image displays correctly without
+    // it), reducing size further and removing camera serial/geo tags.
+    let outputBuffer: Buffer;
+    try {
+      outputBuffer = await sharp(inputBuffer)
+        .rotate() // honour EXIF orientation, then strip it
+        .resize({
+          width: MAX_IMAGE_EDGE_PX,
+          height: MAX_IMAGE_EDGE_PX,
+          fit: "inside",
+          withoutEnlargement: true,
+        })
+        .jpeg({ quality: JPEG_QUALITY, mozjpeg: true })
+        .toBuffer();
+    } catch (err) {
+      console.error("[upload] sharp compression failed", file.name, err);
+      return NextResponse.json(
+        { ok: false, error: `Could not process image: ${file.name}` },
+        { status: 422 },
+      );
+    }
+
+    // All images saved as .jpg (the JPEG re-encode means the extension
+    // matches the actual format on disk).
+    const filename = `${Date.now()}-${id}-${safeName(base)}.jpg`;
     const filepath = path.join(UPLOAD_DIR, filename);
-    const buffer = Buffer.from(await file.arrayBuffer());
-    await fs.writeFile(filepath, buffer);
+    await fs.writeFile(filepath, outputBuffer);
+
     uploaded.push({
       url: `/uploads/${filename}`,
       name: file.name,
-      size: file.size,
+      size: outputBuffer.length,
     });
   }
 

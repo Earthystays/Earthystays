@@ -35,6 +35,10 @@ export const metadata: Metadata = {
   description:
     "Curated villa rentals across India's coastlines, hills, and heritage cities. Private pools, full staff, unforgettable stays.",
   metadataBase: new URL("https://earthystays.com"),
+  verification: {
+    // Google Search Console — keeps the site verified for the linked account.
+    google: "Lp2wW7n4dcZoA1oLDucvYdM8DC8qbc5RmZyD5htOHX8",
+  },
 };
 
 export default async function RootLayout({

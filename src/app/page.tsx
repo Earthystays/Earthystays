@@ -18,6 +18,7 @@ import {
 import { ReviewsSlider } from "@/components/reviews-slider";
 import { getReviews } from "@/lib/data/reviews";
 import { CallbackModal } from "@/components/callback-modal";
+import { OrganizationJsonLd } from "@/components/jsonld-organization";
 import { getBanners } from "@/lib/data/banners";
 import { getCurrentUser } from "@/lib/session";
 
@@ -45,6 +46,9 @@ export default async function HomePage() {
 
   return (
     <div className="flex flex-col">
+      {/* Organization JSON-LD — helps Google understand the brand */}
+      <OrganizationJsonLd />
+
       {/* Hero slider */}
       <HeroSlider slides={slides} />
 

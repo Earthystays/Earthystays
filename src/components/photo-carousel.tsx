@@ -59,13 +59,10 @@ export function PhotoCarousel({
     el.scrollTo({ left: clamped * el.clientWidth, behavior: "smooth" });
   }
 
-  function stopAndGo(toIdx: number) {
-    return (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      goTo(toIdx);
-    };
-  }
+  // React 19's lint flags refs being accessed when the handler is created
+  // (vs when it fires). We keep goTo() — which touches scrollerRef — inside
+  // the actual click event by inlining onClick handlers below instead of
+  // using a factory like stopAndGo().
 
   if (shown.length === 0) return null;
 
@@ -98,7 +95,11 @@ export function PhotoCarousel({
           <button
             type="button"
             aria-label="Previous photo"
-            onClick={stopAndGo(i - 1)}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              goTo(i - 1);
+            }}
             className="absolute left-2 top-1/2 z-10 hidden h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-foreground opacity-0 shadow-sm transition-all hover:bg-white group-hover/carousel:opacity-100 sm:inline-flex"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -106,7 +107,11 @@ export function PhotoCarousel({
           <button
             type="button"
             aria-label="Next photo"
-            onClick={stopAndGo(i + 1)}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              goTo(i + 1);
+            }}
             className="absolute right-2 top-1/2 z-10 hidden h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-foreground opacity-0 shadow-sm transition-all hover:bg-white group-hover/carousel:opacity-100 sm:inline-flex"
           >
             <ChevronRight className="h-4 w-4" />
@@ -119,7 +124,11 @@ export function PhotoCarousel({
                   key={idx}
                   type="button"
                   aria-label={`Go to photo ${idx + 1}`}
-                  onClick={stopAndGo(idx)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    goTo(idx);
+                  }}
                   className={`h-1.5 rounded-full transition-all ${
                     idx === i ? "w-5 bg-white" : "w-1.5 bg-white/60 hover:bg-white/80"
                   }`}

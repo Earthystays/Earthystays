@@ -14,6 +14,7 @@ import { ExternalReviews } from "@/components/external-reviews";
 import { AmenitiesViewer } from "@/components/amenities-viewer";
 import { RecentlyVisitedTracker } from "@/components/recently-visited-tracker";
 import { MobileInquireBar } from "@/components/mobile-inquire-bar";
+import { VillaJsonLd } from "@/components/jsonld-villa";
 import { getVillaBySlug, getVillas } from "@/lib/data/villas";
 import { getStateBySlug } from "@/lib/data/locations";
 import { formatNight } from "@/lib/format";
@@ -92,6 +93,8 @@ export default async function VillaDetailPage({ params }: PageProps) {
 
   return (
     <div>
+      {/* JSON-LD so Google can show rich results (star rating, price, photos) */}
+      <VillaJsonLd villa={villa} />
       {/* Record this view to localStorage so it surfaces on the home page later */}
       <RecentlyVisitedTracker slug={villa.slug} />
       <div className="container-page pt-8">

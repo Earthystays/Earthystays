@@ -39,6 +39,17 @@ export const metadata: Metadata = {
     // Google Search Console — keeps the site verified for the linked account.
     google: "Lp2wW7n4dcZoA1oLDucvYdM8DC8qbc5RmZyD5htOHX8",
   },
+  // Explicit icon links so Google + every browser pick the right size.
+  // Google specifically requires a multiple of 48px — these are 48, 96, 192, 512.
+  icons: {
+    icon: [
+      { url: "/icon-48.png", sizes: "48x48", type: "image/png" },
+      { url: "/icon-96.png", sizes: "96x96", type: "image/png" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: "/icon-192.png",
+  },
 };
 
 export default async function RootLayout({

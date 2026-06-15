@@ -48,16 +48,18 @@ export function PropertyTypeMenu({
 
   const singular = label.replace(/s$/, ""); // "Villa" / "Apartment"
 
-  // Flatten state→city groups into a single alphabetical city list
+  // Flatten state→city groups; sort by property count descending so the
+  // city with the most listings appears first. Ties break alphabetically.
   const allCities = states
     .flatMap((s) =>
       s.cities.map((c) => ({
         key: `${s.stateSlug}/${c.slug}`,
         href: `${href}?state=${s.stateSlug}&city=${c.slug}`,
         name: c.name,
+        count: c.count,
       })),
     )
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
 
   return (
     <DropdownMenu>

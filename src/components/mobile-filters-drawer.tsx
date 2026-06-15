@@ -52,6 +52,7 @@ export function MobileFiltersDrawer({
             amenities={amenities}
             priceMin={priceMin}
             priceMax={priceMax}
+            defaultExpanded={false}
           />
         </div>
       </SheetContent>

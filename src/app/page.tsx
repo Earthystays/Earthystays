@@ -4,6 +4,7 @@ import { HeroSlider } from "@/components/hero-slider";
 import { SearchBar } from "@/components/search-bar";
 import { SectionHeader } from "@/components/section-header";
 import { getAllDestinations } from "@/lib/data/locations";
+import { getAllCollections } from "@/lib/data/collections";
 import { getStateCover } from "@/lib/data/location-covers";
 import {
   getFeaturedVillas,
@@ -131,6 +132,41 @@ export default async function HomePage() {
               </Link>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Collections — same slider treatment as Locations */}
+      <section className="container-page py-12 sm:py-20">
+        <SectionHeader
+          eyebrow="Browse by theme"
+          title="Collections"
+          description="Curated picks — pool villas, pet friendly, beachfront, more."
+          ctaLabel="All collections"
+          ctaHref="/collections"
+        />
+        <div className="mt-10 -mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
+          {getAllCollections().slice(0, 6).map((c) => (
+            <Link
+              key={c.slug}
+              href={`/collections/${c.slug}`}
+              className="group relative aspect-[4/5] w-[68vw] shrink-0 snap-start overflow-hidden rounded-xl sm:aspect-[4/5] sm:w-auto sm:shrink"
+            >
+              <Image
+                src={c.image.src}
+                alt={c.image.alt}
+                fill
+                sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                className="object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 p-4 text-white sm:p-6">
+                <h3 className="font-display text-lg sm:text-2xl">{c.name}</h3>
+                <p className="mt-0.5 line-clamp-2 text-xs text-white/85 sm:mt-1 sm:text-sm">
+                  {c.blurb}
+                </p>
+              </div>
+            </Link>
+          ))}
         </div>
       </section>
 

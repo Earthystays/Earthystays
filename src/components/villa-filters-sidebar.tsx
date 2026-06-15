@@ -13,10 +13,14 @@ export function VillaFiltersSidebar({
   amenities,
   priceMin,
   priceMax,
+  defaultExpanded = true,
 }: {
   amenities: string[];
   priceMin: number;
   priceMax: number;
+  /** Desktop sidebar wants sections expanded by default; mobile drawer
+   *  passes false so the drawer doesn't open as a wall of controls. */
+  defaultExpanded?: boolean;
 }) {
   const router = useRouter();
   const sp = useSearchParams();
@@ -39,11 +43,11 @@ export function VillaFiltersSidebar({
   const [maxP, setMaxP] = useState<string>(String(range[1]));
   const [rooms, setRooms] = useState<number>(initialRooms);
   const [selected, setSelected] = useState<string[]>(initialAmens);
-  // All collapsible sections default to closed — the user can expand what
-  // they actually want to filter on. Especially important on mobile where
-  // the sidebar lives in a drawer.
-  const [openPrice, setOpenPrice] = useState(false);
-  const [openAmen, setOpenAmen] = useState(false);
+  // Section expansion follows the prop — desktop (true) opens everything so
+  // filters are scannable at a glance; mobile drawer (false) keeps them
+  // collapsed so the drawer isn't overwhelming on open.
+  const [openPrice, setOpenPrice] = useState(defaultExpanded);
+  const [openAmen, setOpenAmen] = useState(defaultExpanded);
 
   function push(mutator: (p: URLSearchParams) => void) {
     const next = new URLSearchParams(sp.toString());

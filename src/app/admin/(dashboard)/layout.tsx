@@ -1,11 +1,12 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Home, Building2, Image as ImageIcon, Inbox, MapPin, Sparkles, MessageSquareQuote, ArrowUpRight, LogOut } from "lucide-react";
+import { Home, Building2, Image as ImageIcon, Inbox, MapPin, Sparkles, MessageSquareQuote, Layers, ArrowUpRight, LogOut } from "lucide-react";
 
 const NAV = [
   { href: "/admin", label: "Overview", icon: Home },
   { href: "/admin/villas", label: "Villas", icon: Building2 },
   { href: "/admin/locations", label: "Locations", icon: MapPin },
+  { href: "/admin/collections", label: "Collections", icon: Layers },
   { href: "/admin/amenities", label: "Amenities", icon: Sparkles },
   { href: "/admin/banners", label: "Banners", icon: ImageIcon },
   { href: "/admin/reviews", label: "Reviews", icon: MessageSquareQuote },

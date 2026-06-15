@@ -23,6 +23,7 @@ import { CallbackModal } from "@/components/callback-modal";
 import type { CityIndexState } from "@/lib/data/villas";
 
 const SECONDARY_NAV = [
+  { href: "/collections", label: "Collections" },
   { href: "/locations", label: "Locations" },
   { href: "/partner", label: "Partner with us" },
 ];

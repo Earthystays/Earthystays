@@ -1,6 +1,7 @@
 import type { Collection } from "@/lib/types";
+import { readJsonSync } from "@/lib/storage";
 
-export const collections: Collection[] = [
+const SEED: Collection[] = [
   {
     slug: "pool-villas",
     name: "Pool Villas",
@@ -48,6 +49,51 @@ export const collections: Collection[] = [
   },
 ];
 
+/** Admin-managed collection data — overrides cover photo + name/blurb, plus
+ *  can add new collections or hide seed ones. */
+type AdminCollections = {
+  overrides?: Record<
+    string,
+    { name?: string; blurb?: string; image?: { src: string; alt: string } }
+  >;
+  added?: Collection[];
+  deleted?: string[];
+};
+
+function loadAdminCollections(): AdminCollections {
+  return readJsonSync<AdminCollections>("admin-collections.json", {});
+}
+
+/** All collections (seed + admin-added, minus deleted, with overrides). */
+export const collections: Collection[] = SEED;
+
+export function getAllCollections(): Collection[] {
+  const admin = loadAdminCollections();
+  const deleted = new Set(admin.deleted ?? []);
+  const out: Collection[] = [];
+
+  for (const c of SEED) {
+    if (deleted.has(c.slug)) continue;
+    const ov = admin.overrides?.[c.slug];
+    out.push({
+      slug: c.slug,
+      name: ov?.name ?? c.name,
+      blurb: ov?.blurb ?? c.blurb,
+      image: ov?.image ?? c.image,
+    });
+  }
+  for (const c of admin.added ?? []) {
+    if (deleted.has(c.slug)) continue;
+    if (SEED.some((s) => s.slug === c.slug)) continue;
+    out.push(c);
+  }
+  return out;
+}
+
 export function getCollectionBySlug(slug: string) {
-  return collections.find((c) => c.slug === slug);
+  return getAllCollections().find((c) => c.slug === slug);
+}
+
+export function isSeedCollection(slug: string): boolean {
+  return SEED.some((c) => c.slug === slug);
 }

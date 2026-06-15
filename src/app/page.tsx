@@ -5,6 +5,7 @@ import { SearchBar } from "@/components/search-bar";
 import { SectionHeader } from "@/components/section-header";
 import { getAllDestinations } from "@/lib/data/locations";
 import { getAllCollections } from "@/lib/data/collections";
+import { ScrollSlider } from "@/components/scroll-slider";
 import { getStateCover } from "@/lib/data/location-covers";
 import {
   getFeaturedVillas,
@@ -118,7 +119,7 @@ export default async function HomePage() {
             ctaLabel="All collections"
             ctaHref="/collections"
           />
-          <div className="mt-10 -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-5">
+          <ScrollSlider className="mt-10 -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-5">
             {collections.map((c) => (
               <Link
                 key={c.slug}
@@ -141,7 +142,7 @@ export default async function HomePage() {
                 </div>
               </Link>
             ))}
-          </div>
+          </ScrollSlider>
         </div>
       </section>
 
@@ -155,7 +156,7 @@ export default async function HomePage() {
           ctaHref="/locations"
         />
         {/* Always horizontal slider — 1 visible on mobile, 2 on tablet, 3 on desktop. */}
-        <div className="mt-10 -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-5">
+        <ScrollSlider className="mt-10 -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-5">
           {destinations.map((d) => (
             <Link
               key={d.slug}
@@ -183,7 +184,7 @@ export default async function HomePage() {
               </div>
             </Link>
           ))}
-        </div>
+        </ScrollSlider>
       </section>
 
       {/* Recently visited (client-side, only renders if visitor has history) */}

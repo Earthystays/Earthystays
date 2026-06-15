@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { VillaCard } from "@/components/villa-card";
+import { ScrollSlider } from "@/components/scroll-slider";
 import type { Villa } from "@/lib/types";
 
 /**
@@ -62,7 +63,7 @@ export function LocationChipsFilter({
       )}
 
       {/* Card slider — single big card on mobile (swipe), grid on desktop */}
-      <div className="mt-6 -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-6 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
+      <ScrollSlider className="mt-6 -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-6 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
         {filtered.map((v) => (
           <div
             key={v.slug}
@@ -75,7 +76,7 @@ export function LocationChipsFilter({
             />
           </div>
         ))}
-      </div>
+      </ScrollSlider>
 
       {filtered.length === 0 && activeCity && (
         <p className="mt-6 text-center text-sm text-muted-foreground">

@@ -16,6 +16,13 @@ const SlideSchema = z.object({
       "Use an uploaded image or a full http(s) URL",
     ),
   imageAlt: z.string().min(1),
+  videoSrc: z
+    .string()
+    .optional()
+    .refine(
+      (v) => !v || v.startsWith("/") || /^https?:\/\//i.test(v),
+      "Video must be uploaded or a full http(s) URL",
+    ),
   eyebrow: z.string().optional(),
   title: z.string().min(2),
   subtitle: z.string().optional(),
@@ -45,6 +52,7 @@ export async function saveBanners(
     const raw = {
       imageSrc: String(form.get(`slides.${i}.imageSrc`) ?? "").trim(),
       imageAlt: String(form.get(`slides.${i}.imageAlt`) ?? "").trim(),
+      videoSrc: String(form.get(`slides.${i}.videoSrc`) ?? "").trim() || undefined,
       eyebrow: String(form.get(`slides.${i}.eyebrow`) ?? "").trim() || undefined,
       title: String(form.get(`slides.${i}.title`) ?? "").trim(),
       subtitle: String(form.get(`slides.${i}.subtitle`) ?? "").trim() || undefined,
@@ -58,6 +66,7 @@ export async function saveBanners(
     }
     slides.push({
       image: { src: parsed.data.imageSrc, alt: parsed.data.imageAlt },
+      videoSrc: parsed.data.videoSrc || undefined,
       eyebrow: parsed.data.eyebrow,
       title: parsed.data.title,
       subtitle: parsed.data.subtitle,

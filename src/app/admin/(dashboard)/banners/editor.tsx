@@ -16,6 +16,7 @@ const INITIAL: SaveBannersState = { ok: false };
 type Slide = {
   imageSrc: string;
   imageAlt: string;
+  videoSrc: string;
   eyebrow: string;
   title: string;
   subtitle: string;
@@ -27,6 +28,7 @@ function toForm(s: HeroSlide): Slide {
   return {
     imageSrc: s.image.src,
     imageAlt: s.image.alt,
+    videoSrc: s.videoSrc ?? "",
     eyebrow: s.eyebrow ?? "",
     title: s.title,
     subtitle: s.subtitle ?? "",
@@ -38,6 +40,7 @@ function toForm(s: HeroSlide): Slide {
 const BLANK: Slide = {
   imageSrc: "",
   imageAlt: "",
+  videoSrc: "",
   eyebrow: "",
   title: "",
   subtitle: "",
@@ -136,6 +139,24 @@ export function BannerEditor({ initial }: { initial: HeroSlide[] }) {
               onChange={(e) => patch(i, "imageAlt", e.target.value)}
               required
               placeholder="Pool at sunset"
+            />
+          </Field>
+
+          {/* Optional video — when set, replaces the image on the hero slider.
+              The image above is still used as a poster while the video loads. */}
+          <Field
+            name={`slides.${i}.videoSrc`}
+            label="Video (optional — replaces image with looping video)"
+          >
+            <VideoUploadField
+              src={s.videoSrc}
+              onUploaded={(url) => patch(i, "videoSrc", url)}
+              onRemove={() => patch(i, "videoSrc", "")}
+            />
+            <input
+              type="hidden"
+              name={`slides.${i}.videoSrc`}
+              value={s.videoSrc}
             />
           </Field>
 
@@ -328,6 +349,81 @@ function BannerImageField({
           label="Choose image"
           onUploadStart={() => setUploading(true)}
           onUploaded={handleUpload}
+        />
+      </div>
+    </div>
+  );
+}
+
+function VideoUploadField({
+  src,
+  onUploaded,
+  onRemove,
+}: {
+  src: string;
+  onUploaded: (url: string) => void;
+  onRemove: () => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+
+  if (src) {
+    return (
+      <div className="overflow-hidden rounded-xl border border-border/60 bg-muted">
+        <video
+          src={src}
+          controls
+          muted
+          className="aspect-[21/9] w-full bg-black object-cover"
+        />
+        <div className="flex items-center justify-between gap-2 border-t border-border/60 bg-card px-3 py-2">
+          <span className="truncate text-xs text-muted-foreground">
+            {src.startsWith("/uploads/") ? src.split("/").pop() : src}
+          </span>
+          <div className="flex items-center gap-2">
+            <ImageUploadButton
+              label="Replace"
+              accept="video/mp4,video/webm,video/quicktime"
+              onUploadStart={() => setUploading(true)}
+              onUploaded={(url) => {
+                setUploading(false);
+                onUploaded(url);
+              }}
+            />
+            <button
+              type="button"
+              onClick={onRemove}
+              className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1 text-xs text-destructive hover:bg-destructive/10"
+            >
+              <X className="h-3 w-3" /> Remove
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-dashed border-border bg-muted/30 px-4 py-6 text-center">
+      {uploading ? (
+        <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
+      ) : (
+        <Upload className="mx-auto h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
+      )}
+      <p className="mt-2 text-sm font-medium text-foreground">
+        {uploading ? "Uploading…" : "Add a video (optional)"}
+      </p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        MP4, WebM, or MOV · up to 100MB. Loops silently as the slide background.
+      </p>
+      <div className="mt-3 inline-flex">
+        <ImageUploadButton
+          label="Choose video"
+          accept="video/mp4,video/webm,video/quicktime"
+          onUploadStart={() => setUploading(true)}
+          onUploaded={(url) => {
+            setUploading(false);
+            onUploaded(url);
+          }}
         />
       </div>
     </div>

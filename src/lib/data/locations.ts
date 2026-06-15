@@ -146,8 +146,62 @@ export const destinations: Destination[] = [
   },
 ];
 
+import { readJsonSync } from "@/lib/storage";
+
+/**
+ * Admin-added locations live in data/admin-locations.json and merge with
+ * the bundled seed. This lets the admin grow the location list without
+ * code changes.
+ */
+type AdminLocations = {
+  states?: Destination[];
+  citiesByState?: Record<string, Destination["cities"]>;
+  deletedStates?: string[]; // slugs of states removed via admin
+  deletedCities?: Record<string, string[]>; // state-slug → city-slugs removed
+};
+
+function loadAdminLocations(): AdminLocations {
+  return readJsonSync<AdminLocations>("admin-locations.json", {});
+}
+
+/**
+ * Returns the full merged list: seed + admin-added, minus anything the
+ * admin has explicitly deleted. Used by every consumer that displays the
+ * destination list (header dropdown, locations page, search bar, etc.).
+ */
+export function getAllDestinations(): Destination[] {
+  const admin = loadAdminLocations();
+  const deletedStates = new Set(admin.deletedStates ?? []);
+  const out: Destination[] = [];
+
+  for (const d of destinations) {
+    if (deletedStates.has(d.slug)) continue;
+    const deletedCities = new Set(admin.deletedCities?.[d.slug] ?? []);
+    const extraCities = admin.citiesByState?.[d.slug] ?? [];
+    out.push({
+      ...d,
+      cities: [
+        ...d.cities.filter((c) => !deletedCities.has(c.slug)),
+        ...extraCities.filter(
+          (c) => !d.cities.some((sc) => sc.slug === c.slug),
+        ),
+      ],
+    });
+  }
+
+  // Admin-added states (not in seed)
+  for (const s of admin.states ?? []) {
+    if (deletedStates.has(s.slug)) continue;
+    if (destinations.some((d) => d.slug === s.slug)) continue;
+    const extraCities = admin.citiesByState?.[s.slug] ?? [];
+    out.push({ ...s, cities: extraCities });
+  }
+
+  return out;
+}
+
 export function getStateBySlug(slug: string) {
-  return destinations.find((d) => d.slug === slug);
+  return getAllDestinations().find((d) => d.slug === slug);
 }
 
 export function getCityInState(stateSlug: string, citySlug: string) {
@@ -156,4 +210,17 @@ export function getCityInState(stateSlug: string, citySlug: string) {
   const city = state.cities.find((c) => c.slug === citySlug);
   if (!city) return undefined;
   return { state, city };
+}
+
+/**
+ * Tells the loader whether a slug is part of the bundled seed (read-only,
+ * can be hidden via deletedStates) or admin-added (fully removable).
+ */
+export function isSeedState(slug: string): boolean {
+  return destinations.some((d) => d.slug === slug);
+}
+
+export function isSeedCity(stateSlug: string, citySlug: string): boolean {
+  const state = destinations.find((d) => d.slug === stateSlug);
+  return state ? state.cities.some((c) => c.slug === citySlug) : false;
 }

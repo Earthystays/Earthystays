@@ -7,6 +7,9 @@ import { useEffect, useRef, useState } from "react";
 
 export type HeroSlide = {
   image: { src: string; alt: string };
+  /** Optional video that replaces the image when set. Must be a direct
+   *  URL to an mp4/webm/mov file. Looped, muted, autoplays inline. */
+  videoSrc?: string;
   eyebrow?: string;
   title: string;
   subtitle?: string;
@@ -55,14 +58,26 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
           }`}
           aria-hidden={idx !== i}
         >
-          <Image
-            src={s.image.src}
-            alt={s.image.alt}
-            fill
-            priority={idx === 0}
-            sizes="100vw"
-            className="object-cover"
-          />
+          {s.videoSrc ? (
+            <video
+              src={s.videoSrc}
+              autoPlay
+              loop
+              muted
+              playsInline
+              poster={s.image.src}
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          ) : (
+            <Image
+              src={s.image.src}
+              alt={s.image.alt}
+              fill
+              priority={idx === 0}
+              sizes="100vw"
+              className="object-cover"
+            />
+          )}
           <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/30 to-black/65" />
           <div className="container-page absolute inset-0 flex flex-col items-center justify-center text-center text-white">
             {s.eyebrow && (

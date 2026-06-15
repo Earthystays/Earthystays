@@ -3,7 +3,6 @@ import Link from "next/link";
 import { HeroSlider } from "@/components/hero-slider";
 import { SearchBar } from "@/components/search-bar";
 import { SectionHeader } from "@/components/section-header";
-import { VillaCard } from "@/components/villa-card";
 import { destinations } from "@/lib/data/locations";
 import { getStateCover } from "@/lib/data/location-covers";
 import {
@@ -19,6 +18,7 @@ import { ReviewsSlider } from "@/components/reviews-slider";
 import { getReviews } from "@/lib/data/reviews";
 import { CallbackModal } from "@/components/callback-modal";
 import { OrganizationJsonLd } from "@/components/jsonld-organization";
+import { LocationChipsFilter } from "@/components/location-chips-filter";
 import { getBanners } from "@/lib/data/banners";
 import { getCurrentUser } from "@/lib/session";
 
@@ -66,21 +66,11 @@ export default async function HomePage() {
           ctaLabel="See all villas"
           ctaHref="/villas"
         />
-        {/* Mobile: horizontal swipe-slider. Desktop: grid. Max 8 cards. */}
-        <div className="mt-10 -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-6 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
-          {featured.slice(0, 8).map((villa) => (
-            <div
-              key={villa.slug}
-              className="w-[80vw] shrink-0 snap-start sm:w-auto sm:shrink"
-            >
-              <VillaCard
-                villa={villa}
-                loggedIn={!!user}
-                inWishlist={wishlist.has(villa.slug)}
-              />
-            </div>
-          ))}
-        </div>
+        <LocationChipsFilter
+          properties={featured}
+          loggedIn={!!user}
+          wishlist={wishlist}
+        />
       </section>
 
       {/* Best rated apartments — only rendered if any apartments are marked featured */}
@@ -93,21 +83,11 @@ export default async function HomePage() {
             ctaLabel="See all apartments"
             ctaHref="/apartments"
           />
-          {/* Same mobile slider pattern */}
-          <div className="mt-10 -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-6 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
-            {featuredApartments.slice(0, 8).map((apt) => (
-              <div
-                key={apt.slug}
-                className="w-[80vw] shrink-0 snap-start sm:w-auto sm:shrink"
-              >
-                <VillaCard
-                  villa={apt}
-                  loggedIn={!!user}
-                  inWishlist={wishlist.has(apt.slug)}
-                />
-              </div>
-            ))}
-          </div>
+          <LocationChipsFilter
+            properties={featuredApartments}
+            loggedIn={!!user}
+            wishlist={wishlist}
+          />
         </section>
       )}
 

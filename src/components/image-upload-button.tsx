@@ -9,11 +9,13 @@ export function ImageUploadButton({
   onUploadStart,
   label = "Upload image",
   className = "",
+  accept = "image/jpeg,image/png,image/webp,image/avif",
 }: {
   onUploaded: (url: string, name: string) => void;
   onUploadStart?: () => void;
   label?: string;
   className?: string;
+  accept?: string;
 }) {
   const ref = useRef<HTMLInputElement>(null);
   const [busy, start] = useTransition();
@@ -56,7 +58,7 @@ export function ImageUploadButton({
       <input
         ref={ref}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/avif"
+        accept={accept}
         className="sr-only"
         onChange={(e) => {
           handleFile(e.target.files?.[0] ?? null);

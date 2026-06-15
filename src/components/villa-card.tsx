@@ -2,7 +2,6 @@ import Link from "next/link";
 import { Star, Users, BedDouble, MapPin, ArrowUpRight } from "lucide-react";
 import type { Villa } from "@/lib/types";
 import { formatNight } from "@/lib/format";
-import { getStateBySlug } from "@/lib/data/locations";
 import { PhotoCarousel } from "@/components/photo-carousel";
 import { WishlistButton } from "@/components/wishlist-button";
 
@@ -15,12 +14,12 @@ export function VillaCard({
   loggedIn?: boolean;
   inWishlist?: boolean;
 }) {
-  const state = getStateBySlug(villa.destinationSlug);
-  const location = villa.city && state
-    ? `${villa.city}, ${state.name}`
-    : state
-    ? `${state.name}, ${state.region}`
-    : "";
+  // Build the display location from villa fields directly — keeps this
+  // component client-safe (no fs-dependent imports through location lookups).
+  const location =
+    villa.city && villa.state
+      ? `${villa.city}, ${villa.state}`
+      : villa.state || "";
 
   return (
     <Link

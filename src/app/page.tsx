@@ -3,7 +3,7 @@ import Link from "next/link";
 import { HeroSlider } from "@/components/hero-slider";
 import { SearchBar } from "@/components/search-bar";
 import { SectionHeader } from "@/components/section-header";
-import { destinations } from "@/lib/data/locations";
+import { getAllDestinations } from "@/lib/data/locations";
 import { getStateCover } from "@/lib/data/location-covers";
 import {
   getFeaturedVillas,
@@ -54,7 +54,7 @@ export default async function HomePage() {
 
       {/* Search bar, overlapping the bottom of the hero */}
       <div className="relative z-10 -mt-14">
-        <SearchBar />
+        <SearchBar destinations={getAllDestinations()} />
       </div>
 
       {/* Best rated villas */}
@@ -103,7 +103,7 @@ export default async function HomePage() {
           />
           {/* Mobile: horizontal snap-scroll. Desktop: grid (unchanged). */}
           <div className="mt-10 -mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
-            {destinations.slice(0, 6).map((d) => (
+            {getAllDestinations().slice(0, 6).map((d) => (
               <Link
                 key={d.slug}
                 href={`/locations/${d.slug}`}

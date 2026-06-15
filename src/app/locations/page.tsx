@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { destinations } from "@/lib/data/locations";
+import { getAllDestinations } from "@/lib/data/locations";
 import { getVillasByDestination } from "@/lib/data/villas";
 import { getStateCover } from "@/lib/data/location-covers";
 import { Breadcrumbs } from "@/components/breadcrumbs";
@@ -24,7 +24,7 @@ export default function LocationsPage() {
       </header>
 
       <div className="mt-12 grid gap-6 md:grid-cols-2">
-        {destinations.map((d) => {
+        {getAllDestinations().map((d) => {
           const count = getVillasByDestination(d.slug).length;
           return (
             <Link

@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { destinations } from "@/lib/data/locations";
+import type { Destination } from "@/lib/types";
 import { SingleDatePicker } from "@/components/single-date-picker";
 import { GuestsPicker, DEFAULT_GUESTS, type Guests } from "@/components/guests-picker";
 
@@ -52,7 +52,12 @@ function buildParams({
   return params;
 }
 
-export function SearchBar() {
+export function SearchBar({
+  destinations,
+}: {
+  /** Server passes the merged seed + admin-added location list. */
+  destinations: Destination[];
+}) {
   const router = useRouter();
   const [destination, setDestination] = useState<string>("");
   const [range, setRange] = useState<DateRange | undefined>(undefined);

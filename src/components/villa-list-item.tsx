@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 import type { Villa } from "@/lib/types";
 import { formatINR } from "@/lib/format";
-import { getStateBySlug } from "@/lib/data/locations";
 import { getAmenityIcon } from "@/lib/amenity-icons";
 import { buttonVariants } from "@/components/ui/button";
 import { PhotoCarousel } from "@/components/photo-carousel";
@@ -38,7 +37,6 @@ export function VillaListItem({
   loggedIn?: boolean;
   inWishlist?: boolean;
 }) {
-  const state = getStateBySlug(villa.destinationSlug);
   const visibleAmenities = villa.amenities.slice(0, SHOW_AMENITIES);
   const remaining = Math.max(0, villa.amenities.length - SHOW_AMENITIES);
   const bestRated = isBestRated(villa);
@@ -127,7 +125,7 @@ export function VillaListItem({
           <MapPin className="h-3.5 w-3.5 shrink-0 text-terracotta" />
           <span>
             {villa.city ? `${villa.city}, ` : ""}
-            {state?.name}
+            {villa.state}
           </span>
         </div>
 

@@ -122,7 +122,7 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
             <ChevronRight className="h-5 w-5" />
           </button>
 
-          <div className="absolute bottom-24 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2.5 md:bottom-32">
+          <div className="absolute bottom-16 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2.5 md:bottom-32">
             {slides.map((_, idx) => (
               <button
                 key={idx}

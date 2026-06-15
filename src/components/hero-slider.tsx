@@ -122,14 +122,16 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
             <ChevronRight className="h-5 w-5" />
           </button>
 
-          <div className="absolute bottom-32 left-1/2 z-10 flex -translate-x-1/2 gap-2">
+          <div className="absolute bottom-24 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2.5 md:bottom-32">
             {slides.map((_, idx) => (
               <button
                 key={idx}
                 onClick={() => goto(idx)}
                 aria-label={`Go to slide ${idx + 1}`}
-                className={`h-1 rounded-full transition-all ${
-                  idx === i ? "w-10 bg-white" : "w-5 bg-white/50 hover:bg-white/70"
+                className={`rounded-full transition-all ${
+                  idx === i
+                    ? "h-2.5 w-2.5 bg-white ring-2 ring-white/40"
+                    : "h-2 w-2 bg-white/55 hover:bg-white/80"
                 }`}
               />
             ))}

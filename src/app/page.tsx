@@ -45,6 +45,22 @@ export default async function HomePage() {
   const user = await getCurrentUser();
   const wishlist = new Set(user?.wishlist ?? []);
 
+  const allVillas = getVillas();
+
+  const destinations = getAllDestinations()
+    .map((d) => ({
+      ...d,
+      count: allVillas.filter((v) => v.destinationSlug === d.slug).length,
+    }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+
+  const collections = getAllCollections()
+    .map((c) => ({
+      ...c,
+      count: allVillas.filter((v) => v.collections.includes(c.slug)).length,
+    }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+
   return (
     <div className="flex flex-col">
       {/* Organization JSON-LD — helps Google understand the brand */}
@@ -102,12 +118,12 @@ export default async function HomePage() {
             ctaLabel="All collections"
             ctaHref="/collections"
           />
-          <div className="mt-10 -mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
-            {getAllCollections().slice(0, 6).map((c) => (
+          <div className="mt-10 -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-5">
+            {collections.map((c) => (
               <Link
                 key={c.slug}
                 href={`/collections/${c.slug}`}
-                className="group relative aspect-[4/5] w-[68vw] shrink-0 snap-start overflow-hidden rounded-xl sm:aspect-[4/5] sm:w-auto sm:shrink"
+                className="group relative aspect-[4/5] w-[68vw] shrink-0 snap-start overflow-hidden rounded-xl sm:w-[44vw] lg:w-[calc((100%-2.5rem)/3)]"
               >
                 <Image
                   src={c.image.src}
@@ -138,13 +154,13 @@ export default async function HomePage() {
           ctaLabel="All destinations"
           ctaHref="/locations"
         />
-        {/* Mobile: horizontal snap-scroll. Desktop: grid (unchanged). */}
-        <div className="mt-10 -mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
-          {getAllDestinations().slice(0, 6).map((d) => (
+        {/* Always horizontal slider — 1 visible on mobile, 2 on tablet, 3 on desktop. */}
+        <div className="mt-10 -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-5">
+          {destinations.map((d) => (
             <Link
               key={d.slug}
               href={`/locations/${d.slug}`}
-              className="group relative aspect-[4/5] w-[68vw] shrink-0 snap-start overflow-hidden rounded-xl sm:aspect-[4/5] sm:w-auto sm:shrink"
+              className="group relative aspect-[4/5] w-[68vw] shrink-0 snap-start overflow-hidden rounded-xl sm:w-[44vw] lg:w-[calc((100%-2.5rem)/3)]"
             >
               <Image
                 src={getStateCover(d.slug) ?? d.image.src}

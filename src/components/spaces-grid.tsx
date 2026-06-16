@@ -47,26 +47,26 @@ export function SpacesGrid({
       <p className="mt-1 text-xs text-muted-foreground">
         Tap any space to see more photos.
       </p>
-      <ScrollSlider className="mt-5 -mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-4">
+      <ScrollSlider className="mt-5 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {spaces.map((space) => (
           <Link
             key={space.tag}
             href={`/villas/${slug}/photos?tag=${encodeURIComponent(space.tag)}`}
-            className="group relative aspect-[3/4] w-[78vw] shrink-0 snap-start overflow-hidden rounded-2xl bg-muted sm:w-[44vw] lg:w-[calc((100%-2rem)/3)]"
+            className="group relative aspect-[5/4] w-[58vw] shrink-0 snap-start overflow-hidden rounded-xl bg-muted sm:w-[38vw] lg:w-[calc((100%-1.5rem)/3)]"
           >
             <Image
               src={space.cover.src}
               alt={space.cover.alt}
               fill
-              sizes="(min-width: 1024px) 33vw, (min-width: 640px) 44vw, 78vw"
+              sizes="(min-width: 1024px) 33vw, (min-width: 640px) 38vw, 58vw"
               className="object-cover transition-transform duration-500 group-hover:scale-105"
             />
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent p-4 sm:p-5">
-              <p className="font-display text-xl font-semibold text-white sm:text-2xl">
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent p-3 sm:p-4">
+              <p className="font-display text-base font-semibold text-white sm:text-lg">
                 {space.tag}
               </p>
               {space.count > 1 && (
-                <p className="mt-0.5 text-xs text-white/80 sm:text-sm">
+                <p className="mt-0.5 text-[11px] text-white/80 sm:text-xs">
                   {space.count} photo{space.count === 1 ? "" : "s"}
                 </p>
               )}

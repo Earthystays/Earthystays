@@ -161,8 +161,8 @@ export default async function VillaDetailPage({ params }: PageProps) {
         )}
       </div>
 
-      <div className="container-page mt-10 grid gap-12 lg:grid-cols-[1fr_360px]">
-        <div className="space-y-14">
+      <div className="container-page mt-10 grid gap-12 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="min-w-0 space-y-14">
           {/* Quick facts */}
           <div className="grid grid-cols-3 gap-4 rounded-xl border border-border/60 p-5">
             <Fact icon={<BedDouble className="h-4 w-4" />} label="Bedrooms" value={villa.bedrooms} />

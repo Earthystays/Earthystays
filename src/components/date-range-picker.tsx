@@ -20,6 +20,7 @@ export function DateRangePicker({ value, onChange, className = "" }: Props) {
   const [draft, setDraft] = useState<DateRange | undefined>(value);
   const [isMobile, setIsMobile] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
+  const popoverPanelRef = useRef<HTMLDivElement>(null);
 
   // Detect mobile viewport so we can switch the calendar to a single month
   // (two months don't fit horizontally on a phone screen).
@@ -36,6 +37,20 @@ export function DateRangePicker({ value, onChange, className = "" }: Props) {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: prime local draft from parent value on open
     if (open) setDraft(value);
   }, [open, value]);
+
+  // Mobile: when the calendar opens inside a scrollable sheet (e.g. the
+  // inquiry modal), the popover often falls below the visible fold. Scroll
+  // it into view so all the dates are reachable without manual scrolling.
+  useEffect(() => {
+    if (!open || !isMobile) return;
+    const id = window.setTimeout(() => {
+      popoverPanelRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "end",
+      });
+    }, 50);
+    return () => window.clearTimeout(id);
+  }, [open, isMobile]);
 
   useEffect(() => {
     if (!open) return;
@@ -85,6 +100,7 @@ export function DateRangePicker({ value, onChange, className = "" }: Props) {
 
       {open && (
         <div
+          ref={popoverPanelRef}
           className="
             rdp-popover absolute top-full z-50 mt-3 rounded-2xl border border-border/60 bg-card shadow-2xl
             /* Mobile: anchor to left edge, full visible width */

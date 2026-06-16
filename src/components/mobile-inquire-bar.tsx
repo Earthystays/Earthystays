@@ -57,14 +57,14 @@ export function MobileInquireBar({
             Holds the same InquiryForm desktop users see in the sidebar. */}
         <SheetContent
           side="bottom"
-          className="h-[95vh] overflow-y-auto rounded-t-2xl p-0"
+          className="h-[100dvh] overflow-y-auto rounded-t-2xl p-0"
         >
-          <SheetHeader className="border-b border-border/60 px-5 py-4">
+          <SheetHeader className="sticky top-0 z-10 border-b border-border/60 bg-background px-5 py-4">
             <SheetTitle className="font-display text-xl font-bold tracking-tight">
               Send Inquiry
             </SheetTitle>
           </SheetHeader>
-          <div className="px-5 py-5">
+          <div className="px-5 py-6 pb-24">
             <InquiryForm villaSlug={villaSlug} villaName={villaName} />
           </div>
         </SheetContent>

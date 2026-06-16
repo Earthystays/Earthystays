@@ -9,11 +9,6 @@ type Space = {
   count: number;
 };
 
-/**
- * Group photos by tag (or auto-category) and pick the first photo
- * of each group as the cover. Used to render the "Explore the spaces"
- * tile grid on the villa detail page.
- */
 function buildSpaces(images: VillaImage[]): Space[] {
   const map = new Map<string, Space>();
   for (const img of images) {
@@ -39,23 +34,29 @@ export function SpacesGrid({
   if (spaces.length === 0) return null;
 
   return (
-    <div>
-      <h3 className="font-display text-xl font-bold tracking-tight text-foreground">Explore the spaces</h3>
+    // overflow-hidden on the outer wrapper is defensive: it prevents the
+    // slider's wide content from ever pushing the parent column wider than
+    // the viewport, which previously caused the page to render at a tiny
+    // mobile scale.
+    <div className="min-w-0 overflow-hidden">
+      <h3 className="font-display text-xl font-bold tracking-tight text-foreground">
+        Explore the spaces
+      </h3>
       <p className="mt-1 text-xs text-muted-foreground">
         Tap any space to see more photos.
       </p>
-      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+      <div className="mt-5 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {spaces.map((space) => (
           <Link
             key={space.tag}
             href={`/villas/${slug}/photos?tag=${encodeURIComponent(space.tag)}`}
-            className="group relative aspect-[4/3] overflow-hidden rounded-xl bg-muted"
+            className="group relative aspect-[4/3] w-[68vw] max-w-[280px] shrink-0 snap-start overflow-hidden rounded-xl bg-muted sm:w-[42vw] sm:max-w-none lg:w-[calc((100%-1.5rem)/3)]"
           >
             <Image
               src={space.cover.src}
               alt={space.cover.alt}
               fill
-              sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+              sizes="(min-width: 1024px) 33vw, (min-width: 640px) 42vw, 68vw"
               className="object-cover transition-transform duration-500 group-hover:scale-105"
             />
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent p-3">

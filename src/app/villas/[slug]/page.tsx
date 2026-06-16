@@ -198,28 +198,7 @@ export default async function VillaDetailPage({ params }: PageProps) {
 
           {/* SPACES */}
           <Section id="spaces" title="Spaces">
-            <div className="grid gap-4 sm:grid-cols-3">
-              <SpaceCard
-                icon={<BedDouble className="h-5 w-5 text-terracotta" />}
-                title={`${villa.bedrooms} Bedroom${villa.bedrooms === 1 ? "" : "s"}`}
-                sub="Air-conditioned · linen included"
-              />
-              <SpaceCard
-                icon={<Bath className="h-5 w-5 text-terracotta" />}
-                title={`${villa.bathrooms} Bathroom${villa.bathrooms === 1 ? "" : "s"}`}
-                sub="Hot water · towels & toiletries"
-              />
-              <SpaceCard
-                icon={<Users className="h-5 w-5 text-terracotta" />}
-                title={`Sleeps ${villa.maxGuests}`}
-                sub="Extra beds on request"
-              />
-            </div>
-
-            {/* Tagged photo tiles per space */}
-            <div className="mt-8">
-              <SpacesGrid images={villa.images} slug={villa.slug} />
-            </div>
+            <SpacesGrid images={villa.images} slug={villa.slug} />
             {villa.houseRules.length > 0 && (
               <div className="mt-6">
                 <h3 className="text-sm font-medium text-foreground">House rules</h3>
@@ -525,24 +504,6 @@ function Fact({ icon, label, value }: { icon: React.ReactNode; label: string; va
         {icon} {label}
       </div>
       <p className="mt-1 font-numeric text-2xl font-semibold tabular-nums">{value}</p>
-    </div>
-  );
-}
-
-function SpaceCard({
-  icon,
-  title,
-  sub,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  sub: string;
-}) {
-  return (
-    <div className="rounded-xl border border-border/60 bg-card p-5">
-      <div className="flex items-center gap-2">{icon}</div>
-      <p className="mt-3 font-display text-xl font-bold tracking-tight text-foreground">{title}</p>
-      <p className="mt-1 text-xs text-muted-foreground">{sub}</p>
     </div>
   );
 }

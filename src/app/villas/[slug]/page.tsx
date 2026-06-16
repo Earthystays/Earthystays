@@ -10,6 +10,7 @@ import { DetailTabs, type DetailTab } from "@/components/detail-tabs";
 import { VillaVideo } from "@/components/villa-video";
 import { ExpandableText } from "@/components/expandable-text";
 import { SpacesGrid } from "@/components/spaces-grid";
+import { ScrollSlider } from "@/components/scroll-slider";
 import { ExternalReviews } from "@/components/external-reviews";
 import { AmenitiesViewer } from "@/components/amenities-viewer";
 import { RecentlyVisitedTracker } from "@/components/recently-visited-tracker";
@@ -452,16 +453,20 @@ export default async function VillaDetailPage({ params }: PageProps) {
       {similar.length > 0 && (
         <section className="container-page mt-24">
           <h2 className="font-display text-3xl font-bold tracking-tight text-foreground">More in {state?.name}</h2>
-          <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <ScrollSlider className="mt-8 -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-5 sm:px-6 sm:-mx-6 lg:px-8 lg:-mx-8">
             {similar.map((v) => (
-              <VillaCard
+              <div
                 key={v.slug}
-                villa={v}
-                loggedIn={!!user}
-                inWishlist={wishlistSet.has(v.slug)}
-              />
+                className="w-[78vw] shrink-0 snap-start sm:w-[44vw] lg:w-[calc((100%-2.5rem)/3)]"
+              >
+                <VillaCard
+                  villa={v}
+                  loggedIn={!!user}
+                  inWishlist={wishlistSet.has(v.slug)}
+                />
+              </div>
             ))}
-          </div>
+          </ScrollSlider>
         </section>
       )}
 

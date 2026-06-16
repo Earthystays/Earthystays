@@ -18,6 +18,7 @@ type AmenityChoice = { name: string; iconName: string };
 const INITIAL: AddVillaState = { ok: false };
 
 type CancellationPreset = { value: string; label: string; description: string };
+type MealPreset = { value: string; label: string; description: string };
 
 export function NewVillaForm({
   destinations,
@@ -26,6 +27,7 @@ export function NewVillaForm({
   facilities,
   states,
   cancellationPresets,
+  mealPresets,
   initialState,
 }: {
   destinations: { slug: string; name: string }[];
@@ -34,6 +36,7 @@ export function NewVillaForm({
   facilities: AmenityChoice[];
   states: string[];
   cancellationPresets: CancellationPreset[];
+  mealPresets: MealPreset[];
   initialState?: AddVillaState;
 }) {
   const [state, action, pending] = useActionState(addVilla, initialState ?? INITIAL);
@@ -45,14 +48,23 @@ export function NewVillaForm({
     v?.cancellationDescription ?? "",
   );
 
-  // Restore cancellation state from the server-action snapshot after a
-  // validation error. `v` comes from useActionState (external) so the effect
-  // is the right place — we need to react when the server hands us new values.
+  // Meals — same controlled-preset pattern as cancellation
+  const [mealsPreset, setMealsPreset] = useState<string>(v?.mealsPreset ?? "");
+  const [mealsDescription, setMealsDescription] = useState<string>(
+    v?.mealsDescription ?? "",
+  );
+
+  // Restore cancellation + meals state from the server-action snapshot after
+  // a validation error. `v` comes from useActionState (external) so the
+  // effect is the right place — we need to react when the server hands us
+  // new values.
   useEffect(() => {
     if (v) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: restoring state from server action snapshot
       setPolicyPreset(v.cancellationPreset ?? "");
       setPolicyDescription(v.cancellationDescription ?? "");
+      setMealsPreset(v.mealsPreset ?? "");
+      setMealsDescription(v.mealsDescription ?? "");
     }
   }, [v]);
 
@@ -61,6 +73,14 @@ export function NewVillaForm({
     const found = cancellationPresets.find((p) => p.value === value);
     if (found && value !== "custom") {
       setPolicyDescription(found.description);
+    }
+  }
+
+  function pickMealsPreset(value: string) {
+    setMealsPreset(value);
+    const found = mealPresets.find((p) => p.value === value);
+    if (found && value !== "custom") {
+      setMealsDescription(found.description);
     }
   }
 
@@ -359,6 +379,51 @@ export function NewVillaForm({
           name="externalListingsJson"
           initial={v?.externalListings ?? []}
         />
+      </Section>
+
+      <Section title="Meals" hint="Tell guests whether food is included with the stay">
+        <div className="grid gap-3 sm:grid-cols-2">
+          {mealPresets.map((p) => (
+            <label
+              key={p.value}
+              className={`flex cursor-pointer flex-col rounded-lg border p-3 transition-colors ${
+                mealsPreset === p.value
+                  ? "border-primary bg-primary/5"
+                  : "border-border hover:border-foreground/40"
+              }`}
+            >
+              <span className="flex items-center gap-2 text-sm font-medium">
+                <input
+                  type="radio"
+                  name="mealsPreset"
+                  value={p.value}
+                  checked={mealsPreset === p.value}
+                  onChange={() => pickMealsPreset(p.value)}
+                  className="h-4 w-4"
+                />
+                {p.label}
+              </span>
+              {p.description && (
+                <span className="mt-1 pl-6 text-xs text-muted-foreground">
+                  {p.description}
+                </span>
+              )}
+            </label>
+          ))}
+        </div>
+        <Field
+          name="mealsDescription"
+          label="Meals text shown to guests"
+          hint="Auto-fills from preset; edit freely for custom wording"
+        >
+          <Textarea
+            name="mealsDescription"
+            value={mealsDescription}
+            onChange={(e) => setMealsDescription(e.target.value)}
+            rows={3}
+            placeholder="Describe what's included with the stay (e.g. 'breakfast included, lunch + dinner on request')."
+          />
+        </Field>
       </Section>
 
       <Section title="Cancellation policy">

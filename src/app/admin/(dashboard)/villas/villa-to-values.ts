@@ -51,6 +51,8 @@ export function villaToFormValues(
     longitude: villa.longitude !== undefined ? String(villa.longitude) : "",
     cancellationPreset: villa.cancellationPolicy?.preset ?? "",
     cancellationDescription: villa.cancellationPolicy?.description ?? "",
+    mealsPreset: villa.meals?.preset ?? "",
+    mealsDescription: villa.meals?.description ?? "",
     videoSrc:
       villa.video?.kind === "youtube"
         ? `https://www.youtube.com/watch?v=${villa.video.id}`

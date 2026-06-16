@@ -46,6 +46,17 @@ const VillaSchema = z.object({
     .enum(["flexible", "moderate", "strict", "custom"])
     .optional(),
   cancellationDescription: z.string().optional(),
+  mealsPreset: z
+    .enum([
+      "self-catering",
+      "breakfast",
+      "all-meals",
+      "chef-included",
+      "chef-on-request",
+      "custom",
+    ])
+    .optional(),
+  mealsDescription: z.string().optional(),
   videoSrc: z.string().optional(),
   faqs: z
     .array(z.object({ question: z.string().min(1), answer: z.string().min(1) }))
@@ -173,6 +184,8 @@ export type AddVillaValues = {
   longitude: string;
   cancellationPreset: string;
   cancellationDescription: string;
+  mealsPreset: string;
+  mealsDescription: string;
   videoSrc: string;
   faqs: { question: string; answer: string }[];
   externalListings: { platform: string; url: string; rating?: number; reviewCount?: number }[];
@@ -226,6 +239,8 @@ export async function addVilla(
     longitude: numOrUndef(form.get("longitude")),
     cancellationPreset: (form.get("cancellationPreset") as string) || undefined,
     cancellationDescription: String(form.get("cancellationDescription") ?? "").trim() || undefined,
+    mealsPreset: (form.get("mealsPreset") as string) || undefined,
+    mealsDescription: String(form.get("mealsDescription") ?? "").trim() || undefined,
     videoSrc: String(form.get("videoSrc") ?? "").trim(),
     faqs: parseFaqsJson(form.get("faqsJson") as string),
     externalListings: parseExternalListingsJson(form.get("externalListingsJson") as string),
@@ -260,6 +275,8 @@ export async function addVilla(
     longitude: raw.longitude !== undefined ? String(raw.longitude) : "",
     cancellationPreset: raw.cancellationPreset ?? "",
     cancellationDescription: raw.cancellationDescription ?? "",
+    mealsPreset: raw.mealsPreset ?? "",
+    mealsDescription: raw.mealsDescription ?? "",
     videoSrc: raw.videoSrc,
     faqs: raw.faqs,
     externalListings: raw.externalListings,
@@ -316,6 +333,13 @@ export async function addVilla(
         ? {
             preset: d.cancellationPreset,
             description: d.cancellationDescription,
+          }
+        : undefined,
+    meals:
+      d.mealsPreset || d.mealsDescription
+        ? {
+            preset: d.mealsPreset,
+            description: d.mealsDescription,
           }
         : undefined,
     video: parseVideoUrl(d.videoSrc) ?? undefined,

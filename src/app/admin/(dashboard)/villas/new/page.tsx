@@ -3,7 +3,7 @@ import { destinations } from "@/lib/data/locations";
 import { collections } from "@/lib/data/collections";
 import { INDIAN_STATES } from "@/lib/india-states";
 import { NewVillaForm } from "./form";
-import { VILLA_AMENITIES, VILLA_FACILITIES, CANCELLATION_PRESETS } from "./constants";
+import { VILLA_AMENITIES, VILLA_FACILITIES, CANCELLATION_PRESETS, MEAL_PRESETS } from "./constants";
 import { getCustomAmenityNames, getCustomFacilityNames } from "@/lib/data/amenities-store";
 import { getAmenityIconName } from "@/lib/amenity-icons";
 
@@ -32,6 +32,7 @@ export default function NewVillaPage() {
         facilities={[...VILLA_FACILITIES, ...customF].map(withIcon)}
         states={[...INDIAN_STATES]}
         cancellationPresets={CANCELLATION_PRESETS.map((p) => ({ ...p }))}
+        mealPresets={MEAL_PRESETS.map((p) => ({ ...p }))}
       />
     </div>
   );

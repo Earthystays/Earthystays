@@ -70,6 +70,17 @@ export default async function VillaDetailPage({ params }: PageProps) {
   const chefAvailable = villa.amenities.some((a) =>
     a.toLowerCase().includes("chef"),
   );
+
+  // Meals: prefer the per-villa setting; for villas saved before this
+  // field existed, fall back to the old amenity-based heuristic.
+  const mealsPreset = villa.meals?.preset;
+  const mealsDescription = villa.meals?.description?.trim() ?? "";
+  const mealsChefIncluded =
+    mealsPreset === "chef-included" || mealsPreset === "all-meals";
+  const mealsBreakfast = mealsPreset === "breakfast";
+  const mealsSelfCatering =
+    mealsPreset === "self-catering" || mealsPreset === "chef-on-request";
+  const hasMealsSetting = !!mealsPreset || !!mealsDescription;
   const petsAllowed = villa.amenities.some((a) =>
     a.toLowerCase().includes("pet"),
   );
@@ -255,34 +266,54 @@ export default async function VillaDetailPage({ params }: PageProps) {
 
           {/* MEALS */}
           <Section id="meals" title="Meals">
-            {chefAvailable ? (
-              <div className="rounded-xl border border-border/60 bg-card p-5">
-                <div className="flex items-start gap-3">
+            <div className="rounded-xl border border-border/60 bg-card p-5">
+              <div className="flex items-start gap-3">
+                {hasMealsSetting ? (
+                  mealsChefIncluded ? (
+                    <ChefHat className="h-6 w-6 text-terracotta shrink-0" strokeWidth={1.5} />
+                  ) : (
+                    <Utensils className="h-6 w-6 text-terracotta shrink-0" strokeWidth={1.5} />
+                  )
+                ) : chefAvailable ? (
                   <ChefHat className="h-6 w-6 text-terracotta shrink-0" strokeWidth={1.5} />
-                  <div>
-                    <p className="font-medium text-foreground">In-house chef available</p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      A house chef is included with your stay. Share dietary preferences in advance
-                      and they&apos;ll plan breakfast, lunch and dinner accordingly. Groceries are billed
-                      at cost; alcohol is not provided.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="rounded-xl border border-border/60 bg-card p-5">
-                <div className="flex items-start gap-3">
+                ) : (
                   <Utensils className="h-6 w-6 text-terracotta shrink-0" strokeWidth={1.5} />
-                  <div>
-                    <p className="font-medium text-foreground">Self-catering</p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      The villa has a full kitchen. We can arrange a cook or chef on request — ask
-                      our concierge when you inquire.
-                    </p>
-                  </div>
+                )}
+                <div>
+                  <p className="font-medium text-foreground">
+                    {hasMealsSetting
+                      ? mealsPreset === "chef-included"
+                        ? "In-house chef included"
+                        : mealsPreset === "all-meals"
+                          ? "All meals included"
+                          : mealsPreset === "breakfast"
+                            ? "Breakfast included"
+                            : mealsPreset === "chef-on-request"
+                              ? "Chef on request"
+                              : mealsPreset === "self-catering"
+                                ? "Self-catering"
+                                : "Meals"
+                      : chefAvailable
+                        ? "In-house chef available"
+                        : "Self-catering"}
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground whitespace-pre-line">
+                    {hasMealsSetting
+                      ? mealsDescription ||
+                        (mealsChefIncluded
+                          ? "A house chef is included with your stay."
+                          : mealsBreakfast
+                            ? "Breakfast is prepared by the house staff every morning."
+                            : mealsSelfCatering
+                              ? "The villa has a full kitchen. We can arrange a cook or chef on request."
+                              : "")
+                      : chefAvailable
+                        ? "A house chef is included with your stay. Share dietary preferences in advance and they'll plan breakfast, lunch and dinner accordingly. Groceries are billed at cost; alcohol is not provided."
+                        : "The villa has a full kitchen. We can arrange a cook or chef on request — ask our concierge when you inquire."}
+                  </p>
                 </div>
               </div>
-            )}
+            </div>
           </Section>
 
           {/* REFUND POLICY */}
@@ -396,9 +427,16 @@ export default async function VillaDetailPage({ params }: PageProps) {
                       : "This villa is not pet-friendly. Browse our pet-friendly collection for villas that welcome four-legged guests."}
                   </Faq>
                   <Faq question="Are meals included?">
-                    {chefAvailable
-                      ? "An in-house chef is included. Breakfast, lunch and dinner are prepared on request; groceries are billed at cost."
-                      : "Meals are not included by default — the villa has a full kitchen. We can arrange a cook on request."}
+                    {hasMealsSetting
+                      ? mealsDescription ||
+                        (mealsChefIncluded
+                          ? "An in-house chef is included. Breakfast, lunch and dinner are prepared on request; groceries are billed at cost."
+                          : mealsBreakfast
+                            ? "Breakfast is included with your stay. Lunch and dinner are not."
+                            : "Meals are not included by default — the villa has a full kitchen. We can arrange a cook on request.")
+                      : chefAvailable
+                        ? "An in-house chef is included. Breakfast, lunch and dinner are prepared on request; groceries are billed at cost."
+                        : "Meals are not included by default — the villa has a full kitchen. We can arrange a cook on request."}
                   </Faq>
                   <Faq question="How do I book?">
                     Send an inquiry with your dates and group size through the form on this page (or the

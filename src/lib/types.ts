@@ -51,6 +51,16 @@ export type Villa = {
     preset?: "flexible" | "moderate" | "strict" | "custom";
     description?: string;
   };
+  meals?: {
+    preset?:
+      | "self-catering"
+      | "breakfast"
+      | "all-meals"
+      | "chef-included"
+      | "chef-on-request"
+      | "custom";
+    description?: string;
+  };
   video?: {
     kind: "youtube" | "vimeo" | "file";
     id?: string;       // youtube / vimeo video id

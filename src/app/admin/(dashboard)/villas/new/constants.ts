@@ -36,6 +36,44 @@ export const VILLA_FACILITIES = [
   "Wheelchair Access",
 ] as const;
 
+export const MEAL_PRESETS = [
+  {
+    value: "self-catering",
+    label: "Self-catering",
+    description:
+      "The villa has a full kitchen — guests cook for themselves. We can arrange a cook on request.",
+  },
+  {
+    value: "breakfast",
+    label: "Breakfast included",
+    description:
+      "Breakfast is prepared by the house staff every morning of your stay. Lunch and dinner are not included.",
+  },
+  {
+    value: "all-meals",
+    label: "All meals included",
+    description:
+      "Breakfast, lunch and dinner are all included. The cook plans menus around your preferences; alcohol is not included.",
+  },
+  {
+    value: "chef-included",
+    label: "In-house chef (included)",
+    description:
+      "A house chef is included with your stay. Share dietary preferences in advance and they'll plan breakfast, lunch and dinner accordingly. Groceries billed at cost; alcohol is not provided.",
+  },
+  {
+    value: "chef-on-request",
+    label: "Chef on request",
+    description:
+      "We can arrange a chef on request for an additional charge — ask our concierge when you inquire.",
+  },
+  {
+    value: "custom",
+    label: "Custom",
+    description: "",
+  },
+] as const;
+
 export const CANCELLATION_PRESETS = [
   {
     value: "flexible",

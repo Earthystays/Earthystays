@@ -8,6 +8,7 @@ import {
   VILLA_AMENITIES,
   VILLA_FACILITIES,
   CANCELLATION_PRESETS,
+  MEAL_PRESETS,
 } from "../../new/constants";
 import { NewVillaForm } from "../../new/form";
 import { villaToFormValues } from "../../villa-to-values";
@@ -48,6 +49,7 @@ export default async function EditVillaPage({ params }: PageProps) {
         facilities={[...VILLA_FACILITIES, ...customF].map(withIcon)}
         states={[...INDIAN_STATES]}
         cancellationPresets={CANCELLATION_PRESETS.map((p) => ({ ...p }))}
+        mealPresets={MEAL_PRESETS.map((p) => ({ ...p }))}
         initialState={{ ok: false, values: initialValues }}
       />
     </div>

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Home, Building2, Image as ImageIcon, Inbox, MapPin, Sparkles, MessageSquareQuote, Layers, ArrowUpRight, LogOut } from "lucide-react";
+import { readJson } from "@/lib/storage";
+import type { StoredInquiry } from "@/app/api/inquiries/route";
 
 const NAV = [
   { href: "/admin", label: "Overview", icon: Home },
@@ -13,9 +15,14 @@ const NAV = [
   { href: "/admin/inquiries", label: "Inquiries", icon: Inbox },
 ];
 
+export const dynamic = "force-dynamic";
 export const metadata = { title: "Admin · Earthy Stays", robots: { index: false, follow: false } };
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
+export default async function AdminLayout({ children }: { children: ReactNode }) {
+  const inquiries = await readJson<StoredInquiry[]>("inquiries.json", []);
+  const newInquiriesCount = inquiries.filter(
+    (q) => (q.status ?? "new") === "new",
+  ).length;
   return (
     <div className="min-h-screen bg-secondary/30">
       <div className="mx-auto flex max-w-7xl gap-8 px-5 py-8 lg:px-8">
@@ -25,16 +32,25 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               Admin
             </Link>
             <nav className="mt-8 flex flex-col gap-1">
-              {NAV.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-background hover:text-foreground transition-colors"
-                >
-                  <item.icon className="h-4 w-4" />
-                  {item.label}
-                </Link>
-              ))}
+              {NAV.map((item) => {
+                const showBadge =
+                  item.href === "/admin/inquiries" && newInquiriesCount > 0;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-background hover:text-foreground transition-colors"
+                  >
+                    <item.icon className="h-4 w-4" />
+                    <span className="flex-1">{item.label}</span>
+                    {showBadge && (
+                      <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-semibold text-white">
+                        {newInquiriesCount}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
             </nav>
             <div className="mt-8 border-t border-border/60 pt-4 space-y-1">
               <Link

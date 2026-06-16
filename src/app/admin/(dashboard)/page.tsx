@@ -1,14 +1,18 @@
 import Link from "next/link";
-import { Building2, Image as ImageIcon, Inbox, Plus } from "lucide-react";
+import { Building2, Image as ImageIcon, Inbox, Plus, Sparkles } from "lucide-react";
 import { getVillas } from "@/lib/data/villas";
 import { getBanners } from "@/lib/data/banners";
 import { readJson } from "@/lib/storage";
 import type { StoredInquiry } from "@/app/api/inquiries/route";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminOverviewPage() {
   const villas = getVillas();
   const banners = getBanners();
   const inquiries = await readJson<StoredInquiry[]>("inquiries.json", []);
+  const newInquiries = inquiries.filter((q) => (q.status ?? "new") === "new");
+  const newCount = newInquiries.length;
 
   const cards = [
     {
@@ -51,34 +55,87 @@ export default async function AdminOverviewPage() {
         </p>
       </header>
 
+      {newCount > 0 && (
+        <Link
+          href="/admin/inquiries?status=new"
+          className="mt-8 flex items-start gap-4 rounded-2xl border border-terracotta/40 bg-orange-50 p-5 transition-colors hover:bg-orange-100"
+        >
+          <span className="relative mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-terracotta text-white">
+            <Inbox className="h-5 w-5" />
+            <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-semibold text-white ring-2 ring-orange-50">
+              {newCount}
+            </span>
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="font-display text-lg text-foreground">
+              {newCount === 1
+                ? "You have 1 new inquiry"
+                : `You have ${newCount} new inquiries`}
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Latest from{" "}
+              <span className="font-medium text-foreground">
+                {newInquiries[0].name}
+              </span>
+              {newInquiries[0].villa
+                ? ` about ${newInquiries[0].villa}`
+                : newInquiries[0].kind === "partner"
+                  ? " (Partner with us)"
+                  : newInquiries[0].kind === "callback"
+                    ? " (Callback request)"
+                    : ""}
+              {" · "}
+              {new Date(newInquiries[0].createdAt).toLocaleString(undefined, {
+                dateStyle: "medium",
+                timeStyle: "short",
+              })}
+            </p>
+          </div>
+          <span className="hidden shrink-0 self-center text-sm font-medium text-terracotta sm:inline">
+            Review →
+          </span>
+        </Link>
+      )}
+
       <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {cards.map((c) => (
-          <div
-            key={c.label}
-            className="rounded-2xl border border-border/60 bg-card p-6 transition-shadow hover:shadow-md"
-          >
-            <div className="flex items-center justify-between">
-              <c.icon className="h-5 w-5 text-terracotta" />
+        {cards.map((c) => {
+          const isInbox = c.label === "Inquiries";
+          return (
+            <div
+              key={c.label}
+              className="relative rounded-2xl border border-border/60 bg-card p-6 transition-shadow hover:shadow-md"
+            >
+              {isInbox && newCount > 0 && (
+                <span className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full bg-red-600 px-2.5 py-1 text-[11px] font-semibold text-white">
+                  <Sparkles className="h-3 w-3" />
+                  {newCount} new
+                </span>
+              )}
+              <div className="flex items-center justify-between">
+                <c.icon className="h-5 w-5 text-terracotta" />
+                {!(isInbox && newCount > 0) && (
+                  <Link
+                    href={c.ctaHref}
+                    className="inline-flex items-center gap-1 text-xs text-terracotta hover:underline"
+                  >
+                    <Plus className="h-3 w-3" /> {c.cta}
+                  </Link>
+                )}
+              </div>
+              <p className="mt-6 font-display text-5xl text-foreground">{c.value}</p>
+              <p className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">
+                {c.label}
+              </p>
+              <p className="mt-3 text-sm text-muted-foreground">{c.sub}</p>
               <Link
-                href={c.ctaHref}
-                className="inline-flex items-center gap-1 text-xs text-terracotta hover:underline"
+                href={c.href}
+                className="mt-4 inline-block text-sm text-foreground hover:underline"
               >
-                <Plus className="h-3 w-3" /> {c.cta}
+                Open {c.label.toLowerCase()} →
               </Link>
             </div>
-            <p className="mt-6 font-display text-5xl text-foreground">{c.value}</p>
-            <p className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">
-              {c.label}
-            </p>
-            <p className="mt-3 text-sm text-muted-foreground">{c.sub}</p>
-            <Link
-              href={c.href}
-              className="mt-4 inline-block text-sm text-foreground hover:underline"
-            >
-              Open {c.label.toLowerCase()} →
-            </Link>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <section className="mt-12 rounded-2xl border border-border/60 bg-card p-6">

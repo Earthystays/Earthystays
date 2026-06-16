@@ -4,10 +4,10 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 /**
- * Horizontal scroller with auto-hiding prev/next arrows. Arrows appear when
- * there's overflow in that direction (so on a short list with everything
- * already visible, no arrows show). Click scrolls by ~90% of the visible
- * width, which lines up with the next "page" of cards.
+ * Horizontal scroller with wrap-around prev/next arrows. Both arrows stay
+ * visible whenever the content is wider than the viewport — clicking next
+ * past the last card jumps back to the first, and clicking prev at the
+ * start jumps to the end. If everything already fits, no arrows show.
  */
 export function ScrollSlider({
   children,
@@ -17,18 +17,14 @@ export function ScrollSlider({
   className?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [canLeft, setCanLeft] = useState(false);
-  const [canRight, setCanRight] = useState(false);
+  const [scrollable, setScrollable] = useState(false);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     function update() {
       if (!el) return;
-      setCanLeft(el.scrollLeft > 4);
-      setCanRight(
-        Math.ceil(el.scrollLeft + el.clientWidth) < el.scrollWidth - 4,
-      );
+      setScrollable(el.scrollWidth > el.clientWidth + 4);
     }
     update();
     el.addEventListener("scroll", update, { passive: true });
@@ -42,7 +38,22 @@ export function ScrollSlider({
   function scrollByDir(dir: -1 | 1) {
     const el = ref.current;
     if (!el) return;
-    el.scrollBy({ left: dir * el.clientWidth * 0.9, behavior: "smooth" });
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    const step = el.clientWidth * 0.9;
+
+    if (dir === 1) {
+      if (el.scrollLeft + step >= maxScroll - 4) {
+        el.scrollTo({ left: 0, behavior: "smooth" });
+      } else {
+        el.scrollBy({ left: step, behavior: "smooth" });
+      }
+    } else {
+      if (el.scrollLeft <= 4) {
+        el.scrollTo({ left: maxScroll, behavior: "smooth" });
+      } else {
+        el.scrollBy({ left: -step, behavior: "smooth" });
+      }
+    }
   }
 
   return (
@@ -51,25 +62,25 @@ export function ScrollSlider({
         {children}
       </div>
 
-      {canLeft && (
-        <button
-          type="button"
-          aria-label="Scroll left"
-          onClick={() => scrollByDir(-1)}
-          className="absolute left-2 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-foreground shadow-lg ring-1 ring-black/10 transition-colors hover:bg-white sm:inline-flex"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </button>
-      )}
-      {canRight && (
-        <button
-          type="button"
-          aria-label="Scroll right"
-          onClick={() => scrollByDir(1)}
-          className="absolute right-2 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-foreground shadow-lg ring-1 ring-black/10 transition-colors hover:bg-white sm:inline-flex"
-        >
-          <ChevronRight className="h-5 w-5" />
-        </button>
+      {scrollable && (
+        <>
+          <button
+            type="button"
+            aria-label="Scroll left"
+            onClick={() => scrollByDir(-1)}
+            className="absolute left-2 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-foreground shadow-lg ring-1 ring-black/10 transition-colors hover:bg-white sm:inline-flex"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <button
+            type="button"
+            aria-label="Scroll right"
+            onClick={() => scrollByDir(1)}
+            className="absolute right-2 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-foreground shadow-lg ring-1 ring-black/10 transition-colors hover:bg-white sm:inline-flex"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        </>
       )}
     </div>
   );

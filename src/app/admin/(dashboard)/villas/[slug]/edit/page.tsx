@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getVillaBySlug } from "@/lib/data/villas";
 import { destinations } from "@/lib/data/locations";
-import { collections } from "@/lib/data/collections";
+import { getAllCollections } from "@/lib/data/collections";
 import { INDIAN_STATES } from "@/lib/india-states";
 import {
   VILLA_AMENITIES,
@@ -44,7 +44,7 @@ export default async function EditVillaPage({ params }: PageProps) {
 
       <NewVillaForm
         destinations={destinations.map((d) => ({ slug: d.slug, name: d.name }))}
-        collections={collections.map((c) => ({ slug: c.slug, name: c.name }))}
+        collections={getAllCollections().map((c) => ({ slug: c.slug, name: c.name }))}
         amenities={[...VILLA_AMENITIES, ...customA].map(withIcon)}
         facilities={[...VILLA_FACILITIES, ...customF].map(withIcon)}
         states={[...INDIAN_STATES]}

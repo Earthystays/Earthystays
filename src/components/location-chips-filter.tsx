@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { VillaCard } from "@/components/villa-card";
 import { ScrollSlider } from "@/components/scroll-slider";
 import type { Villa } from "@/lib/types";
@@ -17,10 +19,14 @@ export function LocationChipsFilter({
   properties,
   loggedIn,
   wishlist,
+  exploreHref,
+  exploreLabel = "Explore more",
 }: {
   properties: Villa[];
   loggedIn: boolean;
   wishlist: Set<string>;
+  exploreHref?: string;
+  exploreLabel?: string;
 }) {
   const [activeCity, setActiveCity] = useState<string | null>(null);
 
@@ -76,6 +82,24 @@ export function LocationChipsFilter({
             />
           </div>
         ))}
+        {exploreHref && filtered.length > 0 && (
+          <div className="w-[80vw] shrink-0 snap-start sm:w-auto sm:shrink">
+            <Link
+              href={exploreHref}
+              className="group flex h-full min-h-[260px] flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border bg-card/40 px-6 py-10 text-center transition-colors hover:border-foreground/40 hover:bg-card sm:min-h-[320px]"
+            >
+              <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-foreground text-background transition-transform group-hover:scale-110">
+                <ArrowRight className="h-5 w-5" />
+              </span>
+              <span className="font-display text-xl font-semibold text-foreground">
+                {exploreLabel}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                See every property in this category
+              </span>
+            </Link>
+          </div>
+        )}
       </ScrollSlider>
 
       {filtered.length === 0 && activeCity && (

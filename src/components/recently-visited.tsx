@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, MapPin, Star, Users, BedDouble, Bath } from "lucide-react";
+import { MapPin, Star, Users, BedDouble, Bath } from "lucide-react";
 
 const KEY = "earthystays:recent";
 
@@ -33,9 +33,6 @@ type Entry = { slug: string; ts: number };
 export function RecentlyVisited({ candidates }: { candidates: RecentCandidate[] }) {
   const [items, setItems] = useState<RecentCandidate[]>([]);
   const [mounted, setMounted] = useState(false);
-  const scroller = useRef<HTMLDivElement | null>(null);
-  const [atStart, setAtStart] = useState(true);
-  const [atEnd, setAtEnd] = useState(false);
 
   // Hydrate from localStorage on mount. Canonical "after hydration" pattern —
   // localStorage is unavailable during SSR, so we have to read it post-mount.
@@ -57,29 +54,6 @@ export function RecentlyVisited({ candidates }: { candidates: RecentCandidate[] 
     }
   }, [candidates]);
 
-  // Track scroll position so we can fade out arrows at the edges
-  useEffect(() => {
-    const el = scroller.current;
-    if (!el) return;
-    function update() {
-      if (!el) return;
-      setAtStart(el.scrollLeft <= 4);
-      setAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 4);
-    }
-    update();
-    el.addEventListener("scroll", update, { passive: true });
-    return () => el.removeEventListener("scroll", update);
-  }, [items]);
-
-  function scroll(dir: 1 | -1) {
-    const el = scroller.current;
-    if (!el) return;
-    const step = Math.round(el.clientWidth * 0.85);
-    el.scrollBy({ left: step * dir, behavior: "smooth" });
-  }
-
-  // Don't render anything until after hydration (avoids mismatch) and
-  // skip the section entirely if the visitor has no history.
   if (!mounted || items.length === 0) return null;
 
   return (
@@ -88,38 +62,12 @@ export function RecentlyVisited({ candidates }: { candidates: RecentCandidate[] 
         Properties recently visited
       </h2>
 
-      <div className="relative mt-6">
-        {/* Prev arrow */}
-        <button
-          type="button"
-          aria-label="Scroll left"
-          onClick={() => scroll(-1)}
-          disabled={atStart}
-          className="absolute left-0 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 inline-flex h-10 w-10 items-center justify-center rounded-md border border-border bg-background text-foreground shadow-sm transition-opacity hover:bg-muted disabled:opacity-0 disabled:pointer-events-none"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </button>
-
-        {/* Scroller */}
-        <div
-          ref={scroller}
-          className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-4 [scrollbar-width:thin]"
-        >
+      <div className="mt-6">
+        <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-4 [scrollbar-width:thin]">
           {items.map((it) => (
             <Card key={it.slug} item={it} />
           ))}
         </div>
-
-        {/* Next arrow */}
-        <button
-          type="button"
-          aria-label="Scroll right"
-          onClick={() => scroll(1)}
-          disabled={atEnd}
-          className="absolute right-0 top-1/2 z-10 translate-x-1/2 -translate-y-1/2 inline-flex h-10 w-10 items-center justify-center rounded-md border border-border bg-background text-foreground shadow-sm transition-opacity hover:bg-muted disabled:opacity-0 disabled:pointer-events-none"
-        >
-          <ChevronRight className="h-5 w-5" />
-        </button>
       </div>
     </section>
   );

@@ -1,31 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Star } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { Star } from "lucide-react";
 import type { StoredReview } from "@/lib/data/reviews";
 
 /**
  * Home page testimonials carousel — horizontal snap-scroll, autoplays every
- * 6 seconds (pauses when hovered), prev/next arrows, swipe-friendly on mobile.
+ * 6 seconds (pauses when hovered), swipe-friendly on mobile.
  */
 export function ReviewsSlider({ reviews }: { reviews: StoredReview[] }) {
   const scroller = useRef<HTMLDivElement | null>(null);
-  const [atStart, setAtStart] = useState(true);
-  const [atEnd, setAtEnd] = useState(false);
-
-  // Track scroll position to enable/disable arrows
-  useEffect(() => {
-    const el = scroller.current;
-    if (!el) return;
-    function update() {
-      if (!el) return;
-      setAtStart(el.scrollLeft <= 4);
-      setAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 4);
-    }
-    update();
-    el.addEventListener("scroll", update, { passive: true });
-    return () => el.removeEventListener("scroll", update);
-  }, [reviews]);
 
   // Autoplay — pauses on hover or while user is dragging
   useEffect(() => {
@@ -40,7 +24,6 @@ export function ReviewsSlider({ reviews }: { reviews: StoredReview[] }) {
     const interval = setInterval(() => {
       if (paused || !el) return;
       const step = Math.round(el.clientWidth * 0.85);
-      // Loop back to start once we reach the end
       if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 4) {
         el.scrollTo({ left: 0, behavior: "smooth" });
       } else {
@@ -55,30 +38,10 @@ export function ReviewsSlider({ reviews }: { reviews: StoredReview[] }) {
     };
   }, [reviews]);
 
-  function scroll(dir: 1 | -1) {
-    const el = scroller.current;
-    if (!el) return;
-    const step = Math.round(el.clientWidth * 0.85);
-    el.scrollBy({ left: step * dir, behavior: "smooth" });
-  }
-
   if (reviews.length === 0) return null;
 
   return (
-    <div className="relative mt-12">
-      {/* Prev arrow */}
-      {reviews.length > 1 && (
-        <button
-          type="button"
-          aria-label="Previous review"
-          onClick={() => scroll(-1)}
-          disabled={atStart}
-          className="absolute left-0 top-1/2 z-10 hidden -translate-x-1/2 -translate-y-1/2 sm:inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background text-foreground shadow-sm transition-opacity hover:bg-muted disabled:opacity-0 disabled:pointer-events-none"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </button>
-      )}
-
+    <div className="mt-12">
       <div
         ref={scroller}
         className="flex snap-x snap-mandatory gap-6 overflow-x-auto scroll-smooth pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
@@ -87,19 +50,6 @@ export function ReviewsSlider({ reviews }: { reviews: StoredReview[] }) {
           <ReviewCard key={r.id} review={r} />
         ))}
       </div>
-
-      {/* Next arrow */}
-      {reviews.length > 1 && (
-        <button
-          type="button"
-          aria-label="Next review"
-          onClick={() => scroll(1)}
-          disabled={atEnd}
-          className="absolute right-0 top-1/2 z-10 hidden translate-x-1/2 -translate-y-1/2 sm:inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background text-foreground shadow-sm transition-opacity hover:bg-muted disabled:opacity-0 disabled:pointer-events-none"
-        >
-          <ChevronRight className="h-5 w-5" />
-        </button>
-      )}
     </div>
   );
 }

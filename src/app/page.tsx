@@ -88,8 +88,6 @@ export default async function HomePage() {
           properties={featured}
           loggedIn={!!user}
           wishlist={wishlist}
-          exploreHref="/villas"
-          exploreLabel="Explore all villas"
         />
       </section>
 
@@ -107,8 +105,6 @@ export default async function HomePage() {
             properties={featuredApartments}
             loggedIn={!!user}
             wishlist={wishlist}
-            exploreHref="/apartments"
-            exploreLabel="Explore all apartments"
           />
         </section>
       )}

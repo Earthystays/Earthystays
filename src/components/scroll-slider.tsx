@@ -57,7 +57,7 @@ export function ScrollSlider({
   }
 
   return (
-    <div className="relative">
+    <div className="relative isolate">
       <div ref={ref} className={className}>
         {children}
       </div>
@@ -67,18 +67,26 @@ export function ScrollSlider({
           <button
             type="button"
             aria-label="Scroll left"
-            onClick={() => scrollByDir(-1)}
-            className="absolute left-2 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-foreground shadow-lg ring-1 ring-black/10 transition-colors hover:bg-white sm:inline-flex"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              scrollByDir(-1);
+            }}
+            className="pointer-events-auto absolute left-1 top-1/2 z-30 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-foreground shadow-lg ring-1 ring-black/10 transition-colors hover:bg-white sm:left-2 sm:h-10 sm:w-10"
           >
-            <ChevronLeft className="h-5 w-5" />
+            <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
           </button>
           <button
             type="button"
             aria-label="Scroll right"
-            onClick={() => scrollByDir(1)}
-            className="absolute right-2 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-foreground shadow-lg ring-1 ring-black/10 transition-colors hover:bg-white sm:inline-flex"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              scrollByDir(1);
+            }}
+            className="pointer-events-auto absolute right-1 top-1/2 z-30 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-foreground shadow-lg ring-1 ring-black/10 transition-colors hover:bg-white sm:right-2 sm:h-10 sm:w-10"
           >
-            <ChevronRight className="h-5 w-5" />
+            <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
           </button>
         </>
       )}

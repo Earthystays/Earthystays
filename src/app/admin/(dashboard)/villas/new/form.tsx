@@ -507,6 +507,34 @@ export function NewVillaForm({
             />
             Show on the homepage as a featured property
           </label>
+
+          <div className="grid gap-1.5">
+            <Label
+              htmlFor="featuredRank"
+              className="text-xs uppercase tracking-wider text-muted-foreground"
+            >
+              Home page position
+            </Label>
+            <select
+              id="featuredRank"
+              name="featuredRank"
+              defaultValue={v?.featuredRank ?? ""}
+              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm sm:w-48"
+            >
+              <option value="">Auto (after ranked)</option>
+              <option value="1">1 (first)</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6 (last)</option>
+            </select>
+            <p className="text-xs text-muted-foreground">
+              Only used when Featured is on. Max 6 featured villas + 6
+              featured apartments show on the home page; anything beyond
+              that is hidden.
+            </p>
+          </div>
         </div>
       </Section>
 

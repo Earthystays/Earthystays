@@ -372,12 +372,29 @@ export function getVillaBySlug(slug: string) {
   return loadVillas().find((v) => v.slug === slug);
 }
 
+const FEATURED_CAP = 6;
+
+function rankSort<T extends { featuredRank?: number }>(a: T, b: T): number {
+  const ra = a.featuredRank;
+  const rb = b.featuredRank;
+  if (ra === undefined && rb === undefined) return 0;
+  if (ra === undefined) return 1;
+  if (rb === undefined) return -1;
+  return ra - rb;
+}
+
 export function getFeaturedVillas() {
-  return loadVillas().filter((v) => v.featured && (v.type ?? "villa") === "villa");
+  return loadVillas()
+    .filter((v) => v.featured && (v.type ?? "villa") === "villa")
+    .sort(rankSort)
+    .slice(0, FEATURED_CAP);
 }
 
 export function getFeaturedApartments() {
-  return loadVillas().filter((v) => v.featured && v.type === "apartment");
+  return loadVillas()
+    .filter((v) => v.featured && v.type === "apartment")
+    .sort(rankSort)
+    .slice(0, FEATURED_CAP);
 }
 
 export function getVillasByDestination(destinationSlug: string) {

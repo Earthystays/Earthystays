@@ -72,6 +72,7 @@ const VillaSchema = z.object({
     )
     .default([]),
   featured: z.boolean().default(false),
+  featuredRank: z.coerce.number().int().min(1).max(6).optional(),
 });
 
 function numOrUndef(v: FormDataEntryValue | null): number | undefined {
@@ -190,6 +191,7 @@ export type AddVillaValues = {
   faqs: { question: string; answer: string }[];
   externalListings: { platform: string; url: string; rating?: number; reviewCount?: number }[];
   featured: boolean;
+  featuredRank: string;
   images: { src: string; alt: string }[];
 };
 
@@ -245,6 +247,7 @@ export async function addVilla(
     faqs: parseFaqsJson(form.get("faqsJson") as string),
     externalListings: parseExternalListingsJson(form.get("externalListingsJson") as string),
     featured: form.get("featured") === "on" || form.get("featured") === "true",
+    featuredRank: numOrUndef(form.get("featuredRank")),
   };
 
   // Snapshot the raw form values so we can repopulate the form on error
@@ -281,6 +284,8 @@ export async function addVilla(
     faqs: raw.faqs,
     externalListings: raw.externalListings,
     featured: raw.featured,
+    featuredRank:
+      raw.featuredRank !== undefined ? String(raw.featuredRank) : "",
     images: raw.images,
   };
 
@@ -346,6 +351,7 @@ export async function addVilla(
     faqs: d.faqs.length > 0 ? d.faqs : undefined,
     externalListings: d.externalListings.length > 0 ? d.externalListings : undefined,
     featured: d.featured,
+    featuredRank: d.featured ? d.featuredRank : undefined,
   };
 
   const list = await readJson<Villa[]>("villas.json", []);

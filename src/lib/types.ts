@@ -75,6 +75,9 @@ export type Villa = {
     reviewCount?: number;
   }>;
   featured?: boolean;
+  /** 1 = first slot on the home page, 6 = last. Unset = appears after
+   *  all ranked items (in load order). Capped at 6 displayed per type. */
+  featuredRank?: number;
 };
 
 export type City = {

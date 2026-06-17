@@ -64,6 +64,8 @@ export function villaToFormValues(
     faqs: villa.faqs ?? [],
     externalListings: villa.externalListings ?? [],
     featured: villa.featured ?? false,
+    featuredRank:
+      villa.featuredRank !== undefined ? String(villa.featuredRank) : "",
     images: villa.images,
   };
 }

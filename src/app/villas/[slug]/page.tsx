@@ -14,6 +14,7 @@ import { ScrollSlider } from "@/components/scroll-slider";
 import { ExternalReviews } from "@/components/external-reviews";
 import { AmenitiesViewer } from "@/components/amenities-viewer";
 import { RecentlyVisitedTracker } from "@/components/recently-visited-tracker";
+import { VillaViewTracker } from "@/components/villa-view-tracker";
 import { MobileInquireBar } from "@/components/mobile-inquire-bar";
 import { VillaJsonLd } from "@/components/jsonld-villa";
 import { getVillaBySlug, getVillas } from "@/lib/data/villas";
@@ -109,6 +110,8 @@ export default async function VillaDetailPage({ params }: PageProps) {
       <VillaJsonLd villa={villa} />
       {/* Record this view to localStorage so it surfaces on the home page later */}
       <RecentlyVisitedTracker slug={villa.slug} />
+      {/* Record a server-side view event for popularity-based listing sort */}
+      <VillaViewTracker slug={villa.slug} />
       <div className="container-page pt-8">
         <Breadcrumbs items={crumbs} />
       </div>

@@ -1,5 +1,6 @@
 import type { Villa } from "@/lib/types";
 import { readJsonSync } from "@/lib/storage";
+import { getViewScoresSync } from "./villa-views";
 
 const SEED: Villa[] = [
   {
@@ -546,8 +547,25 @@ export function searchVillas(filters: VillaFilters = {}) {
     case "rating":
       results.sort((a, b) => b.rating - a.rating);
       break;
-    default:
-      results.sort((a, b) => Number(!!b.featured) - Number(!!a.featured));
+    default: {
+      // Default "featured" sort, now popularity-aware. Admin manual
+      // featuredRank wins inside the featured group; everything else
+      // sorts by weighted view score (last-30-day views count double,
+      // see getViewScoresSync).
+      const scores = getViewScoresSync();
+      results.sort((a, b) => {
+        const aF = !!a.featured;
+        const bF = !!b.featured;
+        if (aF && bF) {
+          const ra = a.featuredRank ?? Number.POSITIVE_INFINITY;
+          const rb = b.featuredRank ?? Number.POSITIVE_INFINITY;
+          if (ra !== rb) return ra - rb;
+        } else if (aF !== bF) {
+          return Number(bF) - Number(aF);
+        }
+        return (scores[b.slug] ?? 0) - (scores[a.slug] ?? 0);
+      });
+    }
   }
   return results;
 }

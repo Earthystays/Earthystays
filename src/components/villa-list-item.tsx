@@ -206,8 +206,12 @@ export function VillaListItem({
           <p className="font-numeric text-2xl font-bold tracking-tight tabular-nums text-foreground">
             {formatINR(villa.pricePerNight)}
           </p>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">
-            Per Night + Taxes
+          <span className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-muted px-2.5 py-1 text-xs font-medium text-foreground">
+            <BedDouble className="h-3.5 w-3.5" />
+            For {villa.bedrooms} {villa.bedrooms === 1 ? "Room" : "Rooms"}
+          </span>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Per Night + Taxes ({villa.bedrooms} {villa.bedrooms === 1 ? "room" : "rooms"})
           </p>
         </div>
 

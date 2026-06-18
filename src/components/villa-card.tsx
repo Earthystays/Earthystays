@@ -67,9 +67,15 @@ export function VillaCard({
         </div>
 
         <div className="mt-4 flex items-baseline justify-between">
-          <p className="text-sm text-foreground">
-            <span className="font-medium">{formatNight(villa.pricePerNight)}</span>
-          </p>
+          <div>
+            <p className="text-sm text-foreground">
+              <span className="font-medium">{formatNight(villa.pricePerNight)}</span>
+            </p>
+            <span className="mt-1.5 inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground">
+              <BedDouble className="h-3 w-3" />
+              For {villa.bedrooms} {villa.bedrooms === 1 ? "Room" : "Rooms"}
+            </span>
+          </div>
           <span className="text-xs uppercase tracking-wider text-terracotta group-hover:translate-x-0.5 transition-transform">
             View →
           </span>

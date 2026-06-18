@@ -15,30 +15,37 @@ import type { Villa } from "@/lib/types";
  */
 export function LocationChipsFilter({
   properties,
+  allProperties,
   loggedIn,
   wishlist,
 }: {
+  /** Default-tab properties — typically the featured ones. */
   properties: Villa[];
+  /** Full list of properties for this section's type. Drives the chip
+   *  list (so every city with a villa shows up, not just cities that
+   *  happen to have a featured one) and supplies results when a city
+   *  chip is selected. Falls back to `properties` if omitted. */
+  allProperties?: Villa[];
   loggedIn: boolean;
   wishlist: Set<string>;
 }) {
   const [activeCity, setActiveCity] = useState<string | null>(null);
+  const fullList = allProperties ?? properties;
 
-  // Unique city names present in the property list, preserving insertion order.
   const cities = useMemo(() => {
     const seen = new Set<string>();
     const ordered: string[] = [];
-    for (const v of properties) {
+    for (const v of fullList) {
       const c = (v.city ?? "").trim();
       if (!c || seen.has(c)) continue;
       seen.add(c);
       ordered.push(c);
     }
-    return ordered;
-  }, [properties]);
+    return ordered.sort((a, b) => a.localeCompare(b));
+  }, [fullList]);
 
   const filtered = activeCity
-    ? properties.filter((v) => (v.city ?? "").trim() === activeCity)
+    ? fullList.filter((v) => (v.city ?? "").trim() === activeCity)
     : properties.slice(0, 8);
 
   return (

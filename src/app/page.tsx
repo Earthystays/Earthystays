@@ -86,6 +86,7 @@ export default async function HomePage() {
         />
         <LocationChipsFilter
           properties={featured}
+          allProperties={allVillas.filter((v) => (v.type ?? "villa") === "villa")}
           loggedIn={!!user}
           wishlist={wishlist}
         />
@@ -103,6 +104,7 @@ export default async function HomePage() {
           />
           <LocationChipsFilter
             properties={featuredApartments}
+            allProperties={allVillas.filter((v) => v.type === "apartment")}
             loggedIn={!!user}
             wishlist={wishlist}
           />

@@ -43,17 +43,7 @@ export function VillaListItem({
   const petFriendly = hasPetFriendly(villa);
 
   return (
-    <article className="group relative grid grid-cols-1 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm transition-shadow hover:shadow-md md:grid-cols-[420px_1fr_210px]">
-      {/* Rating chip — floats at the top-right of the entire card,
-          sitting above the right column's background. */}
-      <div className="absolute right-4 top-3 z-20 hidden items-center gap-1.5 text-sm md:inline-flex">
-        <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
-        <span className="font-semibold font-numeric tabular-nums">
-          {villa.rating.toFixed(1)}
-        </span>
-        <span className="text-xs text-muted-foreground">of 5</span>
-      </div>
-
+    <article className="group relative grid grid-cols-1 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm transition-shadow hover:shadow-md md:grid-cols-[420px_1fr_240px]">
       {/* IMAGE COLUMN — mobile uses 17:10 panoramic aspect; on desktop the
           image stretches to the full row height (driven by the middle column)
           so there's no empty area under the photo. object-cover keeps the
@@ -67,6 +57,16 @@ export function VillaListItem({
           sizes="(min-width: 768px) 440px, 100vw"
           counterStyle="text"
         />
+
+        {/* Rating chip — bottom-right of the image, overlapping into the
+            content area like the reference (StayVista). */}
+        <div className="pointer-events-none absolute bottom-3 right-3 z-10 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-xs font-semibold shadow-md ring-1 ring-black/5 backdrop-blur-sm">
+          <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
+          <span className="font-numeric tabular-nums">
+            {villa.rating.toFixed(1)}
+          </span>
+          <span className="text-muted-foreground">of 5</span>
+        </div>
 
         {/* TOP-LEFT — Best Rated badge */}
         {bestRated && (
@@ -189,36 +189,30 @@ export function VillaListItem({
         )}
       </div>
 
-      {/* RIGHT COLUMN — price block centred, View CTA pinned to the bottom.
-          Rating now lives as a floating chip at the card's top-right (above). */}
-      <div className="flex flex-col border-t border-border/60 bg-muted/30 p-4 text-center md:border-l md:border-t-0 lg:p-5">
-        {/* Mobile-only rating row (the absolutely positioned one above is
-            hidden on small screens since the column stacks vertically) */}
-        <div className="inline-flex items-center justify-center gap-1.5 text-sm md:hidden">
-          <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
-          <span className="font-semibold font-numeric tabular-nums">
-            {villa.rating.toFixed(1)}
-          </span>
-          <span className="text-xs text-muted-foreground">of 5</span>
-        </div>
-
-        <div className="flex flex-1 flex-col items-center justify-center">
-          <p className="font-numeric text-2xl font-bold tracking-tight tabular-nums text-foreground">
-            {formatINR(villa.pricePerNight)}
-          </p>
-          <span className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-muted px-2.5 py-1 text-xs font-medium text-foreground">
+      {/* RIGHT COLUMN — rooms-left / price-right split, View CTA below.
+          Rating now lives as a chip on the image (above). */}
+      <div className="flex flex-col border-t border-border/60 bg-muted/30 p-4 md:border-l md:border-t-0 lg:p-5">
+        <div className="flex flex-1 items-center justify-between gap-3">
+          <span className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2.5 py-1.5 text-xs font-medium text-foreground">
             <BedDouble className="h-3.5 w-3.5" />
             For {villa.bedrooms} {villa.bedrooms === 1 ? "Room" : "Rooms"}
           </span>
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            Per Night + Taxes ({villa.bedrooms} {villa.bedrooms === 1 ? "room" : "rooms"})
-          </p>
+          <div className="text-right">
+            <p className="font-numeric text-xl font-bold tracking-tight tabular-nums text-foreground">
+              {formatINR(villa.pricePerNight)}
+            </p>
+            <p className="mt-0.5 text-[10px] leading-tight text-muted-foreground">
+              Per Night + Taxes
+              <br />
+              ({villa.bedrooms} {villa.bedrooms === 1 ? "room" : "rooms"})
+            </p>
+          </div>
         </div>
 
         <Link
           href={`/villas/${villa.slug}`}
           className={buttonVariants({
-            className: "mt-3 w-full justify-center rounded-md",
+            className: "mt-4 w-full justify-center rounded-md",
           })}
         >
           View →

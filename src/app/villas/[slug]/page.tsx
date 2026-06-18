@@ -135,38 +135,41 @@ export default async function VillaDetailPage({ params }: PageProps) {
         <DetailTabs tabs={tabs} />
       </div>
 
-      {/* Title block BELOW the tabs */}
-      <div className="container-page mt-8">
-        <h1 className="font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl lg:text-4xl">
-          {villa.name}
-        </h1>
-        <p className="mt-1 inline-flex items-center gap-1 text-sm text-muted-foreground sm:text-base">
-          <MapPin className="h-3.5 w-3.5 text-terracotta" />
-          {villa.city ? `${villa.city}, ` : ""}{state?.name}
-        </p>
-        <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
-          <span className="inline-flex items-center gap-1.5">
-            <Star className="h-4 w-4 fill-terracotta text-terracotta" />
-            <span className="font-numeric font-semibold tabular-nums">
-              {villa.rating.toFixed(2)}
-            </span>
-            <span className="text-muted-foreground">/5</span>
-          </span>
-          <span className="text-border">|</span>
-          <a
-            href="#reviews"
-            className="text-terracotta underline underline-offset-2 hover:text-terracotta/80"
-          >
-            {villa.reviewCount} reviews
-          </a>
-        </div>
-        {villa.tagline && (
-          <p className="mt-3 max-w-2xl text-muted-foreground">{villa.tagline}</p>
-        )}
-      </div>
+      <div className="container-page mt-8 grid gap-12 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="min-w-0 space-y-10">
+          {/* Title block — inside the grid so the booking sidebar can
+              start at the same vertical position instead of leaving a
+              tall empty band on the right. */}
+          <header>
+            <h1 className="font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl lg:text-4xl">
+              {villa.name}
+            </h1>
+            <p className="mt-1 inline-flex items-center gap-1 text-sm text-muted-foreground sm:text-base">
+              <MapPin className="h-3.5 w-3.5 text-terracotta" />
+              {villa.city ? `${villa.city}, ` : ""}{state?.name}
+            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
+              <span className="inline-flex items-center gap-1.5">
+                <Star className="h-4 w-4 fill-terracotta text-terracotta" />
+                <span className="font-numeric font-semibold tabular-nums">
+                  {villa.rating.toFixed(2)}
+                </span>
+                <span className="text-muted-foreground">/5</span>
+              </span>
+              <span className="text-border">|</span>
+              <a
+                href="#reviews"
+                className="text-terracotta underline underline-offset-2 hover:text-terracotta/80"
+              >
+                {villa.reviewCount} reviews
+              </a>
+            </div>
+            {villa.tagline && (
+              <p className="mt-3 max-w-2xl text-muted-foreground">{villa.tagline}</p>
+            )}
+          </header>
 
-      <div className="container-page mt-10 grid gap-12 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="min-w-0 space-y-14">
+          <div className="space-y-14">
           {/* Quick facts */}
           <div className="grid grid-cols-3 gap-4 rounded-xl border border-border/60 p-5">
             <Fact icon={<BedDouble className="h-4 w-4" />} label="Bedrooms" value={villa.bedrooms} />
@@ -434,10 +437,11 @@ export default async function VillaDetailPage({ params }: PageProps) {
               )}
             </div>
           </Section>
+          </div>
         </div>
 
         {/* Sticky inquiry */}
-        <aside className="lg:sticky lg:top-44 self-start">
+        <aside className="lg:sticky lg:top-32 self-start">
           <div className="rounded-2xl border border-border/60 bg-card p-6 shadow-sm">
             <p className="text-xs uppercase tracking-wider text-muted-foreground">From</p>
             <p className="mt-1 font-numeric text-3xl font-semibold tracking-tight tabular-nums text-foreground">

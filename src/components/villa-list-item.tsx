@@ -194,8 +194,8 @@ export function VillaListItem({
           is narrow, vertical reads cleaner). Rating chip lives on the
           image above, so it's not duplicated here. */}
       <div className="flex flex-col border-t border-border/60 bg-muted/30 p-4 md:border-l md:border-t-0 lg:p-5">
-        <div className="flex flex-1 items-center justify-between gap-3 md:flex-col-reverse md:items-center md:justify-center md:gap-3">
-          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-muted px-2.5 py-1.5 text-xs font-medium text-foreground">
+        <div className="flex flex-1 items-center justify-between gap-3 md:flex-col-reverse md:items-stretch md:justify-center md:gap-3">
+          <span className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-md bg-muted px-2.5 py-1.5 text-xs font-medium text-foreground md:mx-auto md:self-center">
             <BedDouble className="h-3.5 w-3.5" />
             For {villa.bedrooms} {villa.bedrooms === 1 ? "Room" : "Rooms"}
           </span>

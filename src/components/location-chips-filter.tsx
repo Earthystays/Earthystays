@@ -33,15 +33,15 @@ export function LocationChipsFilter({
   const fullList = allProperties ?? properties;
 
   const cities = useMemo(() => {
-    const seen = new Set<string>();
-    const ordered: string[] = [];
+    const counts = new Map<string, number>();
     for (const v of fullList) {
       const c = (v.city ?? "").trim();
-      if (!c || seen.has(c)) continue;
-      seen.add(c);
-      ordered.push(c);
+      if (!c) continue;
+      counts.set(c, (counts.get(c) ?? 0) + 1);
     }
-    return ordered.sort((a, b) => a.localeCompare(b));
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([name]) => name);
   }, [fullList]);
 
   const filtered = activeCity

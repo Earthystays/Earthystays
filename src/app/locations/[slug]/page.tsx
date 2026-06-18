@@ -1,14 +1,23 @@
 import { notFound } from "next/navigation";
-import Image from "next/image";
 import type { Metadata } from "next";
 import { destinations, getStateBySlug } from "@/lib/data/locations";
-import { getVillasByDestination } from "@/lib/data/villas";
-import { getStateCover } from "@/lib/data/location-covers";
-import { VillaCard } from "@/components/villa-card";
+import {
+  searchVillas,
+  getAllAmenities,
+  getPriceBounds,
+  type VillaFilters as Filters,
+} from "@/lib/data/villas";
+import { VillaListItem } from "@/components/villa-list-item";
+import { VillaFiltersSidebar } from "@/components/villa-filters-sidebar";
+import { MobileFiltersDrawer } from "@/components/mobile-filters-drawer";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { SortDropdown } from "@/components/sort-dropdown";
 import { getCurrentUser } from "@/lib/session";
 
-type PageProps = { params: Promise<{ slug: string }> };
+type PageProps = {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
 
 export async function generateStaticParams() {
   return destinations.map((d) => ({ slug: d.slug }));
@@ -19,92 +28,107 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const dest = getStateBySlug(slug);
   if (!dest) return { title: "Not found" };
   return {
-    title: dest.name,
+    title: `Villas in ${dest.name}`,
     description: dest.blurb,
-    openGraph: { images: [dest.image.src] },
   };
 }
 
-/**
- * State landing page — mirrors the city page layout exactly (no cities
- * grid, just the cover + all villas in the state). Visitors who want
- * to drill into a specific city use the /locations/[state]/[city] URL
- * directly (still wired up in routing, just not surfaced as cards here).
- */
-export default async function StatePage({ params }: PageProps) {
+function readNumber(v: string | string[] | undefined): number | undefined {
+  if (!v) return undefined;
+  const s = Array.isArray(v) ? v[0] : v;
+  const n = Number(s);
+  return Number.isFinite(n) && n > 0 ? n : undefined;
+}
+
+function readStringArray(v: string | string[] | undefined): string[] {
+  if (!v) return [];
+  return Array.isArray(v) ? v : [v];
+}
+
+export default async function StatePage({ params, searchParams }: PageProps) {
   const { slug } = await params;
   const state = getStateBySlug(slug);
   if (!state) notFound();
-  const villas = getVillasByDestination(state.slug);
+
+  const sp = await searchParams;
+  const filters: Filters = {
+    state: state.slug,
+    guests: readNumber(sp.guests),
+    bedrooms: readNumber(sp.rooms),
+    minPrice: readNumber(sp.minPrice),
+    maxPrice: readNumber(sp.maxPrice),
+    amenities: readStringArray(sp.amenity),
+    sort: typeof sp.sort === "string" ? (sp.sort as Filters["sort"]) : undefined,
+  };
+
+  const villas = searchVillas(filters);
+  const amenities = getAllAmenities();
+  const bounds = getPriceBounds();
   const user = await getCurrentUser();
   const wishlist = new Set(user?.wishlist ?? []);
 
   return (
-    <div>
-      <section className="relative h-[50vh] min-h-[360px] sm:h-[55vh] sm:min-h-[400px]">
-        <Image
-          src={getStateCover(state.slug) ?? state.image.src}
-          alt={state.image.alt}
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/30 to-black/70" />
-        <div className="container-page absolute inset-x-0 bottom-0 pb-10 text-white">
-          <Breadcrumbs
-            items={[
-              { label: "Home", href: "/" },
-              { label: "Locations", href: "/locations" },
-              { label: state.name },
-            ]}
-          />
-          <p className="mt-4 text-xs uppercase tracking-[0.22em] text-white/80">
-            {state.region}
-          </p>
-          <h1 className="mt-2 font-display text-4xl sm:text-6xl">
-            {state.name}
+    <div className="container-page py-8 lg:py-12">
+      <Breadcrumbs
+        items={[
+          { label: "Home", href: "/" },
+          { label: "Locations", href: "/locations" },
+          { label: state.name },
+        ]}
+      />
+
+      <header className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="font-display text-3xl sm:text-4xl">
+            Villas in {state.name}
           </h1>
-          <p className="mt-3 max-w-xl text-sm text-white/85 sm:text-base">
-            {state.blurb}
+          <p className="mt-1 text-sm text-muted-foreground">
+            {villas.length} {villas.length === 1 ? "stay" : "stays"} match your filters.
           </p>
         </div>
-      </section>
+        <div className="flex items-center gap-2">
+          <MobileFiltersDrawer
+            amenities={amenities}
+            priceMin={bounds.min}
+            priceMax={bounds.max}
+          />
+          <SortDropdown currentSort={filters.sort ?? "featured"} />
+        </div>
+      </header>
 
-      <section className="container-page py-12 sm:py-16">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="text-xs uppercase tracking-[0.18em] text-terracotta">
-              Stays in {state.name}
-            </p>
-            <h2 className="mt-2 font-display text-2xl sm:text-4xl">
-              {villas.length} {villas.length === 1 ? "stay" : "stays"}
-            </h2>
-          </div>
+      <div className="mt-8 grid gap-8 lg:grid-cols-[260px_1fr]">
+        <div className="hidden lg:sticky lg:top-32 lg:block lg:self-start">
+          <VillaFiltersSidebar
+            amenities={amenities}
+            priceMin={bounds.min}
+            priceMax={bounds.max}
+          />
         </div>
 
-        {villas.length === 0 ? (
-          <div className="mt-10 rounded-2xl border border-dashed border-border bg-card/60 p-12 text-center">
-            <p className="font-display text-xl sm:text-2xl">
-              No stays in {state.name} yet.
-            </p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Check back soon — we&apos;re adding new properties regularly.
-            </p>
-          </div>
-        ) : (
-          <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {villas.map((v) => (
-              <VillaCard
-                key={v.slug}
-                villa={v}
-                loggedIn={!!user}
-                inWishlist={wishlist.has(v.slug)}
-              />
-            ))}
-          </div>
-        )}
-      </section>
+        <div>
+          {villas.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-border bg-card/60 p-12 text-center">
+              <p className="font-display text-2xl">
+                No stays in {state.name} match those filters.
+              </p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Try widening the price range or unchecking some amenities.
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-5">
+              {villas.map((villa) => (
+                <VillaListItem
+                  key={villa.slug}
+                  villa={villa}
+                  loggedIn={!!user}
+                  inWishlist={wishlist.has(villa.slug)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

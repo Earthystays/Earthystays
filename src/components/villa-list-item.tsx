@@ -189,19 +189,21 @@ export function VillaListItem({
         )}
       </div>
 
-      {/* RIGHT COLUMN — rooms-left / price-right split, View CTA below.
-          Rating now lives as a chip on the image (above). */}
+      {/* RIGHT COLUMN — mobile keeps the rooms-left / price-right split.
+          Desktop stacks price on top and the rooms pill below it (column
+          is narrow, vertical reads cleaner). Rating chip lives on the
+          image above, so it's not duplicated here. */}
       <div className="flex flex-col border-t border-border/60 bg-muted/30 p-4 md:border-l md:border-t-0 lg:p-5">
-        <div className="flex flex-1 items-center justify-between gap-3">
+        <div className="flex flex-1 items-center justify-between gap-3 md:flex-col-reverse md:justify-center md:gap-3">
           <span className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2.5 py-1.5 text-xs font-medium text-foreground">
             <BedDouble className="h-3.5 w-3.5" />
             For {villa.bedrooms} {villa.bedrooms === 1 ? "Room" : "Rooms"}
           </span>
-          <div className="text-right">
-            <p className="font-numeric text-xl font-bold tracking-tight tabular-nums text-foreground">
+          <div className="text-right md:text-center">
+            <p className="font-numeric text-xl font-bold tracking-tight tabular-nums text-foreground md:text-2xl">
               {formatINR(villa.pricePerNight)}
             </p>
-            <p className="mt-0.5 text-[10px] leading-tight text-muted-foreground">
+            <p className="mt-0.5 text-[10px] leading-tight text-muted-foreground md:text-[11px]">
               Per Night + Taxes
               <br />
               ({villa.bedrooms} {villa.bedrooms === 1 ? "room" : "rooms"})

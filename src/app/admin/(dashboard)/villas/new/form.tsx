@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, useEffect } from "react";
+import { useActionState, useState, useEffect, useRef, useId } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -9,8 +9,8 @@ import { PhotoUploader } from "@/components/photo-uploader";
 import { VideoInput } from "@/components/video-input";
 import { FaqEditor } from "@/components/faq-editor";
 import { ExternalListingsEditor } from "@/components/external-listings-editor";
-import { AlertTriangle } from "lucide-react";
-import { addVilla, type AddVillaState } from "./actions";
+import { AlertTriangle, Check, Save, Loader2 } from "lucide-react";
+import { addVilla, autoSaveDraft, type AddVillaState, type AddVillaValues } from "./actions";
 import { getIconByName } from "@/lib/amenity-catalog";
 
 type AmenityChoice = { name: string; iconName: string };
@@ -29,6 +29,7 @@ export function NewVillaForm({
   cancellationPresets,
   mealPresets,
   initialState,
+  draftId: incomingDraftId,
 }: {
   destinations: { slug: string; name: string }[];
   collections: { slug: string; name: string }[];
@@ -38,9 +39,22 @@ export function NewVillaForm({
   cancellationPresets: CancellationPreset[];
   mealPresets: MealPreset[];
   initialState?: AddVillaState;
+  /** When resuming an existing draft, pass its id here. Omit for new
+   *  villas — the form will mint a draftId on mount. */
+  draftId?: string;
 }) {
   const [state, action, pending] = useActionState(addVilla, initialState ?? INITIAL);
   const v = state.values;
+
+  const formRef = useRef<HTMLFormElement>(null);
+  const reactId = useId();
+  const [draftId] = useState(
+    () => incomingDraftId ?? `draft-${reactId.replace(/[^a-z0-9]/gi, "")}-${Date.now()}`,
+  );
+  const [draftStatus, setDraftStatus] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
 
   // Cancellation policy is controlled so the textarea auto-fills from preset
   const [policyPreset, setPolicyPreset] = useState<string>(v?.cancellationPreset ?? "");
@@ -84,8 +98,64 @@ export function NewVillaForm({
     }
   }
 
+  // Auto-save: every time the form changes, debounce 2.5s and push a
+  // snapshot to /data/villa-drafts.json. The slug isn't required and we
+  // skip validation, so partial drafts are fine. Cleared on successful
+  // publish (server side, see actions.ts).
+  useEffect(() => {
+    const formEl = formRef.current;
+    if (!formEl) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    function snapshot(): Partial<AddVillaValues> {
+      const fd = new FormData(formEl!);
+      const obj: Record<string, unknown> = {};
+      for (const [key, value] of fd.entries()) {
+        if (key === "imagesJson" || key === "faqsJson" || key === "externalListingsJson") {
+          try {
+            obj[key === "imagesJson" ? "images" : key === "faqsJson" ? "faqs" : "externalListings"] =
+              JSON.parse(String(value));
+          } catch {
+            // ignore malformed JSON snapshots
+          }
+          continue;
+        }
+        if (key === "amenities" || key === "facilities" || key === "collections") {
+          if (!Array.isArray(obj[key])) obj[key] = [];
+          (obj[key] as string[]).push(String(value));
+          continue;
+        }
+        obj[key] = value;
+      }
+      return obj as Partial<AddVillaValues>;
+    }
+    function schedule() {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(async () => {
+        setDraftStatus("saving");
+        try {
+          const res = await autoSaveDraft(draftId, snapshot());
+          if (res.ok) {
+            setDraftStatus("saved");
+            setLastSavedAt(res.savedAt);
+          }
+        } catch {
+          setDraftStatus("error");
+        }
+      }, 2500);
+    }
+    formEl.addEventListener("input", schedule);
+    formEl.addEventListener("change", schedule);
+    return () => {
+      if (timer) clearTimeout(timer);
+      formEl.removeEventListener("input", schedule);
+      formEl.removeEventListener("change", schedule);
+    };
+  }, [draftId]);
+
   return (
-    <form action={action} className="mt-10 grid gap-8" key={state.attemptId ?? "initial"}>
+    <form ref={formRef} action={action} className="mt-10 grid gap-8" key={state.attemptId ?? "initial"}>
+      <input type="hidden" name="draftId" value={draftId} />
+      <DraftStatusBanner status={draftStatus} savedAt={lastSavedAt} />
       {state.error && (
         <div className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           <p className="flex items-center gap-2 font-medium">
@@ -612,5 +682,50 @@ function Field({
       {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
+  );
+}
+
+function DraftStatusBanner({
+  status,
+  savedAt,
+}: {
+  status: "idle" | "saving" | "saved" | "error";
+  savedAt: string | null;
+}) {
+  if (status === "idle") {
+    return (
+      <p className="flex items-center gap-2 text-xs text-muted-foreground">
+        <Save className="h-3.5 w-3.5" />
+        Your progress is auto-saved to Drafts as you type. Publish when ready.
+      </p>
+    );
+  }
+  if (status === "saving") {
+    return (
+      <p className="flex items-center gap-2 text-xs text-muted-foreground">
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        Saving draft…
+      </p>
+    );
+  }
+  if (status === "saved") {
+    return (
+      <p className="flex items-center gap-2 text-xs text-emerald-700">
+        <Check className="h-3.5 w-3.5" />
+        Draft saved
+        {savedAt && (
+          <span className="text-muted-foreground">
+            · {new Date(savedAt).toLocaleTimeString()}
+          </span>
+        )}
+      </p>
+    );
+  }
+  return (
+    <p className="flex items-center gap-2 text-xs text-destructive">
+      <AlertTriangle className="h-3.5 w-3.5" />
+      Couldn&apos;t save draft. Your changes are still in the form — try again
+      in a moment.
+    </p>
   );
 }

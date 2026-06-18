@@ -1,9 +1,12 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, FileText } from "lucide-react";
 import { getVillas } from "@/lib/data/villas";
 import { buttonVariants } from "@/components/ui/button";
 import { VillasTable } from "./villas-table";
 import { ImportListingButton } from "./import-modal";
+import { getAllDrafts } from "@/lib/data/villa-drafts";
+
+export const dynamic = "force-dynamic";
 
 type SearchParams = Promise<Record<string, string | undefined>>;
 
@@ -13,6 +16,7 @@ export default async function AdminVillasPage({
   searchParams: SearchParams;
 }) {
   const villas = getVillas();
+  const drafts = await getAllDrafts();
   const sp = await searchParams;
   const added = sp.added;
   const deleted = sp.deleted;
@@ -27,6 +31,18 @@ export default async function AdminVillasPage({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/admin/villas/drafts"
+            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted"
+          >
+            <FileText className="h-4 w-4" />
+            Drafts
+            {drafts.length > 0 && (
+              <span className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-terracotta px-1.5 text-[11px] font-semibold text-white">
+                {drafts.length}
+              </span>
+            )}
+          </Link>
           <ImportListingButton />
           <Link
             href="/admin/villas/new"

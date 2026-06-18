@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { readJson, writeJson } from "@/lib/storage";
 import type { Villa } from "@/lib/types";
 import { parseVideoUrl } from "@/lib/video";
+import { deleteDraft, saveDraft } from "@/lib/data/villa-drafts";
 
 const VillaSchema = z.object({
   slug: z
@@ -360,9 +361,39 @@ export async function addVilla(
   else list.push(villa);
   await writeJson("villas.json", list);
 
+  // If this publish originated from a draft, clean it up so it stops
+  // showing in the drafts list.
+  const draftId = form.get("draftId");
+  if (typeof draftId === "string" && draftId) {
+    await deleteDraft(draftId);
+    revalidatePath("/admin/villas/drafts");
+  }
+
   revalidatePath("/admin/villas");
   revalidatePath("/villas");
   revalidatePath(`/villas/${villa.slug}`);
   revalidatePath("/");
   redirect("/admin/villas?added=" + encodeURIComponent(villa.slug));
+}
+
+/**
+ * Auto-save the in-progress form snapshot to data/villa-drafts.json.
+ * Fire-and-forget from the client every few seconds — we don't validate
+ * here because half-filled forms are exactly the point.
+ */
+export async function autoSaveDraft(
+  draftId: string,
+  values: Partial<AddVillaValues>,
+): Promise<{ ok: true; savedAt: string }> {
+  await saveDraft(draftId, values);
+  return { ok: true, savedAt: new Date().toISOString() };
+}
+
+export async function discardDraft(
+  draftId: string,
+): Promise<{ ok: true }> {
+  await deleteDraft(draftId);
+  revalidatePath("/admin/villas/drafts");
+  revalidatePath("/admin/villas");
+  return { ok: true };
 }

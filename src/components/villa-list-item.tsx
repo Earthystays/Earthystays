@@ -43,7 +43,7 @@ export function VillaListItem({
   const petFriendly = hasPetFriendly(villa);
 
   return (
-    <article className="group relative grid grid-cols-1 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm transition-shadow hover:shadow-md md:grid-cols-[420px_1fr_240px]">
+    <article className="group relative grid grid-cols-1 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm transition-shadow hover:shadow-md md:grid-cols-[420px_minmax(0,1fr)_240px]">
       {/* IMAGE COLUMN — mobile uses 17:10 panoramic aspect; on desktop the
           image stretches to the full row height (driven by the middle column)
           so there's no empty area under the photo. object-cover keeps the
@@ -112,9 +112,10 @@ export function VillaListItem({
         )}
       </Link>
 
-      {/* DETAILS MIDDLE COLUMN — extra padding so the column has substantial
-          height (the image stretches to match this height). */}
-      <div className="flex flex-col p-6 lg:p-7">
+      {/* DETAILS MIDDLE COLUMN — min-w-0 lets the grid track stay at 1fr
+          when the middle content's min-content is naturally wide; without
+          it CSS Grid grows the track to fit and shrinks the right column. */}
+      <div className="flex min-w-0 flex-col p-6 lg:p-7">
         <Link href={`/villas/${villa.slug}`}>
           <h3 className="font-display text-2xl font-bold leading-tight text-foreground transition-colors hover:text-terracotta">
             {villa.name}

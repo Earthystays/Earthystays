@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { ArrowUpRight } from "lucide-react";
 import { ExperienceInquiryModal } from "@/components/experience-inquiry-modal";
 import type { Experience } from "@/lib/types";
 
@@ -60,9 +59,6 @@ export function ExperiencesGrid({
               className="object-cover transition-transform duration-700 group-hover:scale-105"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent" />
-            <span className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-foreground shadow-sm transition-transform duration-300 group-hover:scale-110">
-              <ArrowUpRight className="h-4 w-4" />
-            </span>
             <div className="absolute inset-x-0 bottom-0 p-5 text-white sm:p-6">
               <h3 className="font-display text-xl font-semibold leading-tight sm:text-2xl">
                 {e.name}
@@ -70,9 +66,6 @@ export function ExperiencesGrid({
               <p className="mt-1 line-clamp-2 text-xs text-white/85 sm:text-sm">
                 {e.blurb}
               </p>
-              <span className="mt-3 inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-[0.18em] text-white/90 transition-[gap] duration-300 group-hover:gap-2">
-                Inquire <span aria-hidden>→</span>
-              </span>
             </div>
           </button>
         ))}

@@ -103,3 +103,10 @@ export type Collection = {
   blurb: string;
   image: Image;
 };
+
+export type Experience = {
+  slug: string;
+  name: string;
+  blurb: string;
+  image: Image;
+};

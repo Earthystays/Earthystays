@@ -5,6 +5,8 @@ import { SearchBar } from "@/components/search-bar";
 import { SectionHeader } from "@/components/section-header";
 import { getAllDestinations } from "@/lib/data/locations";
 import { getAllCollections } from "@/lib/data/collections";
+import { getAllExperiences } from "@/lib/data/experiences";
+import { CuratedExperiences } from "@/components/curated-experiences";
 import { ScrollSlider } from "@/components/scroll-slider";
 import { getStateCover } from "@/lib/data/location-covers";
 import {
@@ -247,6 +249,9 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Curated Experiences — premium concierge offerings */}
+      <CuratedExperiences experiences={getAllExperiences()} />
 
       {/* Testimonials — managed in /admin/reviews, displayed as a slider */}
       <section className="container-page py-20">

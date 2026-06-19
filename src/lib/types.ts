@@ -4,22 +4,10 @@ export type Image = {
   tag?: string; // room label e.g. "Bedroom 1", "Kitchen", "Pool"
 };
 
-export type Amenity =
-  | "Private Pool"
-  | "Sea View"
-  | "Pet Friendly"
-  | "Hot Tub"
-  | "Chef on Call"
-  | "Wi-Fi"
-  | "Air Conditioning"
-  | "Beachfront"
-  | "Mountain View"
-  | "Fireplace"
-  | "Garden"
-  | "Gym"
-  | "Spa"
-  | "Bonfire"
-  | "Game Room";
+/** Loose alias — preset names are listed in VILLA_AMENITIES, and the admin
+ *  is free to add custom amenities on top, so the runtime shape is just a
+ *  free-form string. */
+export type Amenity = string;
 
 export type PropertyType = "villa" | "apartment";
 

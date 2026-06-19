@@ -1,25 +1,65 @@
 import type { Amenity } from "@/lib/types";
 
 export const VILLA_AMENITIES: readonly Amenity[] = [
+  // Pool & wellness
   "Private Pool",
-  "Sea View",
-  "Pet Friendly",
   "Hot Tub",
-  "Chef on Call",
-  "Wi-Fi",
-  "Air Conditioning",
+  "Spa",
+  "Gym",
+  // Outdoor
+  "Sea View",
   "Beachfront",
   "Mountain View",
-  "Fireplace",
   "Garden",
-  "Gym",
-  "Spa",
   "Bonfire",
+  // Climate / utility
+  "Wi-Fi",
+  "Air Conditioning",
+  "Ceiling Fan",
+  "Heating",
+  "Fireplace",
+  // Kitchen & dining
+  "Kitchen",
+  "Fridge",
+  "Microwave",
+  "Coffee Maker",
+  "Kettle",
+  "Crockery and Cutlery",
+  // Bathroom
+  "Hot Water",
+  "Hairdryer",
+  "Towels",
+  "Shampoo",
+  "Conditioner",
+  "Shower Gel",
+  // Bedroom & laundry
+  "Washing Machine",
+  "Iron",
+  "Essentials",
+  "Hangers",
+  "Bed Linen",
+  // Entertainment
+  "TV",
+  "Smart TV",
+  "Speakers",
+  "Board Games",
   "Game Room",
+  // Family / pets
+  "Pet Friendly",
+  "Kids Play Area",
+  "Crib",
+  "High Chair",
+  // Services
+  "Chef on Call",
 ] as const;
 
 export const VILLA_FACILITIES = [
-  "Parking",
+  // Parking & facilities
+  "Free Parking",
+  "EV Charging",
+  "Wheelchair Access",
+  "Private Entrance",
+  // Common villa services
   "Shared Pool",
   "24/7 Security",
   "Power Backup",
@@ -27,13 +67,18 @@ export const VILLA_FACILITIES = [
   "Housekeeping",
   "Laundry",
   "Conference Room",
-  "Kids Play Area",
+  "Dedicated Workspace",
+  // Outdoor amenities
   "Bonfire Pit",
   "Outdoor Dining",
   "Outdoor Shower",
   "BBQ Grill",
-  "EV Charging",
-  "Wheelchair Access",
+  // Safety
+  "Smoke Alarm",
+  "Fire Extinguisher",
+  "First Aid Kit",
+  "Security Cameras",
+  "Safe",
 ] as const;
 
 export const MEAL_PRESETS = [

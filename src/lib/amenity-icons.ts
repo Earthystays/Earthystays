@@ -27,6 +27,22 @@ import {
   Camera,
   Bike,
   Heart,
+  Wind,
+  Thermometer,
+  Refrigerator,
+  Microwave,
+  Bell,
+  Briefcase,
+  Shirt,
+  BedDouble,
+  Droplet,
+  Soup,
+  CookingPot,
+  BookOpen,
+  Baby,
+  Building2,
+  AlertTriangle,
+  Lock,
   Check,
   type LucideIcon,
 } from "lucide-react";
@@ -90,14 +106,111 @@ const ICONS: Record<string, LucideIcon> = {
 
   // misc keywords commonly used as custom amenities
   coffee: Coffee,
+  "coffee maker": Coffee,
   "espresso machine": Coffee,
+  kettle: Coffee,
+  toaster: CookingPot,
   bar: Wine,
   wine: Wine,
+  "wine glasses": Wine,
   music: Music,
+  speakers: Music,
+  "sound system": Music,
   bike: Bike,
   bicycles: Bike,
   camera: Camera,
   "yoga deck": Sprout,
+
+  // bathroom
+  hairdryer: Wind,
+  "hair dryer": Wind,
+  "cleaning products": Droplet,
+  shampoo: Droplet,
+  conditioner: Droplet,
+  "hot water": Droplet,
+  geyser: Droplet,
+  "shower gel": Droplet,
+  "body soap": Droplet,
+  towels: Bath,
+  toiletries: Droplet,
+  bathtub: Bath,
+
+  // bedroom & laundry
+  "washing machine": WashingMachine,
+  essentials: BedDouble,
+  hangers: Shirt,
+  "bed linen": BedDouble,
+  iron: Shirt,
+  closet: Shirt,
+  wardrobe: Shirt,
+  dryer: WashingMachine,
+
+  // kitchen & dining (expanded)
+  kitchen: Utensils,
+  fridge: Refrigerator,
+  refrigerator: Refrigerator,
+  microwave: Microwave,
+  stove: CookingPot,
+  oven: CookingPot,
+  dishwasher: Utensils,
+  "crockery and cutlery": Utensils,
+  crockery: Utensils,
+  "cooking basics": Soup,
+  "dining table": Utensils,
+
+  // entertainment (expanded)
+  "smart tv": Tv,
+  "cable tv": Tv,
+  netflix: Tv,
+  "board games": Gamepad2,
+  books: BookOpen,
+  "pool table": Gamepad2,
+  "table tennis": Gamepad2,
+
+  // heating & cooling
+  "ceiling fan": Wind,
+  heating: Thermometer,
+  "indoor fireplace": Flame,
+
+  // internet & office (expanded)
+  "dedicated workspace": Briefcase,
+  ethernet: Wifi,
+  printer: Briefcase,
+
+  // services
+  concierge: Bell,
+  butler: Bell,
+  "in-house chef": ChefHat,
+
+  // family
+  crib: Baby,
+  "high chair": Baby,
+  "pack 'n play": Baby,
+  "baby monitor": Baby,
+  "kids welcome": Baby,
+
+  // parking & facilities
+  "free parking": Car,
+  "paid parking": Car,
+  "private entrance": Building2,
+  elevator: Building2,
+
+  // safety
+  "smoke alarm": AlertTriangle,
+  "fire extinguisher": AlertTriangle,
+  "first aid kit": Heart,
+  "carbon monoxide alarm": AlertTriangle,
+  "co alarm": AlertTriangle,
+  "security cameras": Camera,
+  "safe box": Lock,
+  safe: Lock,
+
+  // views
+  "valley view": Mountain,
+  "river view": Eye,
+  "lake view": Eye,
+  "city view": Building2,
+  "forest view": Trees,
 };
 
 import { getCustomIconMap } from "./data/amenities-store";

@@ -51,6 +51,25 @@ export const VILLA_AMENITIES: readonly Amenity[] = [
   "High Chair",
   // Services
   "Chef on Call",
+  // Extra common villa amenities
+  "Freezer",
+  "Cooker",
+  "Blender",
+  "Water Purifier",
+  "Breakfast Included",
+  "Workstation",
+  "Extra Mattress",
+  "Wardrobe",
+  "Home Theatre",
+  "Music System/Speaker",
+  "Indoor/Outdoor Games",
+  "Balcony/Terrace",
+  "Lawn",
+  "Gazebo",
+  "Bar",
+  "Steam/Sauna",
+  "Electric Blanket",
+  "Geyser",
 ] as const;
 
 export const VILLA_FACILITIES = [
@@ -78,7 +97,17 @@ export const VILLA_FACILITIES = [
   "Fire Extinguisher",
   "First Aid Kit",
   "Security Cameras",
+  "CCTV",
   "Safe",
+  // Extra common villa facilities
+  "Indoor Parking",
+  "Lift",
+  "Smoking Allowed",
+  "Self Check-in",
+  "Building Staff",
+  "Cook Available",
+  "Driver/Staff Accommodation",
+  "Launderette Nearby",
 ] as const;
 
 export const MEAL_PRESETS = [

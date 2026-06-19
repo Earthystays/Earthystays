@@ -49,6 +49,8 @@ const EXACT: Record<string, AmenityCategory> = {
   jacuzzi: "Pool & wellness",
   spa: "Pool & wellness",
   sauna: "Pool & wellness",
+  "steam/sauna": "Pool & wellness",
+  steam: "Pool & wellness",
   gym: "Pool & wellness",
   yoga: "Pool & wellness",
   "yoga deck": "Pool & wellness",
@@ -56,14 +58,21 @@ const EXACT: Record<string, AmenityCategory> = {
   // Outdoor
   beachfront: "Outdoor",
   garden: "Outdoor",
+  "back garden": "Outdoor",
+  lawn: "Outdoor",
+  gazebo: "Outdoor",
   bonfire: "Outdoor",
   "bonfire pit": "Outdoor",
   "outdoor dining": "Outdoor",
   "outdoor shower": "Outdoor",
   "bbq grill": "Outdoor",
+  bbq: "Outdoor",
   patio: "Outdoor",
   balcony: "Outdoor",
   terrace: "Outdoor",
+  "balcony/terrace": "Outdoor",
+  "flower garden": "Outdoor",
+  "walking trails": "Outdoor",
 
   // Kitchen & dining
   kitchen: "Kitchen & dining",
@@ -85,6 +94,11 @@ const EXACT: Record<string, AmenityCategory> = {
   "dining table": "Kitchen & dining",
   bar: "Kitchen & dining",
   wine: "Kitchen & dining",
+  freezer: "Kitchen & dining",
+  cooker: "Kitchen & dining",
+  blender: "Kitchen & dining",
+  "water purifier": "Kitchen & dining",
+  "breakfast included": "Kitchen & dining",
 
   // Internet & office
   "wi-fi": "Internet & office",
@@ -114,6 +128,9 @@ const EXACT: Record<string, AmenityCategory> = {
   "blackout curtains": "Bedroom & laundry",
   laundry: "Bedroom & laundry",
   dryer: "Bedroom & laundry",
+  workstation: "Bedroom & laundry",
+  "extra mattress": "Bedroom & laundry",
+  "electric blanket": "Bedroom & laundry",
 
   // Bathroom
   hairdryer: "Bathroom",
@@ -136,12 +153,18 @@ const EXACT: Record<string, AmenityCategory> = {
   netflix: "Entertainment",
   speakers: "Entertainment",
   "sound system": "Entertainment",
+  "music system": "Entertainment",
+  "music system/speaker": "Entertainment",
   "board games": "Entertainment",
   books: "Entertainment",
   "game room": "Entertainment",
   "pool table": "Entertainment",
   "table tennis": "Entertainment",
   music: "Entertainment",
+  "home theatre": "Entertainment",
+  "home theater": "Entertainment",
+  "indoor/outdoor games": "Entertainment",
+  "movie screen": "Entertainment",
 
   // Services
   "chef on call": "Services",
@@ -150,6 +173,11 @@ const EXACT: Record<string, AmenityCategory> = {
   concierge: "Services",
   butler: "Services",
   "in-house chef": "Services",
+  "cook available": "Services",
+  "smoking allowed": "Services",
+  "self check-in": "Services",
+  "building staff": "Services",
+  "driver/staff accommodation": "Services",
 
   // Family
   "kids play area": "Family",
@@ -164,11 +192,15 @@ const EXACT: Record<string, AmenityCategory> = {
   parking: "Parking & facilities",
   "free parking": "Parking & facilities",
   "paid parking": "Parking & facilities",
+  "indoor parking": "Parking & facilities",
   "ev charging": "Parking & facilities",
   "wheelchair access": "Parking & facilities",
+  "wheelchair friendly": "Parking & facilities",
   "power backup": "Parking & facilities",
   "private entrance": "Parking & facilities",
   elevator: "Parking & facilities",
+  lift: "Parking & facilities",
+  "launderette nearby": "Parking & facilities",
 
   // Home safety
   "smoke alarm": "Home safety",
@@ -177,6 +209,7 @@ const EXACT: Record<string, AmenityCategory> = {
   "carbon monoxide alarm": "Home safety",
   "co alarm": "Home safety",
   "security cameras": "Home safety",
+  cctv: "Home safety",
   "24/7 security": "Home safety",
   "safe box": "Home safety",
   safe: "Home safety",

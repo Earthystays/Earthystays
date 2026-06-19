@@ -43,6 +43,20 @@ import {
   Building2,
   AlertTriangle,
   Lock,
+  Snowflake,
+  Cigarette,
+  KeyRound,
+  Theater,
+  Volume2,
+  Tent,
+  Accessibility,
+  Flower2,
+  Salad,
+  ChevronsUpDown,
+  Trash2,
+  Filter,
+  Monitor,
+  Footprints,
   Check,
   type LucideIcon,
 } from "lucide-react";
@@ -211,6 +225,54 @@ const ICONS: Record<string, LucideIcon> = {
   "lake view": Eye,
   "city view": Building2,
   "forest view": Trees,
+
+  // additional kitchen
+  freezer: Snowflake,
+  cooker: CookingPot,
+  blender: Soup,
+  "water purifier": Filter,
+  "breakfast included": Salad,
+
+  // additional bedroom
+  workstation: Briefcase,
+  "extra mattress": BedDouble,
+
+  // additional services
+  "smoking allowed": Cigarette,
+  "self check-in": KeyRound,
+  "building staff": Bell,
+  "cook available": ChefHat,
+  "driver/staff accommodation": Bell,
+
+  // additional entertainment
+  "home theatre": Theater,
+  "home theater": Theater,
+  "music system": Volume2,
+  "music system/speaker": Volume2,
+  "indoor/outdoor games": Gamepad2,
+
+  // additional outdoor
+  lawn: Sprout,
+  "back garden": Trees,
+  gazebo: Tent,
+  "balcony/terrace": Building2,
+
+  // additional safety / parking
+  cctv: Camera,
+  "indoor parking": Car,
+  lift: ChevronsUpDown,
+  "wheelchair friendly": Accessibility,
+  "launderette nearby": WashingMachine,
+
+  // wellness
+  "steam/sauna": Flame,
+  "electric blanket": Thermometer,
+
+  // misc
+  "bowling alley": Trash2,
+  "movie screen": Monitor,
+  "walking trails": Footprints,
+  "flower garden": Flower2,
 };
 
 import { getCustomIconMap } from "./data/amenities-store";

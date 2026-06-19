@@ -1,15 +1,14 @@
-import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
 import { SectionHeader } from "@/components/section-header";
 import { CallbackModal } from "@/components/callback-modal";
+import { ExperiencesGrid } from "@/components/experiences-grid";
 import type { Experience } from "@/lib/types";
 
 /**
  * Curated Experiences — premium concierge section. Renders as a 4-column
  * grid on desktop, 2-col tablet, 1-col with horizontal swipe on mobile.
- * Each card links to /experiences (the landing) for now; the concierge
- * banner below opens the existing Callback modal.
+ * Clicking a card opens an inquiry modal (name + phone + experience
+ * dropdown) instead of navigating away.
  */
 export function CuratedExperiences({
   experiences,
@@ -28,38 +27,7 @@ export function CuratedExperiences({
         ctaHref="/experiences"
       />
 
-      <div className="mt-10 -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4">
-        {experiences.slice(0, 8).map((e) => (
-          <Link
-            key={e.slug}
-            href={`/experiences/${e.slug}`}
-            className="group relative aspect-[4/5] w-[68vw] shrink-0 snap-start overflow-hidden rounded-2xl bg-muted shadow-sm transition-all duration-500 hover:shadow-xl sm:w-auto sm:shrink"
-          >
-            <Image
-              src={e.image.src}
-              alt={e.image.alt}
-              fill
-              sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 68vw"
-              className="object-cover transition-transform duration-700 group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent" />
-            <span className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-foreground shadow-sm transition-transform duration-300 group-hover:scale-110">
-              <ArrowUpRight className="h-4 w-4" />
-            </span>
-            <div className="absolute inset-x-0 bottom-0 p-5 text-white sm:p-6">
-              <h3 className="font-display text-xl font-semibold leading-tight sm:text-2xl">
-                {e.name}
-              </h3>
-              <p className="mt-1 line-clamp-2 text-xs text-white/85 sm:text-sm">
-                {e.blurb}
-              </p>
-              <span className="mt-3 inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-[0.18em] text-white/90 transition-[gap] duration-300 group-hover:gap-2">
-                Explore <span aria-hidden>→</span>
-              </span>
-            </div>
-          </Link>
-        ))}
-      </div>
+      <ExperiencesGrid experiences={experiences} variant="section" limit={8} />
 
       {/* Concierge banner */}
       <div className="mt-12 overflow-hidden rounded-3xl bg-foreground text-background">

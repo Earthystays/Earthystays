@@ -34,7 +34,7 @@ export function ExperiencesGrid({
 
   const gridClasses =
     variant === "section"
-      ? "mt-10 -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4"
+      ? "mt-10 -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-5"
       : "mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
 
   return (
@@ -45,7 +45,11 @@ export function ExperiencesGrid({
             key={e.slug}
             type="button"
             onClick={() => pick(e.slug)}
-            className="group relative aspect-[4/5] w-[68vw] shrink-0 cursor-pointer snap-start overflow-hidden rounded-2xl bg-muted text-left shadow-sm transition-all duration-500 hover:shadow-xl sm:w-auto sm:shrink"
+            className={`group relative aspect-[4/5] shrink-0 cursor-pointer snap-start overflow-hidden rounded-2xl bg-muted text-left shadow-sm transition-all duration-500 hover:shadow-xl ${
+              variant === "section"
+                ? "w-[68vw] sm:w-[42vw] lg:w-[calc((100%-3.75rem)/4)]"
+                : "w-[68vw] sm:w-auto sm:shrink"
+            }`}
             aria-label={`Inquire about ${e.name}`}
           >
             <Image

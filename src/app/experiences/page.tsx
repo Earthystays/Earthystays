@@ -40,9 +40,10 @@ export default function ExperiencesPage() {
 
       <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {experiences.map((e) => (
-          <article
+          <Link
             key={e.slug}
-            className="group relative aspect-[4/5] overflow-hidden rounded-2xl bg-muted"
+            href={`/experiences/${e.slug}`}
+            className="group relative aspect-[4/5] overflow-hidden rounded-2xl bg-muted shadow-sm transition-all duration-500 hover:shadow-xl"
           >
             <Image
               src={e.image.src}
@@ -52,7 +53,7 @@ export default function ExperiencesPage() {
               className="object-cover transition-transform duration-700 group-hover:scale-105"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent" />
-            <span className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-foreground shadow-sm">
+            <span className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-foreground shadow-sm transition-transform group-hover:scale-110">
               <ArrowUpRight className="h-4 w-4" />
             </span>
             <div className="absolute inset-x-0 bottom-0 p-5 text-white sm:p-6">
@@ -63,7 +64,7 @@ export default function ExperiencesPage() {
                 {e.blurb}
               </p>
             </div>
-          </article>
+          </Link>
         ))}
       </div>
 

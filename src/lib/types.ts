@@ -107,6 +107,22 @@ export type Collection = {
 export type Experience = {
   slug: string;
   name: string;
+  /** Short one-liner for cards + homepage section. */
   blurb: string;
+  /** Cover photo used on cards and as the detail-page hero. */
   image: Image;
+  /** Optional rich content for the /experiences/[slug] detail page.
+   *  When omitted the detail page falls back to sensible defaults
+   *  derived from name + blurb. */
+  hero?: {
+    /** Hero title — defaults to `Luxury {name} in Goa` when omitted. */
+    title?: string;
+    /** Hero subtitle / lede — defaults to `blurb` when omitted. */
+    description?: string;
+  };
+  overview?: string;
+  perfectFor?: string[];
+  whatsIncluded?: Array<{ title: string; description: string; icon?: string }>;
+  gallery?: Image[];
+  faqs?: Array<{ question: string; answer: string }>;
 };

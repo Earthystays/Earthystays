@@ -6,7 +6,7 @@ export type InquiryStatus = "new" | "open" | "shared" | "closed";
 
 export type StoredInquiry = {
   id: string;
-  kind?: "guest" | "partner" | "callback"; // "guest" default booking inquiry; "partner" villa owner pitch; "callback" quick "call me back" request
+  kind?: "guest" | "partner" | "callback" | "experience"; // "guest" default booking inquiry; "partner" villa owner pitch; "callback" quick "call me back"; "experience" concierge experience lead
   status?: InquiryStatus; // defaults to "new" when missing
   name: string;
   phone: string;
@@ -29,7 +29,7 @@ export type StoredInquiry = {
 };
 
 const InquirySchema = z.object({
-  kind: z.enum(["guest", "partner", "callback"]).optional(),
+  kind: z.enum(["guest", "partner", "callback", "experience"]).optional(),
   name: z.string().min(2),
   phone: z.string().min(7),
   email: z.string().email().optional().or(z.literal("")),

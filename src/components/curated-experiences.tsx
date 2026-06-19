@@ -21,7 +21,7 @@ export function CuratedExperiences({
   return (
     <section className="container-page py-20">
       <SectionHeader
-        eyebrow="For your stay"
+        eyebrow="More Than Just A Stay"
         title="Curated Experiences"
         description="Elevate your stay with handpicked experiences designed to make your getaway unforgettable."
         ctaLabel="View all"
@@ -32,8 +32,8 @@ export function CuratedExperiences({
         {experiences.slice(0, 8).map((e) => (
           <Link
             key={e.slug}
-            href="/experiences"
-            className="group relative aspect-[4/5] w-[68vw] shrink-0 snap-start overflow-hidden rounded-2xl bg-muted sm:w-auto sm:shrink"
+            href={`/experiences/${e.slug}`}
+            className="group relative aspect-[4/5] w-[68vw] shrink-0 snap-start overflow-hidden rounded-2xl bg-muted shadow-sm transition-all duration-500 hover:shadow-xl sm:w-auto sm:shrink"
           >
             <Image
               src={e.image.src}

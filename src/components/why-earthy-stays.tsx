@@ -103,25 +103,29 @@ export function WhyEarthyStays({ reviews }: { reviews: StoredReview[] }) {
           ))}
         </ul>
 
-        {/* TRUST BAR */}
-        <div className="mt-12 rounded-2xl bg-foreground px-6 py-8 text-background sm:px-10 sm:py-9">
+        {/* TRUST BAR — single-line auto-scrolling marquee. Items are
+            duplicated so the translateX(-50%) loop is seamless. Pauses
+            on hover. */}
+        <div className="mt-12 overflow-hidden rounded-2xl bg-foreground py-5 text-background sm:py-6">
           <p className="text-center text-[11px] uppercase tracking-[0.22em] text-terracotta/90">
             Trusted by Travellers Across India
           </p>
-          <ul className="mt-6 grid gap-x-8 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
-            {TRUST_BAR_ITEMS.map((item) => (
-              <li
-                key={item}
-                className="flex items-center gap-2.5 text-sm text-background/90"
-              >
-                <Check
-                  className="h-4 w-4 shrink-0 text-terracotta"
-                  strokeWidth={2.5}
-                />
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
+          <div className="mt-4 overflow-hidden">
+            <div className="animate-marquee flex w-max gap-x-12 whitespace-nowrap">
+              {[...TRUST_BAR_ITEMS, ...TRUST_BAR_ITEMS].map((item, i) => (
+                <span
+                  key={`${item}-${i}`}
+                  className="flex shrink-0 items-center gap-2.5 text-sm text-background/90"
+                >
+                  <Check
+                    className="h-4 w-4 shrink-0 text-terracotta"
+                    strokeWidth={2.5}
+                  />
+                  {item}
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* TESTIMONIALS */}

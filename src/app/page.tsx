@@ -23,6 +23,7 @@ import { OrganizationJsonLd } from "@/components/jsonld-organization";
 import { LocationChipsFilter } from "@/components/location-chips-filter";
 import { getBanners } from "@/lib/data/banners";
 import { getCurrentUser } from "@/lib/session";
+import { AvailableOnStrip } from "@/components/available-on-strip";
 import { WhyEarthyStays } from "@/components/why-earthy-stays";
 import { BrandVideoSection } from "@/components/brand-video-section";
 import { FeaturedDestinationsStrip } from "@/components/featured-destinations-strip";
@@ -195,6 +196,9 @@ export default async function HomePage() {
 
       {/* Recently visited (client-side, only renders if visitor has history) */}
       <RecentlyVisited candidates={recentCandidates} />
+
+      {/* Trust strip — "Also available on" OTA logos */}
+      <AvailableOnStrip />
 
       {/* Why Earthy Stays — trust cards, testimonials, founder story, CTA */}
       <WhyEarthyStays reviews={getReviews()} />

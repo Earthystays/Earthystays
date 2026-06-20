@@ -1,65 +1,39 @@
-type Partner =
-  | { name: string; kind: "svg"; slug: string; color: string }
-  | { name: string; kind: "text"; color: string };
+import Image from "next/image";
 
-/** Simple Icons only carries Airbnb + Booking.com from this list; Agoda /
- *  MakeMyTrip / Goibibo aren't in the registry. Mix-render: SVG mark for
- *  the two that have one, brand-coloured wordmark for the rest. */
-const PARTNERS: Partner[] = [
-  { name: "Airbnb", kind: "svg", slug: "airbnb", color: "FF5A5F" },
-  { name: "Booking.com", kind: "svg", slug: "bookingdotcom", color: "003580" },
-  { name: "Agoda", kind: "text", color: "#5D2EB1" },
-  { name: "MakeMyTrip", kind: "text", color: "#EB2026" },
-  { name: "Goibibo", kind: "text", color: "#E73E7B" },
+/** Static "Find us on all your favorite platforms" strip. Drop more
+ *  PNG/SVG files into public/brand/partners/ and add an entry below to
+ *  surface another OTA. Files render at a max height of ~48px, full
+ *  colour, with subtle hover. */
+const PARTNERS: Array<{ name: string; file: string }> = [
+  { name: "Airbnb", file: "/brand/partners/airbnb.png" },
+  { name: "MakeMyTrip", file: "/brand/partners/makemytrip.png" },
+  { name: "Booking.com", file: "/brand/partners/booking.png" },
+  { name: "Agoda", file: "/brand/partners/agoda.png" },
 ];
 
-/**
- * "Also available on" trust strip — auto-scrolling marquee. Logos are
- * shown in their brand colour at ~80% opacity so the strip reads as a
- * trust signal rather than an ad. Hover (anywhere on the strip) pauses
- * the loop via .animate-marquee.
- */
 export function AvailableOnStrip() {
-  const items = [...PARTNERS, ...PARTNERS];
+  if (PARTNERS.length === 0) return null;
 
   return (
-    <section className="border-y border-border/40 bg-secondary/30 py-10">
+    <section className="border-y border-border/40 bg-background py-12 sm:py-14">
       <div className="container-page">
-        <p className="text-center text-xs uppercase tracking-[0.22em] text-muted-foreground">
-          Also available on
-        </p>
-        <div className="mt-6 overflow-hidden">
-          <div className="animate-marquee flex w-max items-center gap-x-14 sm:gap-x-20">
-            {items.map((p, i) => (
-              <PartnerLogo key={`${p.name}-${i}`} partner={p} />
-            ))}
-          </div>
-        </div>
+        <h2 className="text-center font-display text-xl text-foreground sm:text-2xl">
+          Find us on all your favorite platforms!
+        </h2>
+        <ul className="mt-8 flex flex-wrap items-center justify-center gap-x-10 gap-y-6 sm:gap-x-14 sm:gap-y-8">
+          {PARTNERS.map((p) => (
+            <li key={p.name} className="shrink-0">
+              <Image
+                src={p.file}
+                alt={p.name}
+                width={160}
+                height={48}
+                className="h-9 w-auto object-contain opacity-90 transition-opacity hover:opacity-100 sm:h-10"
+              />
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
-  );
-}
-
-function PartnerLogo({ partner }: { partner: Partner }) {
-  if (partner.kind === "svg") {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element -- single-color SVG from Simple Icons CDN, not worth optimising via Next/Image
-      <img
-        src={`https://cdn.simpleicons.org/${partner.slug}/${partner.color}`}
-        alt={partner.name}
-        width={96}
-        height={32}
-        className="h-7 w-auto shrink-0 opacity-80 transition-opacity hover:opacity-100 sm:h-8"
-        loading="lazy"
-      />
-    );
-  }
-  return (
-    <span
-      className="shrink-0 whitespace-nowrap font-display text-xl font-semibold tracking-tight opacity-80 transition-opacity hover:opacity-100 sm:text-2xl"
-      style={{ color: partner.color }}
-    >
-      {partner.name}
-    </span>
   );
 }

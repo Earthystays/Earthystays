@@ -82,20 +82,21 @@ export function WhyEarthyStays({ reviews }: { reviews: StoredReview[] }) {
           </p>
         </header>
 
-        {/* 6 TRUST CARDS — 2-col compact grid on mobile, 3-col on desktop. */}
-        <ul className="mt-12 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3">
+        {/* 6 TRUST CARDS — horizontal snap-slider on mobile, 2-col grid on
+            tablet, 3-col grid on desktop. */}
+        <ul className="mt-12 -mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
           {TRUST_CARDS.map(({ Icon, title, description }) => (
             <li
               key={title}
-              className="group rounded-2xl border border-border/60 bg-card p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-terracotta/40 hover:shadow-md sm:p-6"
+              className="group w-[72vw] shrink-0 snap-start rounded-2xl border border-border/60 bg-card p-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-terracotta/40 hover:shadow-md sm:w-auto sm:shrink sm:p-6"
             >
-              <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-terracotta/10 text-terracotta sm:h-12 sm:w-12">
-                <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-terracotta/10 text-terracotta sm:h-12 sm:w-12">
+                <Icon className="h-5 w-5" />
               </span>
-              <h3 className="mt-3 font-display text-base font-semibold text-foreground sm:mt-5 sm:text-xl">
+              <h3 className="mt-4 font-display text-lg font-semibold text-foreground sm:mt-5 sm:text-xl">
                 {title}
               </h3>
-              <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground sm:mt-2 sm:text-sm">
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 {description}
               </p>
             </li>

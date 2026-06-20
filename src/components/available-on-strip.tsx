@@ -6,9 +6,10 @@ import Image from "next/image";
  *  colour, with subtle hover. */
 const PARTNERS: Array<{ name: string; file: string }> = [
   { name: "Airbnb", file: "/brand/partners/airbnb.png" },
-  { name: "MakeMyTrip", file: "/brand/partners/makemytrip.png" },
-  { name: "Booking.com", file: "/brand/partners/booking.png" },
-  { name: "Agoda", file: "/brand/partners/agoda.png" },
+  { name: "MakeMyTrip", file: "/brand/partners/Makemytrip.png" },
+  { name: "Booking.com", file: "/brand/partners/Booking.png" },
+  { name: "Agoda", file: "/brand/partners/Agoda.png" },
+  { name: "Goibibo", file: "/brand/partners/goibibo.png" },
 ];
 
 export function AvailableOnStrip() {

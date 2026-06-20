@@ -1,5 +1,6 @@
 import type { Villa } from "@/lib/types";
 import { getStateBySlug } from "@/lib/data/locations";
+import { getAverageRating, getReviewsByVilla } from "@/lib/data/reviews";
 
 /**
  * LodgingBusiness JSON-LD for villa detail pages.
@@ -20,6 +21,14 @@ export function VillaJsonLd({ villa }: { villa: Villa }) {
     .map((img) =>
       img.src.startsWith("http") ? img.src : `https://earthystays.com${img.src}`,
     );
+
+  // Prefer real reviews from /admin/reviews; fall back to the villa's
+  // legacy rating/count fields when no linked reviews exist yet.
+  const linkedReviews = getReviewsByVilla(villa.slug);
+  const linkedAvg = getAverageRating(linkedReviews);
+  const ratingValue = linkedReviews.length > 0 ? linkedAvg : villa.rating;
+  const reviewCount =
+    linkedReviews.length > 0 ? linkedReviews.length : villa.reviewCount;
 
   const data = {
     "@context": "https://schema.org",
@@ -48,14 +57,29 @@ export function VillaJsonLd({ villa }: { villa: Villa }) {
       ? `₹${villa.pricePerNight.toLocaleString("en-IN")}`
       : undefined,
     aggregateRating:
-      villa.rating > 0 && villa.reviewCount > 0
+      ratingValue > 0 && reviewCount > 0
         ? {
             "@type": "AggregateRating",
-            ratingValue: villa.rating.toFixed(1),
-            reviewCount: villa.reviewCount,
+            ratingValue: ratingValue.toFixed(1),
+            reviewCount,
             bestRating: 5,
             worstRating: 1,
           }
+        : undefined,
+    review:
+      linkedReviews.length > 0
+        ? linkedReviews.slice(0, 10).map((r) => ({
+            "@type": "Review",
+            reviewRating: {
+              "@type": "Rating",
+              ratingValue: r.rating,
+              bestRating: 5,
+              worstRating: 1,
+            },
+            author: { "@type": "Person", name: r.guestName },
+            reviewBody: r.quote,
+            ...(r.title ? { name: r.title } : {}),
+          }))
         : undefined,
     numberOfRooms: villa.bedrooms,
     petsAllowed: villa.amenities.some((a) => /pet/i.test(a)),

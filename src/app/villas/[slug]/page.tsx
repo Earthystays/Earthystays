@@ -12,6 +12,8 @@ import { ExpandableText } from "@/components/expandable-text";
 import { SpacesGrid } from "@/components/spaces-grid";
 import { ScrollSlider } from "@/components/scroll-slider";
 import { ExternalReviews } from "@/components/external-reviews";
+import { VillaReviews } from "@/components/villa-reviews";
+import { getReviewsByVilla } from "@/lib/data/reviews";
 import { AmenitiesViewer } from "@/components/amenities-viewer";
 import { RecentlyVisitedTracker } from "@/components/recently-visited-tracker";
 import { VillaViewTracker } from "@/components/villa-view-tracker";
@@ -52,6 +54,7 @@ export default async function VillaDetailPage({ params }: PageProps) {
   const similar = getVillas()
     .filter((v) => v.slug !== villa.slug && v.destinationSlug === villa.destinationSlug)
     .slice(0, 3);
+  const villaReviews = getReviewsByVilla(villa.slug);
   const user = await getCurrentUser();
   const inWishlist = user?.wishlist.includes(villa.slug) ?? false;
   const wishlistSet = new Set(user?.wishlist ?? []);
@@ -321,32 +324,38 @@ export default async function VillaDetailPage({ params }: PageProps) {
 
           {/* REVIEWS */}
           <Section id="reviews" title="Reviews">
-            <div className="rounded-2xl border border-border/60 bg-card p-6">
-              <div className="flex items-center gap-4">
-                <div>
-                  <p className="font-numeric text-5xl font-semibold tracking-tight tabular-nums text-foreground">{villa.rating.toFixed(2)}</p>
-                  <div className="mt-1 flex items-center gap-0.5 text-terracotta">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`h-4 w-4 ${
-                          i < Math.round(villa.rating) ? "fill-terracotta" : "fill-none"
-                        }`}
-                      />
-                    ))}
+            {villaReviews.length > 0 ? (
+              <VillaReviews reviews={villaReviews} />
+            ) : (
+              <div className="rounded-2xl border border-border/60 bg-card p-6">
+                <div className="flex items-center gap-4">
+                  <div>
+                    <p className="font-numeric text-5xl font-semibold tracking-tight tabular-nums text-foreground">
+                      {villa.rating.toFixed(2)}
+                    </p>
+                    <div className="mt-1 flex items-center gap-0.5 text-terracotta">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`h-4 w-4 ${
+                            i < Math.round(villa.rating) ? "fill-terracotta" : "fill-none"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="border-l border-border pl-4">
+                    <p className="text-sm text-muted-foreground">
+                      Loved by {villa.reviewCount} past guests
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Detailed guest reviews coming soon. Our concierge is happy
+                      to share recent guest notes — just ask.
+                    </p>
                   </div>
                 </div>
-                <div className="border-l border-border pl-4">
-                  <p className="text-sm text-muted-foreground">
-                    Loved by {villa.reviewCount} past guests
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Detailed guest reviews coming soon. Our concierge is happy to share recent guest
-                    notes — just ask.
-                  </p>
-                </div>
               </div>
-            </div>
+            )}
 
             {villa.externalListings && villa.externalListings.length > 0 && (
               <div className="mt-6">

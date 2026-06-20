@@ -18,7 +18,7 @@ import {
   RecentlyVisited,
   type RecentCandidate,
 } from "@/components/recently-visited";
-import { getReviews } from "@/lib/data/reviews";
+import { getFeaturedReviews } from "@/lib/data/reviews";
 import { OrganizationJsonLd } from "@/components/jsonld-organization";
 import { LocationChipsFilter } from "@/components/location-chips-filter";
 import { getBanners } from "@/lib/data/banners";
@@ -201,7 +201,7 @@ export default async function HomePage() {
       <AvailableOnStrip />
 
       {/* Why Earthy Stays — trust cards, testimonials, founder story, CTA */}
-      <WhyEarthyStays reviews={getReviews()} />
+      <WhyEarthyStays reviews={getFeaturedReviews(6)} />
 
       {/* Brand video — only renders when admin has set a URL in
           data/brand-video.json */}

@@ -10,6 +10,8 @@ import {
   Check,
   Star,
   MessageCircle,
+  MapPin,
+  User,
 } from "lucide-react";
 import { formatStayMonth, type StoredReview } from "@/lib/data/reviews";
 
@@ -143,40 +145,74 @@ export function WhyEarthyStays({ reviews }: { reviews: StoredReview[] }) {
                   key={r.id}
                   className="flex w-[82vw] shrink-0 snap-start flex-col gap-4 rounded-2xl border border-border/60 bg-card p-6 sm:w-auto sm:shrink"
                 >
-                  <div
-                    className="flex gap-0.5 text-terracotta"
-                    aria-label={`${r.rating} out of 5`}
-                  >
-                    {Array.from({ length: 5 }).map((_, j) => (
-                      <Star
-                        key={j}
-                        className={`h-4 w-4 ${
-                          j < r.rating
-                            ? "fill-terracotta"
-                            : "fill-none opacity-30"
-                        }`}
+                  <header className="flex items-center gap-3">
+                    {r.guestPhoto && r.showPhoto !== false ? (
+                      <Image
+                        src={r.guestPhoto}
+                        alt={r.guestName}
+                        width={48}
+                        height={48}
+                        className="h-12 w-12 shrink-0 rounded-full object-cover"
                       />
-                    ))}
-                  </div>
-                  <blockquote className="font-display text-base italic leading-snug text-foreground">
+                    ) : (
+                      <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-terracotta/10 text-terracotta">
+                        <User className="h-5 w-5" />
+                      </span>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-foreground">
+                        {r.guestName}
+                      </p>
+                      {r.guestLocation && (
+                        <p className="truncate text-xs text-muted-foreground">
+                          {r.guestLocation}
+                        </p>
+                      )}
+                    </div>
+                    <div
+                      className="flex shrink-0 gap-0.5 text-terracotta"
+                      aria-label={`${r.rating} out of 5`}
+                    >
+                      {Array.from({ length: 5 }).map((_, j) => (
+                        <Star
+                          key={j}
+                          className={`h-3.5 w-3.5 ${
+                            j < r.rating
+                              ? "fill-terracotta"
+                              : "fill-none opacity-30"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </header>
+
+                  {r.title && (
+                    <p className="font-display text-base font-semibold text-foreground">
+                      {r.title}
+                    </p>
+                  )}
+                  <blockquote className="font-display text-base italic leading-snug text-foreground/85">
                     &ldquo;{r.quote}&rdquo;
                   </blockquote>
-                  <div className="mt-auto border-t border-border/60 pt-4 text-xs leading-relaxed">
-                    <p className="font-medium text-foreground">{r.guestName}</p>
-                    {r.villaName && (
-                      <p className="mt-0.5 text-muted-foreground">
-                        Stayed at{" "}
-                        <span className="text-foreground">{r.villaName}</span>
-                      </p>
-                    )}
-                    {(r.location || r.stayMonth) && (
-                      <p className="mt-0.5 text-muted-foreground">
-                        {r.location}
-                        {r.location && r.stayMonth ? " · " : ""}
-                        {formatStayMonth(r.stayMonth)}
-                      </p>
-                    )}
-                  </div>
+
+                  {(r.villaName || r.stayMonth || r.location) && (
+                    <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border/60 pt-4 text-[11px] text-muted-foreground">
+                      {r.villaName && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-foreground">
+                          {r.villaName}
+                        </span>
+                      )}
+                      {r.location && (
+                        <span className="inline-flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          {r.location}
+                        </span>
+                      )}
+                      {r.stayMonth && (
+                        <span>· Stayed {formatStayMonth(r.stayMonth)}</span>
+                      )}
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>

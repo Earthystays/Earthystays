@@ -82,20 +82,20 @@ export function WhyEarthyStays({ reviews }: { reviews: StoredReview[] }) {
           </p>
         </header>
 
-        {/* 6 TRUST CARDS */}
-        <ul className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {/* 6 TRUST CARDS — 2-col compact grid on mobile, 3-col on desktop. */}
+        <ul className="mt-12 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3">
           {TRUST_CARDS.map(({ Icon, title, description }) => (
             <li
               key={title}
-              className="group rounded-2xl border border-border/60 bg-card p-6 transition-all duration-300 hover:-translate-y-0.5 hover:border-terracotta/40 hover:shadow-md"
+              className="group rounded-2xl border border-border/60 bg-card p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-terracotta/40 hover:shadow-md sm:p-6"
             >
-              <span className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-terracotta/10 text-terracotta">
-                <Icon className="h-5 w-5" />
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-terracotta/10 text-terracotta sm:h-12 sm:w-12">
+                <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
               </span>
-              <h3 className="mt-5 font-display text-xl font-semibold text-foreground">
+              <h3 className="mt-3 font-display text-base font-semibold text-foreground sm:mt-5 sm:text-xl">
                 {title}
               </h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground sm:mt-2 sm:text-sm">
                 {description}
               </p>
             </li>
@@ -132,11 +132,11 @@ export function WhyEarthyStays({ reviews }: { reviews: StoredReview[] }) {
             <h3 className="mt-3 font-display text-3xl sm:text-4xl">
               What our guests say
             </h3>
-            <ul className="mt-10 grid gap-5 text-left sm:grid-cols-2 lg:grid-cols-3">
+            <ul className="mt-10 -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-3 text-left [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
               {featured.map((r) => (
                 <li
                   key={r.id}
-                  className="flex flex-col gap-4 rounded-2xl border border-border/60 bg-card p-6"
+                  className="flex w-[82vw] shrink-0 snap-start flex-col gap-4 rounded-2xl border border-border/60 bg-card p-6 sm:w-auto sm:shrink"
                 >
                   <div
                     className="flex gap-0.5 text-terracotta"
@@ -179,8 +179,8 @@ export function WhyEarthyStays({ reviews }: { reviews: StoredReview[] }) {
         )}
 
         {/* FOUNDER STORY */}
-        <div className="mt-20 grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
-          <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-muted sm:aspect-[5/6] lg:aspect-[4/5]">
+        <div className="mt-20 grid items-center gap-8 lg:grid-cols-2 lg:gap-16">
+          <div className="relative aspect-[16/10] overflow-hidden rounded-2xl bg-muted sm:aspect-[4/3] lg:aspect-[4/5]">
             <Image
               src="/brand/why-earthy-stays.jpg"
               alt="Earthy Stays villa at golden hour"

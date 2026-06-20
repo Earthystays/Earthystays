@@ -18,13 +18,15 @@ import {
   RecentlyVisited,
   type RecentCandidate,
 } from "@/components/recently-visited";
-import { ReviewsSlider } from "@/components/reviews-slider";
 import { getReviews } from "@/lib/data/reviews";
-import { CallbackModal } from "@/components/callback-modal";
 import { OrganizationJsonLd } from "@/components/jsonld-organization";
 import { LocationChipsFilter } from "@/components/location-chips-filter";
 import { getBanners } from "@/lib/data/banners";
 import { getCurrentUser } from "@/lib/session";
+import { WhyEarthyStays } from "@/components/why-earthy-stays";
+import { BrandVideoSection } from "@/components/brand-video-section";
+import { FeaturedDestinationsStrip } from "@/components/featured-destinations-strip";
+import { getBrandVideo } from "@/lib/data/brand-video";
 
 export default async function HomePage() {
   const featured = getFeaturedVillas();
@@ -194,94 +196,22 @@ export default async function HomePage() {
       {/* Recently visited (client-side, only renders if visitor has history) */}
       <RecentlyVisited candidates={recentCandidates} />
 
-      {/* Why us */}
-      <section className="bg-primary/5 py-20">
-        <div className="container-page grid gap-10 lg:grid-cols-2 lg:items-center">
-          <div className="relative aspect-[4/3] overflow-hidden rounded-2xl">
-            <Image
-              src="/brand/why-earthy-stays.jpg"
-              alt="Earthy Stays villa with pool at golden hour"
-              fill
-              sizes="(min-width: 1024px) 50vw, 100vw"
-              className="object-cover"
-            />
-          </div>
-          <div>
-            <p className="text-xs uppercase tracking-[0.22em] text-terracotta">
-              Why Earthy Stays
-            </p>
-            <h2 className="mt-3 font-display text-4xl sm:text-5xl">
-              Stay Beyond the Ordinary
-            </h2>
-            <p className="mt-5 max-w-xl text-muted-foreground">
-              At Earthy Stays, we handpick unique villas, apartments, and boutique
-              stays that combine comfort, local character, and exceptional
-              hospitality. Whether you&apos;re visiting Goa for a beach holiday, a
-              workcation, or a long-term stay, we create experiences that feel
-              authentic, seamless, and memorable.
-            </p>
-            <dl className="mt-8 grid grid-cols-3 gap-6">
-              <div>
-                <dt className="font-numeric text-3xl font-semibold tracking-tight tabular-nums text-terracotta">
-                  40+
-                </dt>
-                <dd className="mt-1 text-xs text-muted-foreground">
-                  Properties Managed
-                </dd>
-              </div>
-              <div>
-                <dt className="font-numeric text-3xl font-semibold tracking-tight tabular-nums text-terracotta">
-                  2000+
-                </dt>
-                <dd className="mt-1 text-xs text-muted-foreground">
-                  Happy Guests
-                </dd>
-              </div>
-              <div>
-                <dt className="font-numeric text-3xl font-semibold tracking-tight tabular-nums text-terracotta">
-                  4.8★
-                </dt>
-                <dd className="mt-1 text-xs text-muted-foreground">
-                  Guest Rating
-                </dd>
-              </div>
-            </dl>
-          </div>
-        </div>
-      </section>
+      {/* Why Earthy Stays — trust cards, testimonials, founder story, CTA */}
+      <WhyEarthyStays reviews={getReviews()} />
+
+      {/* Brand video — only renders when admin has set a URL in
+          data/brand-video.json */}
+      {(() => {
+        const bv = getBrandVideo();
+        if (!bv) return null;
+        return <BrandVideoSection video={bv.video} title={bv.title} />;
+      })()}
 
       {/* Curated Experiences — premium concierge offerings */}
       <CuratedExperiences experiences={getAllExperiences()} />
 
-      {/* Testimonials — managed in /admin/reviews, displayed as a slider */}
-      <section className="container-page py-20">
-        <SectionHeader
-          eyebrow="In their words"
-          title="Loved by quiet weekenders"
-          align="center"
-        />
-        <ReviewsSlider reviews={getReviews()} />
-      </section>
-
-      {/* CTA */}
-      <section className="container-page pb-24">
-        <div className="rounded-3xl bg-foreground px-8 py-16 text-center text-background sm:px-16">
-          <h2 className="font-display text-4xl sm:text-5xl">
-            Not sure where to start?
-          </h2>
-          <p className="mx-auto mt-4 max-w-xl text-background/80">
-            Tell us your dates, your group, and the kind of weekend you&apos;re chasing.
-            Our concierge will build you a shortlist within the day.
-          </p>
-          <div className="mt-8">
-            <CallbackModal
-              triggerLabel="Talk to a planner →"
-              showIcon={false}
-              triggerClassName="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer"
-            />
-          </div>
-        </div>
-      </section>
+      {/* Featured destinations strip — slim, just above the footer */}
+      <FeaturedDestinationsStrip destinations={getAllDestinations()} />
     </div>
   );
 }

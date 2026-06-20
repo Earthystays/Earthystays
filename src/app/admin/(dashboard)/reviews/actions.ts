@@ -18,6 +18,7 @@ export async function saveReview(
   const guestName = String(formData.get("guestName") ?? "").trim();
   const villaName = String(formData.get("villaName") ?? "").trim();
   const location = String(formData.get("location") ?? "").trim();
+  const stayMonth = String(formData.get("stayMonth") ?? "").trim();
   const quote = String(formData.get("quote") ?? "").trim();
   const ratingRaw = String(formData.get("rating") ?? "5");
   const rating = Math.min(5, Math.max(1, Number(ratingRaw)));
@@ -35,6 +36,7 @@ export async function saveReview(
         guestName,
         villaName: villaName || undefined,
         location: location || undefined,
+        stayMonth: stayMonth || undefined,
         quote,
         rating,
       };

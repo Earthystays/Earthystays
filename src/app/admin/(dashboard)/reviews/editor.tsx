@@ -183,6 +183,18 @@ function ReviewForm({
 
         <div className="grid gap-1.5">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+            Stay month (optional)
+          </Label>
+          <Input
+            name="stayMonth"
+            type="month"
+            defaultValue={initial?.stayMonth ?? ""}
+            className="sm:max-w-[200px]"
+          />
+        </div>
+
+        <div className="grid gap-1.5">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
             Rating
           </Label>
           <div className="flex items-center gap-1">

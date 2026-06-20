@@ -2,13 +2,27 @@ import { readJsonSync } from "@/lib/storage";
 
 export type StoredReview = {
   id: string;
-  guestName: string; // "Aanya & Rohit" or "The Mehta family"
-  villaName?: string; // optional context — "Casa Azul"
-  location?: string; // optional context — "Goa" / "Lonavala"
+  guestName: string;
+  villaName?: string;
+  location?: string;
+  /** Approximate stay date as "YYYY-MM" — rendered as "May 2026" on cards. */
+  stayMonth?: string;
   quote: string;
   rating: number; // 1–5
   createdAt: string;
 };
+
+export function formatStayMonth(input?: string): string {
+  if (!input) return "";
+  const [y, m] = input.split("-");
+  const year = Number(y);
+  const month = Number(m);
+  if (!year || !month || month < 1 || month > 12) return "";
+  const monthName = new Date(year, month - 1, 1).toLocaleString(undefined, {
+    month: "long",
+  });
+  return `${monthName} ${year}`;
+}
 
 const FILE = "reviews.json";
 

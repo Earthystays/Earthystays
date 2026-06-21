@@ -75,8 +75,8 @@ export default async function HomePage() {
       {/* Hero slider */}
       <HeroSlider slides={slides} />
 
-      {/* Search bar, overlapping the bottom of the hero */}
-      <div className="relative z-10 -mt-14">
+      {/* Search bar, just below the hero with a small breathing gap */}
+      <div className="relative z-10 mt-6 sm:mt-8">
         <SearchBar
           destinations={getAllDestinations()}
           villas={allVillas.map((v) => ({

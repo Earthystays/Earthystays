@@ -203,6 +203,9 @@ export default async function HomePage() {
         </ScrollSlider>
       </section>
 
+      {/* Curated Experiences — premium concierge offerings */}
+      <CuratedExperiences experiences={getAllExperiences()} />
+
       {/* Recently visited (client-side, only renders if visitor has history) */}
       <RecentlyVisited candidates={recentCandidates} />
 
@@ -219,9 +222,6 @@ export default async function HomePage() {
         if (!bv) return null;
         return <BrandVideoSection video={bv.video} title={bv.title} />;
       })()}
-
-      {/* Curated Experiences — premium concierge offerings */}
-      <CuratedExperiences experiences={getAllExperiences()} />
 
       {/* Featured destinations strip — slim, just above the footer */}
       <FeaturedDestinationsStrip destinations={getAllDestinations()} />

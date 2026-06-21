@@ -21,7 +21,10 @@ export type SearchVilla = {
   slug: string;
   name: string;
   city?: string;
+  /** Display name for the state, e.g. "Goa". */
   state?: string;
+  /** URL slug for the state — required to build /villas?state= links. */
+  stateSlug?: string;
 };
 
 type DestSuggestion = {
@@ -30,13 +33,29 @@ type DestSuggestion = {
   name: string;
   region: string;
 };
+type CitySuggestion = {
+  kind: "city";
+  citySlug: string;
+  cityName: string;
+  stateSlug: string;
+  stateName: string;
+  count: number;
+};
 type VillaSuggestion = {
   kind: "villa";
   slug: string;
   name: string;
   loc: string;
 };
-type Suggestion = DestSuggestion | VillaSuggestion;
+type Suggestion = DestSuggestion | CitySuggestion | VillaSuggestion;
+
+function slugifyCity(s: string): string {
+  return s
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
 
 function toISO(d: Date | undefined): string | undefined {
   if (!d) return undefined;
@@ -46,17 +65,32 @@ function toISO(d: Date | undefined): string | undefined {
   return `${y}-${m}-${day}`;
 }
 
+type PickedPlace =
+  | { kind: "destination"; slug: string; label: string }
+  | {
+      kind: "city";
+      stateSlug: string;
+      citySlug: string;
+      label: string;
+    }
+  | null;
+
 function buildParams({
-  destination,
+  place,
   range,
   guests,
 }: {
-  destination: string;
+  place: PickedPlace;
   range: DateRange | undefined;
   guests: Guests;
 }) {
   const params = new URLSearchParams();
-  if (destination) params.set("destination", destination);
+  if (place?.kind === "destination") {
+    params.set("destination", place.slug);
+  } else if (place?.kind === "city") {
+    params.set("state", place.stateSlug);
+    params.set("city", place.citySlug);
+  }
   const checkIn = toISO(range?.from);
   const checkOut = toISO(range?.to);
   if (checkIn) params.set("checkIn", checkIn);
@@ -78,14 +112,13 @@ export function SearchBar({
   villas?: SearchVilla[];
 }) {
   const router = useRouter();
-  const [destination, setDestination] = useState<string>("");
-  const [destinationLabel, setDestinationLabel] = useState<string>("");
+  const [place, setPlace] = useState<PickedPlace>(null);
   const [range, setRange] = useState<DateRange | undefined>(undefined);
   const [guests, setGuests] = useState<Guests>(DEFAULT_GUESTS);
   const [sheetOpen, setSheetOpen] = useState(false);
 
   function go(g: Guests = guests) {
-    const params = buildParams({ destination, range, guests: g });
+    const params = buildParams({ place, range, guests: g });
     setSheetOpen(false);
     router.push(`/villas${params.toString() ? `?${params.toString()}` : ""}`);
   }
@@ -96,8 +129,11 @@ export function SearchBar({
   }
 
   function pickDestination(slug: string, label: string) {
-    setDestination(slug);
-    setDestinationLabel(label);
+    setPlace({ kind: "destination", slug, label });
+  }
+
+  function pickCity(stateSlug: string, citySlug: string, label: string) {
+    setPlace({ kind: "city", stateSlug, citySlug, label });
   }
 
   function pickVilla(slug: string) {
@@ -129,8 +165,9 @@ export function SearchBar({
           <SearchCombobox
             destinations={destinations}
             villas={villas}
-            value={destinationLabel}
+            value={place?.label ?? ""}
             onPickDestination={pickDestination}
+            onPickCity={pickCity}
             onPickVilla={pickVilla}
           />
           <SingleDatePicker
@@ -191,8 +228,9 @@ export function SearchBar({
               <SearchCombobox
                 destinations={destinations}
                 villas={villas}
-                value={destinationLabel}
+                value={place?.label ?? ""}
                 onPickDestination={pickDestination}
+                onPickCity={pickCity}
                 onPickVilla={pickVilla}
               />
               <div className="grid grid-cols-2 divide-x divide-border/60">
@@ -256,12 +294,14 @@ function SearchCombobox({
   villas,
   value,
   onPickDestination,
+  onPickCity,
   onPickVilla,
 }: {
   destinations: Destination[];
   villas: SearchVilla[];
   value: string;
   onPickDestination: (slug: string, label: string) => void;
+  onPickCity: (stateSlug: string, citySlug: string, label: string) => void;
   onPickVilla: (slug: string) => void;
 }) {
   const [query, setQuery] = useState(value);
@@ -284,6 +324,35 @@ function SearchCombobox({
     return () => document.removeEventListener("mousedown", onClick);
   }, [open]);
 
+  // Derive unique cities from the villa list. Each city remembers its
+  // parent state so picking it produces a /villas?state=&city= link.
+  const cityItems: CitySuggestion[] = useMemo(() => {
+    const map = new Map<string, CitySuggestion>();
+    for (const v of villas) {
+      if (!v.city || !v.stateSlug) continue;
+      const cityName = v.city.trim();
+      if (!cityName) continue;
+      const citySlug = slugifyCity(cityName);
+      const key = `${v.stateSlug}/${citySlug}`;
+      const existing = map.get(key);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        map.set(key, {
+          kind: "city",
+          citySlug,
+          cityName,
+          stateSlug: v.stateSlug,
+          stateName: v.state ?? "",
+          count: 1,
+        });
+      }
+    }
+    return [...map.values()].sort((a, b) =>
+      b.count - a.count || a.cityName.localeCompare(b.cityName),
+    );
+  }, [villas]);
+
   const suggestions: Suggestion[] = useMemo(() => {
     const q = query.trim().toLowerCase();
     const destItems: DestSuggestion[] = destinations.map((d) => ({
@@ -300,10 +369,16 @@ function SearchCombobox({
     }));
 
     if (!q) {
-      // No query — show the top destinations as quick-picks.
-      return destItems.slice(0, 6);
+      // No query — quick-picks: top cities (where most stock lives)
+      // followed by destinations.
+      return [...cityItems.slice(0, 4), ...destItems.slice(0, 4)];
     }
 
+    const matchingCities = cityItems.filter(
+      (c) =>
+        c.cityName.toLowerCase().includes(q) ||
+        c.stateName.toLowerCase().includes(q),
+    );
     const matchingDests = destItems.filter(
       (d) =>
         d.name.toLowerCase().includes(q) || d.region.toLowerCase().includes(q),
@@ -312,13 +387,22 @@ function SearchCombobox({
       (v) => v.name.toLowerCase().includes(q) || v.loc.toLowerCase().includes(q),
     );
 
-    return [...matchingDests.slice(0, 4), ...matchingVillas.slice(0, 8)];
-  }, [query, destinations, villas]);
+    return [
+      ...matchingCities.slice(0, 4),
+      ...matchingDests.slice(0, 3),
+      ...matchingVillas.slice(0, 6),
+    ];
+  }, [query, destinations, villas, cityItems]);
 
   function choose(s: Suggestion) {
     if (s.kind === "destination") {
       onPickDestination(s.slug, s.name);
       setQuery(s.name);
+      setOpen(false);
+    } else if (s.kind === "city") {
+      const label = `${s.cityName}${s.stateName ? `, ${s.stateName}` : ""}`;
+      onPickCity(s.stateSlug, s.citySlug, label);
+      setQuery(label);
       setOpen(false);
     } else {
       setOpen(false);
@@ -366,39 +450,47 @@ function SearchCombobox({
 
       {open && suggestions.length > 0 && (
         <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-[60vh] overflow-y-auto rounded-xl border border-border/60 bg-card p-1.5 shadow-2xl sm:left-3 sm:right-3">
-          {suggestions.map((s, i) => (
-            <button
-              key={`${s.kind}-${s.slug}`}
-              type="button"
-              onMouseDown={(e) => {
-                // mousedown fires before input blur, so the click registers.
-                e.preventDefault();
-                choose(s);
-              }}
-              onMouseEnter={() => setActiveIdx(i)}
-              className={`flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${
-                i === activeIdx ? "bg-muted/60" : "hover:bg-muted/40"
-              }`}
-            >
-              <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-terracotta/10 text-terracotta">
-                {s.kind === "destination" ? (
-                  <MapPin className="h-3.5 w-3.5" />
-                ) : (
-                  <Home className="h-3.5 w-3.5" />
-                )}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate font-medium text-foreground">
-                  {s.name}
+          {suggestions.map((s, i) => {
+            const key =
+              s.kind === "city"
+                ? `city-${s.stateSlug}-${s.citySlug}`
+                : `${s.kind}-${s.slug}`;
+            return (
+              <button
+                key={key}
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  choose(s);
+                }}
+                onMouseEnter={() => setActiveIdx(i)}
+                className={`flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${
+                  i === activeIdx ? "bg-muted/60" : "hover:bg-muted/40"
+                }`}
+              >
+                <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-terracotta/10 text-terracotta">
+                  {s.kind === "villa" ? (
+                    <Home className="h-3.5 w-3.5" />
+                  ) : (
+                    <MapPin className="h-3.5 w-3.5" />
+                  )}
                 </span>
-                <span className="block truncate text-xs text-muted-foreground">
-                  {s.kind === "destination"
-                    ? `Destination · ${s.region}`
-                    : `Villa${s.loc ? ` · ${s.loc}` : ""}`}
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-medium text-foreground">
+                    {s.kind === "city" ? s.cityName : s.name}
+                  </span>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {s.kind === "destination" && `Destination · ${s.region}`}
+                    {s.kind === "city" &&
+                      `City${s.stateName ? ` · ${s.stateName}` : ""} · ${s.count} ${
+                        s.count === 1 ? "stay" : "stays"
+                      }`}
+                    {s.kind === "villa" && `Villa${s.loc ? ` · ${s.loc}` : ""}`}
+                  </span>
                 </span>
-              </span>
-            </button>
-          ))}
+              </button>
+            );
+          })}
         </div>
       )}
       {open && suggestions.length === 0 && query.trim().length > 0 && (

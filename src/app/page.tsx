@@ -84,6 +84,7 @@ export default async function HomePage() {
             name: v.name,
             city: v.city,
             state: v.state,
+            stateSlug: v.destinationSlug,
           }))}
         />
       </div>

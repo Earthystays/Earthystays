@@ -126,7 +126,7 @@ export default async function HomePage() {
             ctaLabel="All collections"
             ctaHref="/collections"
           />
-          <ScrollSlider className="mt-10 -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-5">
+          <ScrollSlider className="mt-10 -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-pl-5 px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-5">
             {collections.map((c) => (
               <Link
                 key={c.slug}
@@ -163,7 +163,7 @@ export default async function HomePage() {
           ctaHref="/locations"
         />
         {/* Always horizontal slider — 1 visible on mobile, 2 on tablet, 3 on desktop. */}
-        <ScrollSlider className="mt-10 -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-5">
+        <ScrollSlider className="mt-10 -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-pl-5 px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-5">
           {destinations.map((d) => (
             <Link
               key={d.slug}

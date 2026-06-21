@@ -469,7 +469,7 @@ export default async function VillaDetailPage({ params }: PageProps) {
       {similar.length > 0 && (
         <section className="container-page mt-24">
           <h2 className="font-display text-3xl font-bold tracking-tight text-foreground">More in {state?.name}</h2>
-          <ScrollSlider className="mt-8 -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-5 sm:px-6 sm:-mx-6 lg:px-8 lg:-mx-8">
+          <ScrollSlider className="mt-8 -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-pl-5 px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-5 sm:scroll-pl-6 sm:px-6 sm:-mx-6 lg:scroll-pl-8 lg:px-8 lg:-mx-8">
             {similar.map((v) => (
               <div
                 key={v.slug}

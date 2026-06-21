@@ -86,7 +86,7 @@ export function WhyEarthyStays({ reviews }: { reviews: StoredReview[] }) {
 
         {/* 6 TRUST CARDS — horizontal snap-slider on mobile, 2-col grid on
             tablet, 3-col grid on desktop. */}
-        <ul className="mt-12 -mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
+        <ul className="mt-12 -mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-pl-5 px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
           {TRUST_CARDS.map(({ Icon, title, description }) => (
             <li
               key={title}
@@ -139,7 +139,7 @@ export function WhyEarthyStays({ reviews }: { reviews: StoredReview[] }) {
             <h3 className="mt-3 font-display text-3xl sm:text-4xl">
               What our guests say
             </h3>
-            <ul className="mt-10 -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-3 text-left [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
+            <ul className="mt-10 -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-pl-5 px-5 pb-3 text-left [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
               {featured.map((r) => (
                 <li
                   key={r.id}

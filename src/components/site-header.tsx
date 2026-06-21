@@ -208,6 +208,24 @@ export function SiteHeader({
           <GetInTouchMenu />
         </div>
 
+        {/* Mobile-only quick "Call Us" button — opens tap-to-dial.
+            Always visible alongside the hamburger so the team's
+            reservation line is one tap away on a phone. */}
+        <div className="flex items-center gap-2 md:hidden">
+          <a
+            href={`tel:${PHONE_E164}`}
+            aria-label={`Call ${PHONE_DISPLAY}`}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+              isOverlay
+                ? "border-white/50 text-white hover:bg-white/10"
+                : "border-foreground/40 text-foreground hover:bg-muted"
+            }`}
+          >
+            <Phone className="h-3.5 w-3.5" />
+            Call us
+          </a>
+        </div>
+
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger
             className={`md:hidden inline-flex items-center justify-center rounded-md p-2 transition-colors ${

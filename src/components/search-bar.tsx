@@ -1,17 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { Search, MapPin } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Search, MapPin, Home } from "lucide-react";
 import { CallbackModal } from "@/components/callback-modal";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Sheet,
   SheetContent,
@@ -23,6 +16,27 @@ import { SingleDatePicker } from "@/components/single-date-picker";
 import { GuestsPicker, DEFAULT_GUESTS, type Guests } from "@/components/guests-picker";
 
 type DateRange = { from?: Date; to?: Date };
+
+export type SearchVilla = {
+  slug: string;
+  name: string;
+  city?: string;
+  state?: string;
+};
+
+type DestSuggestion = {
+  kind: "destination";
+  slug: string;
+  name: string;
+  region: string;
+};
+type VillaSuggestion = {
+  kind: "villa";
+  slug: string;
+  name: string;
+  loc: string;
+};
+type Suggestion = DestSuggestion | VillaSuggestion;
 
 function toISO(d: Date | undefined): string | undefined {
   if (!d) return undefined;
@@ -58,11 +72,14 @@ function buildParams({
 
 export function SearchBar({
   destinations,
+  villas = [],
 }: {
   destinations: Destination[];
+  villas?: SearchVilla[];
 }) {
   const router = useRouter();
   const [destination, setDestination] = useState<string>("");
+  const [destinationLabel, setDestinationLabel] = useState<string>("");
   const [range, setRange] = useState<DateRange | undefined>(undefined);
   const [guests, setGuests] = useState<Guests>(DEFAULT_GUESTS);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -78,67 +95,19 @@ export function SearchBar({
     go();
   }
 
-  const selectedDest = destination
-    ? destinations.find((d) => d.slug === destination)?.name
-    : undefined;
+  function pickDestination(slug: string, label: string) {
+    setDestination(slug);
+    setDestinationLabel(label);
+  }
 
-  const locationField = (
-    <Field label="Location/Villas/Landmark">
-      <Select value={destination} onValueChange={(v) => setDestination(v ?? "")}>
-        <SelectTrigger className="h-auto border-0 bg-transparent p-0 text-[15px] text-foreground shadow-none focus:ring-0 focus-visible:ring-0">
-          <SelectValue placeholder="Where To?" />
-        </SelectTrigger>
-        <SelectContent className="!w-auto min-w-[260px] max-w-[420px]">
-          {destinations.map((d) => (
-            <SelectItem key={d.slug} value={d.slug}>
-              <span className="whitespace-nowrap">
-                {d.name}
-                <span className="ml-1.5 text-muted-foreground">· {d.region}</span>
-              </span>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </Field>
-  );
-
-  const checkInField = (
-    <SingleDatePicker
-      label="Check-in"
-      value={range?.from}
-      onChange={(d) =>
-        setRange((r) => ({
-          from: d,
-          to: r?.to && d && r.to <= d ? undefined : r?.to,
-        }))
-      }
-    />
-  );
-
-  const checkOutField = (
-    <SingleDatePicker
-      label="Check-out"
-      value={range?.to}
-      minDate={
-        range?.from
-          ? new Date(range.from.getTime() + 24 * 60 * 60 * 1000)
-          : undefined
-      }
-      onChange={(d) => setRange((r) => ({ ...r, to: d }))}
-    />
-  );
-
-  const guestsField = (
-    <GuestsPicker
-      value={guests}
-      onChange={setGuests}
-      onApplyAndSearch={(g) => go(g)}
-    />
-  );
+  function pickVilla(slug: string) {
+    setSheetOpen(false);
+    router.push(`/villas/${slug}`);
+  }
 
   return (
     <div className="container-page">
-      {/* MOBILE — slim pill trigger that opens the search sheet */}
+      {/* MOBILE — slim pill trigger opens the search sheet */}
       <button
         type="button"
         onClick={() => setSheetOpen(true)}
@@ -147,23 +116,48 @@ export function SearchBar({
       >
         <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
         <span className="truncate text-[15px] text-muted-foreground">
-          Search for a property in{" "}
-          <span className="font-medium text-foreground">
-            {selectedDest ?? "India"}
-          </span>
+          Search villas, apartments, locations…
         </span>
       </button>
 
-      {/* DESKTOP — original inline card with the full form */}
+      {/* DESKTOP — inline horizontal card */}
       <div className="hidden overflow-visible rounded-2xl border border-border/60 bg-card shadow-2xl md:block">
         <form
           onSubmit={submit}
-          className="grid grid-cols-1 divide-y divide-border/60 md:grid-cols-[1.4fr_1fr_1fr_1.1fr_auto] md:divide-x md:divide-y-0"
+          className="grid grid-cols-1 divide-y divide-border/60 md:grid-cols-[1.5fr_1fr_1fr_1.1fr_auto] md:divide-x md:divide-y-0"
         >
-          {locationField}
-          {checkInField}
-          {checkOutField}
-          {guestsField}
+          <SearchCombobox
+            destinations={destinations}
+            villas={villas}
+            value={destinationLabel}
+            onPickDestination={pickDestination}
+            onPickVilla={pickVilla}
+          />
+          <SingleDatePicker
+            label="Check-in"
+            value={range?.from}
+            onChange={(d) =>
+              setRange((r) => ({
+                from: d,
+                to: r?.to && d && r.to <= d ? undefined : r?.to,
+              }))
+            }
+          />
+          <SingleDatePicker
+            label="Check-out"
+            value={range?.to}
+            minDate={
+              range?.from
+                ? new Date(range.from.getTime() + 24 * 60 * 60 * 1000)
+                : undefined
+            }
+            onChange={(d) => setRange((r) => ({ ...r, to: d }))}
+          />
+          <GuestsPicker
+            value={guests}
+            onChange={setGuests}
+            onApplyAndSearch={(g) => go(g)}
+          />
           <Button
             type="submit"
             className="h-14 rounded-none px-10 text-base font-semibold uppercase tracking-[0.15em] md:h-auto"
@@ -192,17 +186,42 @@ export function SearchBar({
             </SheetTitle>
           </SheetHeader>
 
-          <form
-            onSubmit={submit}
-            className="flex-1 px-5 py-5"
-          >
+          <form onSubmit={submit} className="flex-1 px-5 py-5">
             <div className="grid grid-cols-1 divide-y divide-border/60 overflow-hidden rounded-2xl border border-border/60 bg-card">
-              {locationField}
+              <SearchCombobox
+                destinations={destinations}
+                villas={villas}
+                value={destinationLabel}
+                onPickDestination={pickDestination}
+                onPickVilla={pickVilla}
+              />
               <div className="grid grid-cols-2 divide-x divide-border/60">
-                {checkInField}
-                {checkOutField}
+                <SingleDatePicker
+                  label="Check-in"
+                  value={range?.from}
+                  onChange={(d) =>
+                    setRange((r) => ({
+                      from: d,
+                      to: r?.to && d && r.to <= d ? undefined : r?.to,
+                    }))
+                  }
+                />
+                <SingleDatePicker
+                  label="Check-out"
+                  value={range?.to}
+                  minDate={
+                    range?.from
+                      ? new Date(range.from.getTime() + 24 * 60 * 60 * 1000)
+                      : undefined
+                  }
+                  onChange={(d) => setRange((r) => ({ ...r, to: d }))}
+                />
               </div>
-              {guestsField}
+              <GuestsPicker
+                value={guests}
+                onChange={setGuests}
+                onApplyAndSearch={(g) => go(g)}
+              />
             </div>
 
             <Button
@@ -227,13 +246,167 @@ export function SearchBar({
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+/**
+ * Typeahead for the location/villa field. Lets the guest type a villa
+ * name, a city, or a destination. Selecting a villa navigates straight
+ * to that villa's page; selecting a destination filters the listing.
+ */
+function SearchCombobox({
+  destinations,
+  villas,
+  value,
+  onPickDestination,
+  onPickVilla,
+}: {
+  destinations: Destination[];
+  villas: SearchVilla[];
+  value: string;
+  onPickDestination: (slug: string, label: string) => void;
+  onPickVilla: (slug: string) => void;
+}) {
+  const [query, setQuery] = useState(value);
+  const [open, setOpen] = useState(false);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const wrapRef = useRef<HTMLLabelElement>(null);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: sync local input from externally-controlled value
+    setQuery(value);
+  }, [value]);
+
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    if (open) document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [open]);
+
+  const suggestions: Suggestion[] = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const destItems: DestSuggestion[] = destinations.map((d) => ({
+      kind: "destination",
+      slug: d.slug,
+      name: d.name,
+      region: d.region,
+    }));
+    const villaItems: VillaSuggestion[] = villas.map((v) => ({
+      kind: "villa",
+      slug: v.slug,
+      name: v.name,
+      loc: [v.city, v.state].filter(Boolean).join(", "),
+    }));
+
+    if (!q) {
+      // No query — show the top destinations as quick-picks.
+      return destItems.slice(0, 6);
+    }
+
+    const matchingDests = destItems.filter(
+      (d) =>
+        d.name.toLowerCase().includes(q) || d.region.toLowerCase().includes(q),
+    );
+    const matchingVillas = villaItems.filter(
+      (v) => v.name.toLowerCase().includes(q) || v.loc.toLowerCase().includes(q),
+    );
+
+    return [...matchingDests.slice(0, 4), ...matchingVillas.slice(0, 8)];
+  }, [query, destinations, villas]);
+
+  function choose(s: Suggestion) {
+    if (s.kind === "destination") {
+      onPickDestination(s.slug, s.name);
+      setQuery(s.name);
+      setOpen(false);
+    } else {
+      setOpen(false);
+      onPickVilla(s.slug);
+    }
+  }
+
+  function onKey(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!open) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIdx((i) => Math.min(i + 1, suggestions.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIdx((i) => Math.max(i - 1, 0));
+    } else if (e.key === "Enter" && suggestions[activeIdx]) {
+      e.preventDefault();
+      choose(suggestions[activeIdx]);
+    } else if (e.key === "Escape") {
+      setOpen(false);
+    }
+  }
+
   return (
-    <label className="block px-5 py-3.5 transition-colors hover:bg-muted/30">
+    <label
+      ref={wrapRef}
+      className="relative block px-5 py-3.5 transition-colors hover:bg-muted/30"
+    >
       <div className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
-        {label}
+        Location / Villas / Landmark
       </div>
-      <div className="mt-1">{children}</div>
+      <input
+        type="text"
+        value={query}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          setOpen(true);
+          setActiveIdx(0);
+        }}
+        onFocus={() => setOpen(true)}
+        onKeyDown={onKey}
+        placeholder="Where to? Try a villa name or city…"
+        className="mt-1 w-full border-0 bg-transparent p-0 text-[15px] text-foreground outline-none placeholder:text-muted-foreground/70"
+      />
+
+      {open && suggestions.length > 0 && (
+        <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-[60vh] overflow-y-auto rounded-xl border border-border/60 bg-card p-1.5 shadow-2xl sm:left-3 sm:right-3">
+          {suggestions.map((s, i) => (
+            <button
+              key={`${s.kind}-${s.slug}`}
+              type="button"
+              onMouseDown={(e) => {
+                // mousedown fires before input blur, so the click registers.
+                e.preventDefault();
+                choose(s);
+              }}
+              onMouseEnter={() => setActiveIdx(i)}
+              className={`flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${
+                i === activeIdx ? "bg-muted/60" : "hover:bg-muted/40"
+              }`}
+            >
+              <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-terracotta/10 text-terracotta">
+                {s.kind === "destination" ? (
+                  <MapPin className="h-3.5 w-3.5" />
+                ) : (
+                  <Home className="h-3.5 w-3.5" />
+                )}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-medium text-foreground">
+                  {s.name}
+                </span>
+                <span className="block truncate text-xs text-muted-foreground">
+                  {s.kind === "destination"
+                    ? `Destination · ${s.region}`
+                    : `Villa${s.loc ? ` · ${s.loc}` : ""}`}
+                </span>
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+      {open && suggestions.length === 0 && query.trim().length > 0 && (
+        <div className="absolute left-0 right-0 top-full z-50 mt-2 rounded-xl border border-border/60 bg-card p-4 text-sm text-muted-foreground shadow-2xl sm:left-3 sm:right-3">
+          No matches for &ldquo;{query}&rdquo;. Try a city or destination
+          name.
+        </div>
+      )}
     </label>
   );
 }

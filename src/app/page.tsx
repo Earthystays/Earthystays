@@ -77,7 +77,15 @@ export default async function HomePage() {
 
       {/* Search bar, overlapping the bottom of the hero */}
       <div className="relative z-10 -mt-14">
-        <SearchBar destinations={getAllDestinations()} />
+        <SearchBar
+          destinations={getAllDestinations()}
+          villas={allVillas.map((v) => ({
+            slug: v.slug,
+            name: v.name,
+            city: v.city,
+            state: v.state,
+          }))}
+        />
       </div>
 
       {/* Best rated villas */}

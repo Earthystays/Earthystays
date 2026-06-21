@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { appendJson } from "@/lib/storage";
+import { notifyInquiryToWhatsApp } from "@/lib/whatsapp-notifier";
 
 export type InquiryStatus = "new" | "open" | "shared" | "closed";
 
@@ -90,6 +91,10 @@ export async function POST(req: Request) {
   }
 
   console.log("[inquiry]", inquiry.id, inquiry.name, inquiry.phone);
+
+  // Fire-and-forget WhatsApp ping to the admin. No-op when env vars
+  // for CallMeBot aren't set (see lib/whatsapp-notifier.ts).
+  await notifyInquiryToWhatsApp(inquiry);
 
   if (process.env.RESEND_API_KEY && process.env.INQUIRY_TO_EMAIL) {
     try {

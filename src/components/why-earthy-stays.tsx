@@ -220,13 +220,13 @@ export function WhyEarthyStays({ reviews }: { reviews: StoredReview[] }) {
         )}
 
         {/* FOUNDER STORY */}
-        <div className="mt-20 grid items-center gap-8 lg:grid-cols-2 lg:gap-16">
-          <div className="relative aspect-[16/10] overflow-hidden rounded-2xl bg-muted sm:aspect-[4/3] lg:aspect-[4/5]">
+        <div className="mt-20 grid items-center gap-8 lg:grid-cols-[5fr_6fr] lg:gap-14">
+          <div className="relative aspect-[16/10] overflow-hidden rounded-2xl bg-muted sm:aspect-[4/3] lg:aspect-[5/4] lg:max-h-[420px]">
             <Image
               src="/brand/why-earthy-stays.jpg"
               alt="Earthy Stays villa at golden hour"
               fill
-              sizes="(min-width: 1024px) 50vw, 100vw"
+              sizes="(min-width: 1024px) 45vw, 100vw"
               className="object-cover"
             />
           </div>

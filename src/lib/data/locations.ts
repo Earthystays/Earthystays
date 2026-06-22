@@ -158,6 +158,10 @@ type AdminLocations = {
   citiesByState?: Record<string, Destination["cities"]>;
   deletedStates?: string[]; // slugs of states removed via admin
   deletedCities?: Record<string, string[]>; // state-slug → city-slugs removed
+  /** Localities under each city: state-slug → city-slug → location[] */
+  locationsByCity?: Record<string, Record<string, { slug: string; name: string }[]>>;
+  /** Soft-deleted localities (only matters for seed locations) */
+  deletedLocations?: Record<string, Record<string, string[]>>;
 };
 
 function loadAdminLocations(): AdminLocations {
@@ -169,6 +173,25 @@ function loadAdminLocations(): AdminLocations {
  * admin has explicitly deleted. Used by every consumer that displays the
  * destination list (header dropdown, locations page, search bar, etc.).
  */
+function attachLocations(
+  stateSlug: string,
+  cities: Destination["cities"],
+  admin: AdminLocations,
+): Destination["cities"] {
+  const byCity = admin.locationsByCity?.[stateSlug] ?? {};
+  const deleted = admin.deletedLocations?.[stateSlug] ?? {};
+  return cities.map((c) => {
+    const extras = byCity[c.slug] ?? [];
+    const removed = new Set(deleted[c.slug] ?? []);
+    const seed = (c.locations ?? []).filter((l) => !removed.has(l.slug));
+    const merged = [
+      ...seed,
+      ...extras.filter((e) => !seed.some((s) => s.slug === e.slug)),
+    ];
+    return merged.length > 0 ? { ...c, locations: merged } : c;
+  });
+}
+
 export function getAllDestinations(): Destination[] {
   const admin = loadAdminLocations();
   const deletedStates = new Set(admin.deletedStates ?? []);
@@ -178,23 +201,21 @@ export function getAllDestinations(): Destination[] {
     if (deletedStates.has(d.slug)) continue;
     const deletedCities = new Set(admin.deletedCities?.[d.slug] ?? []);
     const extraCities = admin.citiesByState?.[d.slug] ?? [];
-    out.push({
-      ...d,
-      cities: [
-        ...d.cities.filter((c) => !deletedCities.has(c.slug)),
-        ...extraCities.filter(
-          (c) => !d.cities.some((sc) => sc.slug === c.slug),
-        ),
-      ],
-    });
+    const cities = [
+      ...d.cities.filter((c) => !deletedCities.has(c.slug)),
+      ...extraCities.filter(
+        (c) => !d.cities.some((sc) => sc.slug === c.slug),
+      ),
+    ];
+    out.push({ ...d, cities: attachLocations(d.slug, cities, admin) });
   }
 
   // Admin-added states (not in seed)
   for (const s of admin.states ?? []) {
     if (deletedStates.has(s.slug)) continue;
     if (destinations.some((d) => d.slug === s.slug)) continue;
-    const extraCities = admin.citiesByState?.[s.slug] ?? [];
-    out.push({ ...s, cities: extraCities });
+    const cities = admin.citiesByState?.[s.slug] ?? [];
+    out.push({ ...s, cities: attachLocations(s.slug, cities, admin) });
   }
 
   return out;

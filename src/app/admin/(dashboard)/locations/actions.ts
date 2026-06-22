@@ -15,6 +15,8 @@ type AdminLocations = {
   citiesByState?: Record<string, City[]>;
   deletedStates?: string[];
   deletedCities?: Record<string, string[]>;
+  locationsByCity?: Record<string, Record<string, { slug: string; name: string }[]>>;
+  deletedLocations?: Record<string, Record<string, string[]>>;
 };
 
 function slugify(s: string): string {
@@ -202,6 +204,80 @@ export async function deleteCity(
     admin.deletedCities[stateSlug] = Array.from(
       new Set([...(admin.deletedCities[stateSlug] ?? []), citySlug]),
     );
+  }
+
+  // Drop locations the admin had added under this city
+  if (admin.locationsByCity?.[stateSlug]) {
+    delete admin.locationsByCity[stateSlug][citySlug];
+  }
+
+  await writeJson(ADMIN_FILE, admin);
+  revalidateLocations();
+  return { ok: true };
+}
+
+export async function addLocation(formData: FormData): Promise<{
+  ok: boolean;
+  error?: string;
+}> {
+  const stateSlug = String(formData.get("stateSlug") ?? "").trim();
+  const citySlug = String(formData.get("citySlug") ?? "").trim();
+  const name = String(formData.get("name") ?? "").trim();
+
+  if (!stateSlug || !citySlug) {
+    return { ok: false, error: "Pick a state and city first." };
+  }
+  if (name.length < 2) {
+    return { ok: false, error: "Location name is required." };
+  }
+
+  const slug = slugify(name);
+  const admin = await readJson<AdminLocations>(ADMIN_FILE, {});
+  admin.locationsByCity = admin.locationsByCity ?? {};
+  admin.locationsByCity[stateSlug] = admin.locationsByCity[stateSlug] ?? {};
+  const existing = admin.locationsByCity[stateSlug][citySlug] ?? [];
+
+  if (existing.some((l) => l.slug === slug)) {
+    return {
+      ok: false,
+      error: `A location with the slug "${slug}" already exists here.`,
+    };
+  }
+
+  // Un-delete if previously soft-deleted
+  if (admin.deletedLocations?.[stateSlug]?.[citySlug]?.includes(slug)) {
+    admin.deletedLocations[stateSlug][citySlug] = admin.deletedLocations[
+      stateSlug
+    ][citySlug].filter((s) => s !== slug);
+  }
+
+  admin.locationsByCity[stateSlug][citySlug] = [...existing, { slug, name }];
+
+  await writeJson(ADMIN_FILE, admin);
+  revalidateLocations();
+  return { ok: true };
+}
+
+export async function deleteLocation(
+  stateSlug: string,
+  citySlug: string,
+  locationSlug: string,
+): Promise<{ ok: boolean }> {
+  const admin = await readJson<AdminLocations>(ADMIN_FILE, {});
+
+  // Admin-added: just remove
+  if (admin.locationsByCity?.[stateSlug]?.[citySlug]) {
+    admin.locationsByCity[stateSlug][citySlug] = admin.locationsByCity[
+      stateSlug
+    ][citySlug].filter((l) => l.slug !== locationSlug);
+  }
+
+  // Seed (i.e. defined in code) — soft-delete so the loader hides it
+  admin.deletedLocations = admin.deletedLocations ?? {};
+  admin.deletedLocations[stateSlug] = admin.deletedLocations[stateSlug] ?? {};
+  const existing = admin.deletedLocations[stateSlug][citySlug] ?? [];
+  if (!existing.includes(locationSlug)) {
+    admin.deletedLocations[stateSlug][citySlug] = [...existing, locationSlug];
   }
 
   await writeJson(ADMIN_FILE, admin);

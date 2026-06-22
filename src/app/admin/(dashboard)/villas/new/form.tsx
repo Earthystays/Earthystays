@@ -13,10 +13,16 @@ import { AlertTriangle, Check, Save, Loader2 } from "lucide-react";
 import { addVilla, autoSaveDraft, type AddVillaState, type AddVillaValues } from "./actions";
 import { getIconByName } from "@/lib/amenity-catalog";
 
+type LocationOpt = { slug: string; name: string };
+type CityOption = {
+  slug: string;
+  name: string;
+  locations?: LocationOpt[];
+};
 type DestinationOption = {
   slug: string;
   name: string;
-  cities?: { slug: string; name: string }[];
+  cities?: CityOption[];
 };
 
 type AmenityChoice = { name: string; iconName: string };
@@ -96,6 +102,31 @@ export function NewVillaForm({
   const finalCity = cityChoice === CUSTOM ? cityCustom : cityChoice;
   const finalState = selectedDest?.name ?? v?.state ?? "";
 
+  // Locations under the selected city
+  const selectedCity = cityOptions.find(
+    (c) => c.name === (cityChoice === CUSTOM ? "" : cityChoice),
+  );
+  const locationOptions = selectedCity?.locations ?? [];
+  const initialLocation = v?.locationNote ?? "";
+  const initialLocationIsCustom =
+    initialLocation.length > 0 &&
+    locationOptions.length > 0 &&
+    !locationOptions.some((l) => l.name === initialLocation);
+  const [locationChoice, setLocationChoice] = useState<string>(
+    initialLocation
+      ? initialLocationIsCustom || locationOptions.length === 0
+        ? CUSTOM
+        : initialLocation
+      : "",
+  );
+  const [locationCustom, setLocationCustom] = useState<string>(
+    initialLocationIsCustom || locationOptions.length === 0
+      ? initialLocation
+      : "",
+  );
+  const finalLocation =
+    locationChoice === CUSTOM ? locationCustom : locationChoice;
+
   // Restore cancellation + meals state from the server-action snapshot after
   // a validation error. `v` comes from useActionState (external) so the
   // effect is the right place — we need to react when the server hands us
@@ -117,6 +148,23 @@ export function NewVillaForm({
       !!v.city && cities.length > 0 && !cities.some((c) => c.name === v.city);
     setCityChoice(v.city ? (cityIsCustom ? CUSTOM : v.city) : "");
     setCityCustom(cityIsCustom ? v.city ?? "" : "");
+    // Re-sync the Location picker after a validation round-trip.
+    const matchedCity = cities.find((c) => c.name === v.city);
+    const locs = matchedCity?.locations ?? [];
+    const locIsCustom =
+      !!v.locationNote &&
+      locs.length > 0 &&
+      !locs.some((l) => l.name === v.locationNote);
+    setLocationChoice(
+      v.locationNote
+        ? locIsCustom || locs.length === 0
+          ? CUSTOM
+          : v.locationNote
+        : "",
+    );
+    setLocationCustom(
+      locIsCustom || locs.length === 0 ? v.locationNote ?? "" : "",
+    );
   }, [v, destinations]);
 
   function pickPreset(value: string) {
@@ -286,10 +334,11 @@ export function NewVillaForm({
       <Section title="Location" hint="Lat/long enables a map embed on the detail page">
         {/* Hidden inputs the server action reads. They mirror the
             cascading controlled selects below so admin only picks State
-            → City; the rest is derived. */}
+            → City → Location; the rest is derived. */}
         <input type="hidden" name="destinationSlug" value={destSlug} />
         <input type="hidden" name="state" value={finalState} />
         <input type="hidden" name="city" value={finalCity} />
+        <input type="hidden" name="locationNote" value={finalLocation} />
 
         <div className="grid gap-4 sm:grid-cols-3">
           {/* STATE */}
@@ -344,19 +393,45 @@ export function NewVillaForm({
             </select>
           </Field>
 
-          {/* LOCATION / LANDMARK */}
+          {/* LOCATION */}
           <Field
             name="locationNote"
-            label="Location / Landmark"
-            hint="Specific area, road, or distance"
+            label="Location"
+            hint={
+              locationOptions.length > 0
+                ? "Pick a locality or Other"
+                : cityChoice === ""
+                  ? "Pick a city first"
+                  : "Type a locality"
+            }
             error={state.fieldErrors?.locationNote}
           >
-            <Input
-              name="locationNote"
-              required
-              placeholder="e.g. Anjuna, off Ozran Beach Rd"
-              defaultValue={v?.locationNote ?? ""}
-            />
+            {locationOptions.length > 0 ? (
+              <select
+                value={locationChoice}
+                onChange={(e) => setLocationChoice(e.target.value)}
+                disabled={!cityChoice || cityChoice === CUSTOM}
+                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm disabled:opacity-50"
+              >
+                <option value="">Choose location…</option>
+                {locationOptions.map((l) => (
+                  <option key={l.slug} value={l.name}>
+                    {l.name}
+                  </option>
+                ))}
+                <option value={CUSTOM}>Other (specify)…</option>
+              </select>
+            ) : (
+              <Input
+                value={locationCustom}
+                onChange={(e) => {
+                  setLocationCustom(e.target.value);
+                  setLocationChoice(CUSTOM);
+                }}
+                placeholder="e.g. Anjuna, off Ozran Beach Rd"
+                disabled={!cityChoice}
+              />
+            )}
           </Field>
         </div>
 
@@ -366,6 +441,17 @@ export function NewVillaForm({
               value={cityCustom}
               onChange={(e) => setCityCustom(e.target.value)}
               placeholder="e.g. Vagator"
+              autoFocus
+            />
+          </Field>
+        )}
+
+        {locationChoice === CUSTOM && locationOptions.length > 0 && (
+          <Field name="locationCustom" label="Custom location name">
+            <Input
+              value={locationCustom}
+              onChange={(e) => setLocationCustom(e.target.value)}
+              placeholder="e.g. Off Ozran Beach Rd"
               autoFocus
             />
           </Field>

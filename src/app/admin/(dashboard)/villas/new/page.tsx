@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { destinations } from "@/lib/data/locations";
+import { getAllDestinations } from "@/lib/data/locations";
 import { getAllCollections } from "@/lib/data/collections";
 import { INDIAN_STATES } from "@/lib/india-states";
 import { NewVillaForm } from "./form";
@@ -26,10 +26,17 @@ export default function NewVillaPage() {
       </header>
 
       <NewVillaForm
-        destinations={destinations.map((d) => ({
+        destinations={getAllDestinations().map((d) => ({
           slug: d.slug,
           name: d.name,
-          cities: d.cities.map((c) => ({ slug: c.slug, name: c.name })),
+          cities: d.cities.map((c) => ({
+            slug: c.slug,
+            name: c.name,
+            locations: (c.locations ?? []).map((l) => ({
+              slug: l.slug,
+              name: l.name,
+            })),
+          })),
         }))}
         collections={getAllCollections().map((c) => ({ slug: c.slug, name: c.name }))}
         amenities={[...VILLA_AMENITIES, ...customA].map(withIcon)}

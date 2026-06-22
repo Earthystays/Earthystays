@@ -68,11 +68,20 @@ export type Villa = {
   featuredRank?: number;
 };
 
+export type LocationArea = {
+  slug: string;
+  name: string;
+};
+
 export type City = {
   slug: string;
   name: string;
   blurb: string;
   image: Image;
+  /** Optional list of localities / neighbourhoods inside this city
+   *  (e.g. "Anjuna", "Vagator" inside "North Goa"). Used by the villa
+   *  form's third cascading dropdown. */
+  locations?: LocationArea[];
 };
 
 export type Destination = {

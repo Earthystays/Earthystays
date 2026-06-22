@@ -9,7 +9,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { ImageUploadButton } from "@/components/image-upload-button";
 import type { Destination } from "@/lib/types";
-import { addState, addCity, deleteState, deleteCity } from "./actions";
+import {
+  addState,
+  addCity,
+  deleteState,
+  deleteCity,
+  addLocation,
+  deleteLocation,
+} from "./actions";
 
 type Props = {
   destinations: Destination[];
@@ -18,6 +25,7 @@ type Props = {
 export function LocationCrud({ destinations }: Props) {
   const [showStateForm, setShowStateForm] = useState(false);
   const [showCityForm, setShowCityForm] = useState(false);
+  const [showLocationForm, setShowLocationForm] = useState(false);
 
   return (
     <section className="mt-10 border-t border-border/60 pt-10">
@@ -37,6 +45,7 @@ export function LocationCrud({ destinations }: Props) {
           onClick={() => {
             setShowStateForm((v) => !v);
             setShowCityForm(false);
+            setShowLocationForm(false);
           }}
           variant="outline"
           className="rounded-full"
@@ -48,12 +57,25 @@ export function LocationCrud({ destinations }: Props) {
           onClick={() => {
             setShowCityForm((v) => !v);
             setShowStateForm(false);
+            setShowLocationForm(false);
           }}
           variant="outline"
           className="rounded-full"
         >
           <Plus className="h-4 w-4 mr-1.5" />
           {showCityForm ? "Cancel" : "Add a city"}
+        </Button>
+        <Button
+          onClick={() => {
+            setShowLocationForm((v) => !v);
+            setShowStateForm(false);
+            setShowCityForm(false);
+          }}
+          variant="outline"
+          className="rounded-full"
+        >
+          <Plus className="h-4 w-4 mr-1.5" />
+          {showLocationForm ? "Cancel" : "Add a location"}
         </Button>
       </div>
 
@@ -64,6 +86,12 @@ export function LocationCrud({ destinations }: Props) {
         <AddCityForm
           destinations={destinations}
           onSaved={() => setShowCityForm(false)}
+        />
+      )}
+      {showLocationForm && (
+        <AddLocationForm
+          destinations={destinations}
+          onSaved={() => setShowLocationForm(false)}
         />
       )}
 
@@ -149,22 +177,180 @@ function CityRow({
       else toast.error("Could not remove");
     });
   }
+  const locations = city.locations ?? [];
   return (
-    <li className="flex items-center justify-between rounded-md border border-border/60 bg-background px-3 py-2 text-sm">
-      <span className="inline-flex items-center gap-1.5">
-        <MapPin className="h-3 w-3 text-terracotta" />
-        {city.name}
-      </span>
+    <li className="rounded-md border border-border/60 bg-background px-3 py-2 text-sm">
+      <div className="flex items-center justify-between">
+        <span className="inline-flex items-center gap-1.5">
+          <MapPin className="h-3 w-3 text-terracotta" />
+          {city.name}
+          {locations.length > 0 && (
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              · {locations.length}{" "}
+              {locations.length === 1 ? "location" : "locations"}
+            </span>
+          )}
+        </span>
+        <button
+          type="button"
+          onClick={onDelete}
+          disabled={pending}
+          aria-label={`Remove ${city.name}`}
+          className="inline-flex h-6 w-6 items-center justify-center rounded-md text-destructive hover:bg-destructive/10 disabled:opacity-50"
+        >
+          <Trash2 className="h-3 w-3" />
+        </button>
+      </div>
+      {locations.length > 0 && (
+        <ul className="mt-2 flex flex-wrap gap-1.5">
+          {locations.map((l) => (
+            <LocationChip
+              key={l.slug}
+              stateSlug={stateSlug}
+              citySlug={city.slug}
+              location={l}
+            />
+          ))}
+        </ul>
+      )}
+    </li>
+  );
+}
+
+function LocationChip({
+  stateSlug,
+  citySlug,
+  location,
+}: {
+  stateSlug: string;
+  citySlug: string;
+  location: { slug: string; name: string };
+}) {
+  const [pending, start] = useTransition();
+  function onDelete() {
+    if (!confirm(`Delete location "${location.name}"?`)) return;
+    start(async () => {
+      const res = await deleteLocation(stateSlug, citySlug, location.slug);
+      if (res.ok) toast.success(`Removed ${location.name}`);
+      else toast.error("Could not remove");
+    });
+  }
+  return (
+    <li className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-muted/40 pl-2.5 pr-1 text-[11px]">
+      {location.name}
       <button
         type="button"
         onClick={onDelete}
         disabled={pending}
-        aria-label={`Remove ${city.name}`}
-        className="inline-flex h-6 w-6 items-center justify-center rounded-md text-destructive hover:bg-destructive/10 disabled:opacity-50"
+        aria-label={`Remove ${location.name}`}
+        className="inline-flex h-5 w-5 items-center justify-center rounded-full text-destructive hover:bg-destructive/10 disabled:opacity-50"
       >
-        <Trash2 className="h-3 w-3" />
+        <Trash2 className="h-2.5 w-2.5" />
       </button>
     </li>
+  );
+}
+
+function AddLocationForm({
+  destinations,
+  onSaved,
+}: {
+  destinations: Destination[];
+  onSaved: () => void;
+}) {
+  const [stateSlug, setStateSlug] = useState("");
+  const [citySlug, setCitySlug] = useState("");
+  const [pending, start] = useTransition();
+  const cities = destinations.find((d) => d.slug === stateSlug)?.cities ?? [];
+
+  function submit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    fd.set("stateSlug", stateSlug);
+    fd.set("citySlug", citySlug);
+    start(async () => {
+      const res = await addLocation(fd);
+      if (res.ok) {
+        toast.success("Location added");
+        onSaved();
+      } else {
+        toast.error(res.error ?? "Could not add location");
+      }
+    });
+  }
+
+  return (
+    <form
+      onSubmit={submit}
+      className="mt-6 grid gap-4 rounded-2xl border border-border bg-card p-5"
+    >
+      <h3 className="font-display text-lg font-bold tracking-tight">
+        Add a new location
+      </h3>
+      <p className="text-xs text-muted-foreground">
+        Sub-locality inside a city (e.g. Anjuna or Vagator inside North Goa).
+        Appears as the third cascading dropdown when admins add a villa.
+      </p>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-1.5">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+            State *
+          </Label>
+          <select
+            value={stateSlug}
+            onChange={(e) => {
+              setStateSlug(e.target.value);
+              setCitySlug("");
+            }}
+            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+            required
+          >
+            <option value="">Choose…</option>
+            {destinations.map((d) => (
+              <option key={d.slug} value={d.slug}>
+                {d.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="grid gap-1.5">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+            City *
+          </Label>
+          <select
+            value={citySlug}
+            onChange={(e) => setCitySlug(e.target.value)}
+            className="h-9 rounded-md border border-input bg-background px-3 text-sm disabled:opacity-50"
+            disabled={!stateSlug}
+            required
+          >
+            <option value="">
+              {stateSlug ? "Choose…" : "Pick a state first"}
+            </option>
+            {cities.map((c) => (
+              <option key={c.slug} value={c.slug}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <FormField
+          label="Location name *"
+          name="name"
+          placeholder="Anjuna"
+          required
+        />
+      </div>
+
+      <Button
+        type="submit"
+        disabled={pending || !stateSlug || !citySlug}
+        className="rounded-md"
+      >
+        {pending ? "Adding…" : "Add location"}
+      </Button>
+    </form>
   );
 }
 

@@ -13,6 +13,12 @@ import { AlertTriangle, Check, Save, Loader2 } from "lucide-react";
 import { addVilla, autoSaveDraft, type AddVillaState, type AddVillaValues } from "./actions";
 import { getIconByName } from "@/lib/amenity-catalog";
 
+type DestinationOption = {
+  slug: string;
+  name: string;
+  cities?: { slug: string; name: string }[];
+};
+
 type AmenityChoice = { name: string; iconName: string };
 
 const INITIAL: AddVillaState = { ok: false };
@@ -31,7 +37,7 @@ export function NewVillaForm({
   initialState,
   draftId: incomingDraftId,
 }: {
-  destinations: { slug: string; name: string }[];
+  destinations: DestinationOption[];
   collections: { slug: string; name: string }[];
   amenities: AmenityChoice[];
   facilities: AmenityChoice[];
@@ -68,19 +74,50 @@ export function NewVillaForm({
     v?.mealsDescription ?? "",
   );
 
+  // Cascading State → City → Locality. State is destinationSlug (each
+  // destination IS a state). City is sourced from the selected
+  // destination's cities[]; an "Other (specify)" option lets admins type
+  // a custom city for backward compatibility with existing data.
+  const CUSTOM = "__custom__";
+  const [destSlug, setDestSlug] = useState<string>(v?.destinationSlug ?? "");
+  const initialDest = destinations.find((d) => d.slug === (v?.destinationSlug ?? ""));
+  const initialCity = v?.city ?? "";
+  const initialIsCustom =
+    initialCity.length > 0 &&
+    !(initialDest?.cities ?? []).some((c) => c.name === initialCity);
+  const [cityChoice, setCityChoice] = useState<string>(
+    initialCity ? (initialIsCustom ? CUSTOM : initialCity) : "",
+  );
+  const [cityCustom, setCityCustom] = useState<string>(
+    initialIsCustom ? initialCity : "",
+  );
+  const selectedDest = destinations.find((d) => d.slug === destSlug);
+  const cityOptions = selectedDest?.cities ?? [];
+  const finalCity = cityChoice === CUSTOM ? cityCustom : cityChoice;
+  const finalState = selectedDest?.name ?? v?.state ?? "";
+
   // Restore cancellation + meals state from the server-action snapshot after
   // a validation error. `v` comes from useActionState (external) so the
   // effect is the right place — we need to react when the server hands us
   // new values.
   useEffect(() => {
-    if (v) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: restoring state from server action snapshot
-      setPolicyPreset(v.cancellationPreset ?? "");
-      setPolicyDescription(v.cancellationDescription ?? "");
-      setMealsPreset(v.mealsPreset ?? "");
-      setMealsDescription(v.mealsDescription ?? "");
-    }
-  }, [v]);
+    if (!v) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: restoring state from server action snapshot
+    setPolicyPreset(v.cancellationPreset ?? "");
+    setPolicyDescription(v.cancellationDescription ?? "");
+    setMealsPreset(v.mealsPreset ?? "");
+    setMealsDescription(v.mealsDescription ?? "");
+    // Re-sync the cascading location pickers after a validation
+    // round-trip so the chosen state/city aren't cleared.
+    const dSlug = v.destinationSlug ?? "";
+    setDestSlug(dSlug);
+    const dest = destinations.find((dd) => dd.slug === dSlug);
+    const cities = dest?.cities ?? [];
+    const cityIsCustom =
+      !!v.city && cities.length > 0 && !cities.some((c) => c.name === v.city);
+    setCityChoice(v.city ? (cityIsCustom ? CUSTOM : v.city) : "");
+    setCityCustom(cityIsCustom ? v.city ?? "" : "");
+  }, [v, destinations]);
 
   function pickPreset(value: string) {
     setPolicyPreset(value);
@@ -247,44 +284,92 @@ export function NewVillaForm({
       </Section>
 
       <Section title="Location" hint="Lat/long enables a map embed on the detail page">
-        <Field name="destinationSlug" label="Destination" error={state.fieldErrors?.destinationSlug}>
-          <select
+        {/* Hidden inputs the server action reads. They mirror the
+            cascading controlled selects below so admin only picks State
+            → City; the rest is derived. */}
+        <input type="hidden" name="destinationSlug" value={destSlug} />
+        <input type="hidden" name="state" value={finalState} />
+        <input type="hidden" name="city" value={finalCity} />
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          {/* STATE */}
+          <Field
             name="destinationSlug"
-            required
-            defaultValue={v?.destinationSlug ?? ""}
-            className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+            label="State"
+            error={state.fieldErrors?.destinationSlug}
           >
-            <option value="" disabled>Choose…</option>
-            {destinations.map((d) => (
-              <option key={d.slug} value={d.slug}>{d.name}</option>
-            ))}
-          </select>
-        </Field>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field name="state" label="State" error={state.fieldErrors?.state}>
             <select
-              name="state"
-              defaultValue={v?.state ?? ""}
+              required
+              value={destSlug}
+              onChange={(e) => {
+                setDestSlug(e.target.value);
+                setCityChoice("");
+                setCityCustom("");
+              }}
               className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
             >
-              <option value="">Choose…</option>
-              {states.map((s) => (
-                <option key={s} value={s}>{s}</option>
+              <option value="" disabled>Choose state…</option>
+              {destinations.map((d) => (
+                <option key={d.slug} value={d.slug}>{d.name}</option>
               ))}
             </select>
           </Field>
-          <Field name="city" label="City" hint="Free text" error={state.fieldErrors?.city}>
-            <Input name="city" placeholder="Anjuna" defaultValue={v?.city ?? ""} />
+
+          {/* CITY */}
+          <Field
+            name="city"
+            label="City"
+            hint={
+              destSlug && cityOptions.length === 0
+                ? "No preset cities — pick Other to type"
+                : "Choose from preset or pick Other"
+            }
+            error={state.fieldErrors?.city}
+          >
+            <select
+              value={cityChoice}
+              onChange={(e) => setCityChoice(e.target.value)}
+              disabled={!destSlug}
+              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm disabled:opacity-50"
+            >
+              <option value="">
+                {destSlug ? "Choose city…" : "Pick a state first"}
+              </option>
+              {cityOptions.map((c) => (
+                <option key={c.slug} value={c.name}>{c.name}</option>
+              ))}
+              {destSlug && (
+                <option value={CUSTOM}>Other (specify)…</option>
+              )}
+            </select>
+          </Field>
+
+          {/* LOCATION / LANDMARK */}
+          <Field
+            name="locationNote"
+            label="Location / Landmark"
+            hint="Specific area, road, or distance"
+            error={state.fieldErrors?.locationNote}
+          >
+            <Input
+              name="locationNote"
+              required
+              placeholder="e.g. Anjuna, off Ozran Beach Rd"
+              defaultValue={v?.locationNote ?? ""}
+            />
           </Field>
         </div>
-        <Field name="locationNote" label="Location note" hint="Shown on detail page (e.g. drive time from airport)" error={state.fieldErrors?.locationNote}>
-          <Input
-            name="locationNote"
-            required
-            placeholder="Anjuna, North Goa — 45 min from Dabolim."
-            defaultValue={v?.locationNote ?? ""}
-          />
-        </Field>
+
+        {cityChoice === CUSTOM && (
+          <Field name="cityCustom" label="Custom city name">
+            <Input
+              value={cityCustom}
+              onChange={(e) => setCityCustom(e.target.value)}
+              placeholder="e.g. Vagator"
+              autoFocus
+            />
+          </Field>
+        )}
         <div className="grid gap-4 sm:grid-cols-2">
           <Field name="latitude" label="Latitude" hint="-90 to 90 (e.g. 15.5762345)">
             <Input

@@ -43,7 +43,11 @@ export default async function EditVillaPage({ params }: PageProps) {
       </header>
 
       <NewVillaForm
-        destinations={destinations.map((d) => ({ slug: d.slug, name: d.name }))}
+        destinations={destinations.map((d) => ({
+          slug: d.slug,
+          name: d.name,
+          cities: d.cities.map((c) => ({ slug: c.slug, name: c.name })),
+        }))}
         collections={getAllCollections().map((c) => ({ slug: c.slug, name: c.name }))}
         amenities={[...VILLA_AMENITIES, ...customA].map(withIcon)}
         facilities={[...VILLA_FACILITIES, ...customF].map(withIcon)}

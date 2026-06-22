@@ -224,7 +224,10 @@ export function SearchBar({
           </SheetHeader>
 
           <form onSubmit={submit} className="flex-1 px-5 py-5">
-            <div className="grid grid-cols-1 divide-y divide-border/60 overflow-hidden rounded-2xl border border-border/60 bg-card">
+            {/* No overflow-hidden here — the calendar / guests popovers need
+                to escape the wrapper. Each row stacks full-width so the
+                calendar popover gets the full sheet width to render. */}
+            <div className="grid grid-cols-1 divide-y divide-border/60 rounded-2xl border border-border/60 bg-card">
               <SearchCombobox
                 destinations={destinations}
                 villas={villas}
@@ -233,28 +236,26 @@ export function SearchBar({
                 onPickCity={pickCity}
                 onPickVilla={pickVilla}
               />
-              <div className="grid grid-cols-2 divide-x divide-border/60">
-                <SingleDatePicker
-                  label="Check-in"
-                  value={range?.from}
-                  onChange={(d) =>
-                    setRange((r) => ({
-                      from: d,
-                      to: r?.to && d && r.to <= d ? undefined : r?.to,
-                    }))
-                  }
-                />
-                <SingleDatePicker
-                  label="Check-out"
-                  value={range?.to}
-                  minDate={
-                    range?.from
-                      ? new Date(range.from.getTime() + 24 * 60 * 60 * 1000)
-                      : undefined
-                  }
-                  onChange={(d) => setRange((r) => ({ ...r, to: d }))}
-                />
-              </div>
+              <SingleDatePicker
+                label="Check-in"
+                value={range?.from}
+                onChange={(d) =>
+                  setRange((r) => ({
+                    from: d,
+                    to: r?.to && d && r.to <= d ? undefined : r?.to,
+                  }))
+                }
+              />
+              <SingleDatePicker
+                label="Check-out"
+                value={range?.to}
+                minDate={
+                  range?.from
+                    ? new Date(range.from.getTime() + 24 * 60 * 60 * 1000)
+                    : undefined
+                }
+                onChange={(d) => setRange((r) => ({ ...r, to: d }))}
+              />
               <GuestsPicker
                 value={guests}
                 onChange={setGuests}

@@ -16,7 +16,8 @@ import type {
   InventoryUnitStatus,
 } from "@/lib/types";
 import { generateBeds } from "@/lib/data/units";
-import { saveUnit, deleteUnit, toggleUnitDate } from "../../unit-actions";
+import type { UnitDateMap } from "@/lib/data/unit-rates";
+import { saveUnit, deleteUnit, toggleUnitDate, setUnitRateOverride } from "../../unit-actions";
 
 /** Statuses an operator sets by hand ("held" is transient, set by checkout). */
 const BED_STATUSES: { value: InventoryUnitStatus; label: string }[] = [
@@ -76,12 +77,15 @@ export function UnitsEditor({
   type,
   initialUnits,
   initialBlockedDates = {},
+  initialRates = {},
 }: {
   slug: string;
   type: "hotel" | "hostel";
   initialUnits: AccommodationUnit[];
   /** Per-unit blocked dates: { [unitId]: ["YYYY-MM-DD"] } (Phase H). */
   initialBlockedDates?: Record<string, string[]>;
+  /** Per-unit date rate/inventory overrides (Phase 21). */
+  initialRates?: Record<string, UnitDateMap>;
 }) {
   const kind: Kind = type === "hotel" ? "room" : "dorm";
   const nounSingular = type === "hotel" ? "Room type" : "Dorm type";
@@ -92,7 +96,30 @@ export function UnitsEditor({
   const [blocked, setBlocked] = useState<Record<string, string[]>>(initialBlockedDates);
   const [dateToBlock, setDateToBlock] = useState("");
   const [amenityInput, setAmenityInput] = useState("");
+  const [rates, setRates] = useState<Record<string, UnitDateMap>>(initialRates);
+  const [rateForm, setRateForm] = useState({ date: "", price: "", units: "" });
   const [pending, startTransition] = useTransition();
+
+  function onSetRate(unitId: string, date: string, price: string, units: string) {
+    if (!date) {
+      toast.error("Pick a date first.");
+      return;
+    }
+    const override = {
+      price: price.trim() === "" ? undefined : Number(price),
+      units: units.trim() === "" ? undefined : Number(units),
+    };
+    startTransition(async () => {
+      try {
+        const res = await setUnitRateOverride(slug, unitId, date, override);
+        setRates((prev) => ({ ...prev, [unitId]: res.dates }));
+        setRateForm({ date: "", price: "", units: "" });
+        toast.success("Rate updated");
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Could not update rate");
+      }
+    });
+  }
 
   function addAmenity(name: string) {
     const v = name.trim();
@@ -607,6 +634,89 @@ export function UnitsEditor({
                 </div>
               ) : (
                 <p className="text-xs text-muted-foreground">No blocked dates.</p>
+              )}
+            </div>
+          )}
+
+          {/* Per-date rate & inventory overrides — saved unit only */}
+          {draft.id && (
+            <div className="grid gap-2 rounded-lg border border-border bg-background p-4">
+              <Label className="text-sm">Rates &amp; inventory by date</Label>
+              <p className="text-xs text-muted-foreground">
+                Override price and/or available {invNoun} for specific dates. Blank
+                = keep the default (₹{draft.basePrice.toLocaleString("en-IN")} · {draft.inventory} {invNoun}).
+                Saved immediately.
+              </p>
+              <div className="flex flex-wrap items-end gap-2">
+                <div className="grid gap-1">
+                  <span className="text-[11px] text-muted-foreground">Date</span>
+                  <Input
+                    type="date"
+                    value={rateForm.date}
+                    onChange={(e) => setRateForm((f) => ({ ...f, date: e.target.value }))}
+                    className="h-9 w-auto"
+                  />
+                </div>
+                <div className="grid gap-1">
+                  <span className="text-[11px] text-muted-foreground">Price ₹</span>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={rateForm.price}
+                    onChange={(e) => setRateForm((f) => ({ ...f, price: e.target.value }))}
+                    placeholder={String(draft.basePrice)}
+                    className="h-9 w-24"
+                  />
+                </div>
+                <div className="grid gap-1">
+                  <span className="text-[11px] text-muted-foreground">{invNoun}</span>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={rateForm.units}
+                    onChange={(e) => setRateForm((f) => ({ ...f, units: e.target.value }))}
+                    placeholder={String(draft.inventory)}
+                    className="h-9 w-20"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={!rateForm.date || pending}
+                  onClick={() => onSetRate(draft.id, rateForm.date, rateForm.price, rateForm.units)}
+                >
+                  Set
+                </Button>
+              </div>
+              {Object.keys(rates[draft.id] ?? {}).length > 0 ? (
+                <div className="mt-1 grid gap-1">
+                  {Object.entries(rates[draft.id])
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .map(([date, ov]) => (
+                      <div
+                        key={date}
+                        className="flex items-center gap-3 rounded-md border border-border/60 px-2.5 py-1.5 text-xs"
+                      >
+                        <span className="font-medium">{date}</span>
+                        <span className="text-muted-foreground">
+                          {ov.price != null ? `₹${ov.price.toLocaleString("en-IN")}` : "default price"}
+                          {" · "}
+                          {ov.units != null ? `${ov.units} ${invNoun}` : `default ${invNoun}`}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => onSetRate(draft.id, date, "", "")}
+                          className="ml-auto text-muted-foreground hover:text-destructive"
+                          aria-label={`Clear override for ${date}`}
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">No date overrides.</p>
               )}
             </div>
           )}

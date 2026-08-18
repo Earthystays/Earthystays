@@ -15,6 +15,7 @@ import { NewVillaForm } from "../../new/form";
 import { villaToFormValues } from "../../villa-to-values";
 import { UnitsEditor } from "./units-editor";
 import { getBlockedDatesForProperty } from "@/lib/data/unit-blocked-dates";
+import { getRatesForProperty } from "@/lib/data/unit-rates";
 import { getCustomAmenityNames, getCustomFacilityNames } from "@/lib/data/amenities-store";
 import { getAmenityIconName } from "@/lib/amenity-icons";
 
@@ -78,6 +79,7 @@ export default async function EditVillaPage({ params }: PageProps) {
           type={villa.type}
           initialUnits={villa.units ?? []}
           initialBlockedDates={await getBlockedDatesForProperty(villa.slug)}
+          initialRates={await getRatesForProperty(villa.slug)}
         />
       )}
     </div>

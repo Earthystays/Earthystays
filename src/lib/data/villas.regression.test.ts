@@ -45,10 +45,11 @@ describe("villa regression baseline", () => {
     }
   });
 
-  it("legacy villas carry no units (whole-property model intact)", () => {
-    // Phase A adds an OPTIONAL units[]. No existing record should have gained
-    // units as a side effect of the type change.
+  it("villas & apartments carry no units (whole-property model intact)", () => {
+    // Only hotels/hostels use units[]. Villas & apartments must stay whole-
+    // property so their pages render exactly as before.
     for (const v of villas) {
+      if (v.type === "hotel" || v.type === "hostel") continue;
       expect(v.units === undefined || v.units.length === 0).toBe(true);
     }
   });

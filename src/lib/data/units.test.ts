@@ -7,7 +7,10 @@ import {
   hasUnits,
   inventoryNoun,
   isMultiUnitType,
+  effectiveUnitPrice,
+  effectiveUnitUnits,
   isUnitAvailable,
+  isWeekendDate,
   nightsInRange,
   rangeIsBlocked,
   removeUnit,
@@ -202,6 +205,28 @@ describe("units helpers", () => {
         checkOut: "2026-09-15",
       }),
     ).toBe(5); // block outside the range
+  });
+
+  it("detects Fri/Sat as weekend", () => {
+    expect(isWeekendDate("2026-08-21")).toBe(true); // Friday
+    expect(isWeekendDate("2026-08-22")).toBe(true); // Saturday
+    expect(isWeekendDate("2026-08-23")).toBe(false); // Sunday
+    expect(isWeekendDate("2026-08-18")).toBe(false); // Tuesday
+  });
+
+  it("effectiveUnitPrice: override > weekend > base", () => {
+    const u = { basePrice: 4500, weekendPrice: 5500 };
+    expect(effectiveUnitPrice(u, "2026-08-18")).toBe(4500); // weekday
+    expect(effectiveUnitPrice(u, "2026-08-22")).toBe(5500); // Saturday
+    expect(effectiveUnitPrice(u, "2026-08-22", { price: 9999 })).toBe(9999); // override
+    expect(effectiveUnitPrice({ basePrice: 4500 }, "2026-08-22")).toBe(4500); // no weekend set
+  });
+
+  it("effectiveUnitUnits: blocked > override > inventory", () => {
+    const u = { inventory: 8 };
+    expect(effectiveUnitUnits(u, "2026-08-18")).toBe(8);
+    expect(effectiveUnitUnits(u, "2026-08-18", { units: 3 })).toBe(3);
+    expect(effectiveUnitUnits(u, "2026-08-18", { units: 3 }, ["2026-08-18"])).toBe(0);
   });
 
   it("uses type-correct guest nouns", () => {

@@ -32,6 +32,8 @@ import { propertyPath } from "@/lib/property-url";
 import { HotelRooms } from "@/components/hotel-rooms";
 import { DormsSection } from "@/components/dorms-section";
 import { hasUnits as villaHasUnits, startingFromPrice } from "@/lib/data/units";
+import { getRatesForProperty } from "@/lib/data/unit-rates";
+import { getBlockedDatesForProperty } from "@/lib/data/unit-blocked-dates";
 import { getPublishedExperiences } from "@/lib/data/experiences";
 import { getStateBySlug } from "@/lib/data/locations";
 import { formatNight } from "@/lib/format";
@@ -150,6 +152,9 @@ export async function PropertyDetail({ slug }: { slug: string }) {
   const showUnits = (isHotel || isHostel) && villaHasUnits(villa);
   const spacesLabel = isHotel ? "Rooms" : isHostel ? "Dorms" : "Spaces";
   const displayPrice = showUnits ? startingFromPrice(villa) : villa.pricePerNight;
+  // Per-unit rate & inventory overrides + blocked dates for the 7-day strip.
+  const overridesByUnit = showUnits ? await getRatesForProperty(villa.slug) : {};
+  const blockedByUnit = showUnits ? await getBlockedDatesForProperty(villa.slug) : {};
 
   // Build the tabs based on what content actually exists for this villa
   const tabs: DetailTab[] = [{ id: "overview", label: "Overview" }];
@@ -292,9 +297,19 @@ export async function PropertyDetail({ slug }: { slug: string }) {
               room / dorm types as bookable cards. */}
           <Section id="spaces" title={spacesLabel}>
             {showUnits && isHostel ? (
-              <DormsSection slug={villa.slug} units={villa.units!} />
+              <DormsSection
+                slug={villa.slug}
+                units={villa.units!}
+                overridesByUnit={overridesByUnit}
+                blockedByUnit={blockedByUnit}
+              />
             ) : showUnits ? (
-              <HotelRooms slug={villa.slug} units={villa.units!} />
+              <HotelRooms
+                slug={villa.slug}
+                units={villa.units!}
+                overridesByUnit={overridesByUnit}
+                blockedByUnit={blockedByUnit}
+              />
             ) : (
               <SpacesGrid images={villa.images} slug={villa.slug} />
             )}

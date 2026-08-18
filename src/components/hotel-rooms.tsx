@@ -3,6 +3,7 @@
 import { RoomCard } from "@/components/room-card";
 import { setUnitSelection } from "@/lib/unit-selection";
 import type { AccommodationUnit } from "@/lib/types";
+import type { UnitDateMap } from "@/lib/data/unit-rates";
 
 /**
  * Hotel rooms section (Phase G). Renders the room-type cards and records the
@@ -12,9 +13,13 @@ import type { AccommodationUnit } from "@/lib/types";
 export function HotelRooms({
   slug,
   units,
+  overridesByUnit = {},
+  blockedByUnit = {},
 }: {
   slug: string;
   units: AccommodationUnit[];
+  overridesByUnit?: Record<string, UnitDateMap>;
+  blockedByUnit?: Record<string, string[]>;
 }) {
   return (
     <div className="grid gap-4">
@@ -24,6 +29,8 @@ export function HotelRooms({
           key={unit.id}
           unit={unit}
           propertyType="hotel"
+          overrides={overridesByUnit[unit.id]}
+          blocked={blockedByUnit[unit.id]}
           onSelect={(unitId, qty) => {
             setUnitSelection({
               slug,

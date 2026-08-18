@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Users, BedDouble, Ruler, Minus, Plus, Check } from "lucide-react";
+import { Users, BedDouble, Ruler, Minus, Plus, Check, CalendarDays } from "lucide-react";
 import { formatNight } from "@/lib/format";
 import { unitAvailableCount } from "@/lib/data/units";
+import { RoomRateStrip } from "@/components/room-rate-strip";
 import type { AccommodationUnit, PropertyType } from "@/lib/types";
+import type { UnitDateMap } from "@/lib/data/unit-rates";
 
 /**
  * Guest-facing room-type / dorm-type card (Phase E/F). Layout mirrors the
@@ -18,6 +20,8 @@ export function RoomCard({
   propertyType,
   onSelect,
   ctaLabel,
+  overrides,
+  blocked,
 }: {
   unit: AccommodationUnit;
   propertyType: PropertyType;
@@ -27,12 +31,17 @@ export function RoomCard({
   onSelect?: (unitId: string, qty: number) => void;
   /** Overrides the default "Select Room/Bed" CTA text. */
   ctaLabel?: string;
+  /** Per-date price/units overrides for the 7-day rate strip (Phase 21). */
+  overrides?: UnitDateMap;
+  /** Blocked dates for the rate strip. */
+  blocked?: string[];
 }) {
   const isHostel = propertyType === "hostel";
   const noun = isHostel ? "Bed" : "Room";
   const available = unitAvailableCount(unit);
   const soldOut = available <= 0;
 
+  const [showRates, setShowRates] = useState(false);
   const [qty, setQty] = useState(1);
   const cap = Math.max(1, available);
   const dec = () => setQty((q) => Math.max(1, q - 1));
@@ -50,7 +59,8 @@ export function RoomCard({
   ].filter(Boolean);
 
   return (
-    <div className="grid gap-4 rounded-2xl border border-border/70 bg-card p-4 sm:grid-cols-[220px_1fr] lg:grid-cols-[220px_1fr_220px]">
+    <div className="rounded-2xl border border-border/70 bg-card p-4">
+    <div className="grid gap-4 sm:grid-cols-[220px_1fr] lg:grid-cols-[220px_1fr_220px]">
       {/* Image */}
       <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-muted sm:aspect-auto sm:h-full sm:min-h-[150px]">
         {cover ? (
@@ -160,9 +170,23 @@ export function RoomCard({
                 <Check className="h-4 w-4" /> {ctaLabel ?? `Select ${noun}`}
               </a>
             )}
+            <button
+              type="button"
+              onClick={() => setShowRates((s) => !s)}
+              aria-expanded={showRates}
+              className="inline-flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <CalendarDays className="h-3.5 w-3.5" />
+              {showRates ? "Hide" : "View"} 7-day rates
+            </button>
           </div>
         )}
       </div>
+    </div>
+
+    {showRates && (
+      <RoomRateStrip unit={unit} overrides={overrides} blocked={blocked} noun={noun} />
+    )}
     </div>
   );
 }

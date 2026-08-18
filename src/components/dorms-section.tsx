@@ -6,6 +6,7 @@ import { RoomCard } from "@/components/room-card";
 import { unitAvailableCount } from "@/lib/data/units";
 import { setUnitSelection } from "@/lib/unit-selection";
 import type { AccommodationUnit, BedInventory } from "@/lib/types";
+import type { UnitDateMap } from "@/lib/data/unit-rates";
 
 function goToInquiry() {
   if (typeof window !== "undefined") window.location.hash = "#inquire";
@@ -19,9 +20,13 @@ function goToInquiry() {
 export function DormsSection({
   slug,
   units,
+  overridesByUnit = {},
+  blockedByUnit = {},
 }: {
   slug: string;
   units: AccommodationUnit[];
+  overridesByUnit?: Record<string, UnitDateMap>;
+  blockedByUnit?: Record<string, string[]>;
 }) {
   const [selecting, setSelecting] = useState<AccommodationUnit | null>(null);
 
@@ -41,6 +46,8 @@ export function DormsSection({
             unit={unit}
             propertyType="hostel"
             ctaLabel="Select Bed"
+            overrides={overridesByUnit[unit.id]}
+            blocked={blockedByUnit[unit.id]}
             onSelect={(unitId, qty) => {
               if (selectable) {
                 setSelecting(unit);

@@ -191,6 +191,46 @@ export function unitAvailableForRange(
   return rangeIsBlocked(blocked, checkIn, checkOut) ? 0 : base;
 }
 
+/** Weekend = Friday or Saturday night (typical for Indian leisure stays). */
+export function isWeekendDate(dateStr: string): boolean {
+  const t = Date.parse(`${dateStr}T00:00:00Z`);
+  if (Number.isNaN(t)) return false;
+  const day = new Date(t).getUTCDay(); // 0 Sun … 6 Sat
+  return day === 5 || day === 6;
+}
+
+/**
+ * Effective nightly price for a unit on a date (calendar — Phase 21):
+ * per-date override → weekend price (on Fri/Sat) → base price.
+ */
+export function effectiveUnitPrice(
+  unit: Pick<AccommodationUnit, "basePrice" | "weekendPrice">,
+  dateStr: string,
+  override?: { price?: number },
+): number {
+  if (override?.price != null) return override.price;
+  if (isWeekendDate(dateStr) && unit.weekendPrice != null) return unit.weekendPrice;
+  return unit.basePrice;
+}
+
+/**
+ * Effective bookable units for a unit on a date: 0 if the date is blocked,
+ * else the per-date override count, else the unit's pooled inventory.
+ */
+export function effectiveUnitUnits(
+  unit: Pick<AccommodationUnit, "inventory">,
+  dateStr: string,
+  override?: { units?: number },
+  blocked?: Iterable<string>,
+): number {
+  if (blocked) {
+    const set = blocked instanceof Set ? blocked : new Set(blocked);
+    if (set.has(dateStr)) return 0;
+  }
+  if (override?.units != null) return Math.max(0, override.units);
+  return Math.max(0, unit.inventory ?? 0);
+}
+
 /** Guest-facing noun for the unit of inventory, driven by property type. */
 export function inventoryNoun(
   type: PropertyType | undefined,

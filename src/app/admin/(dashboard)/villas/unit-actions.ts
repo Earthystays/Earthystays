@@ -8,6 +8,7 @@ import {
   clearUnitBlockedDates,
   toggleUnitBlockedDate,
 } from "@/lib/data/unit-blocked-dates";
+import { clearUnitRates, setUnitRate, type RateOverride } from "@/lib/data/unit-rates";
 import type { AccommodationUnit, Villa } from "@/lib/types";
 
 // Admin auth is enforced by middleware (src/proxy.ts matches /admin/:path*),
@@ -77,8 +78,21 @@ export async function deleteUnit(
   villa.units = removeUnit(villa.units ?? [], unitId);
   await writeJson("villas.json", persist(list, villa, inList));
   await clearUnitBlockedDates(slug, unitId); // don't leave orphaned blocks
+  await clearUnitRates(slug, unitId); // …or orphaned rate overrides
   revalidate(slug);
   return { ok: true };
+}
+
+/** Set (or clear) a per-date price/units override for one unit (Phase 21). */
+export async function setUnitRateOverride(
+  slug: string,
+  unitId: string,
+  date: string,
+  override: RateOverride,
+): Promise<{ ok: true; dates: Record<string, RateOverride> }> {
+  const res = await setUnitRate(slug, unitId, date, override);
+  revalidate(slug);
+  return { ok: true, dates: res.dates };
 }
 
 /** Block or unblock a single date for one unit (Phase H). */

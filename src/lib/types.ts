@@ -123,6 +123,9 @@ export type BookingItem = {
   unitId: string;
   unitName: string;
   quantity: number;
+  /** Per-night price of the chosen room/bed at inquiry time — snapshot so the
+   *  guest and the admin both see the figure the guest was looking at. */
+  unitPrice?: number;
   /** Specific bed/room ids when the guest selected them. */
   selectedInventoryIds?: string[];
 };

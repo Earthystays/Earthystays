@@ -27,7 +27,7 @@ export function HotelRooms({
           onSelect={(unitId, qty) => {
             setUnitSelection({
               slug,
-              item: { unitId, unitName: unit.name, quantity: qty },
+              item: { unitId, unitName: unit.name, quantity: qty, unitPrice: unit.basePrice },
             });
             if (typeof window !== "undefined") window.location.hash = "#inquire";
           }}

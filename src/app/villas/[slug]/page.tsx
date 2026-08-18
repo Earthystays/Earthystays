@@ -545,7 +545,11 @@ export async function PropertyDetail({ slug }: { slug: string }) {
               </p>
             </div>
             <div className="px-6 pb-6 pt-5">
-              <InquiryForm villaSlug={villa.slug} villaName={villa.name} />
+              <InquiryForm
+                villaSlug={villa.slug}
+                villaName={villa.name}
+                unitLabel={isHotel ? "Room" : isHostel ? "Bed" : undefined}
+              />
             </div>
             <div className="border-t border-border/60 px-6 py-4">
               <ConnectWithHost />
@@ -578,7 +582,8 @@ export async function PropertyDetail({ slug }: { slug: string }) {
       <MobileInquireBar
         villaSlug={villa.slug}
         villaName={villa.name}
-        pricePerNight={villa.pricePerNight}
+        pricePerNight={displayPrice}
+        unitLabel={isHotel ? "Room" : isHostel ? "Bed" : undefined}
       />
     </div>
   );

@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { DateRangePicker, type DateRange } from "@/components/date-range-picker";
 import { GuestsPicker, DEFAULT_GUESTS, type Guests } from "@/components/guests-picker";
 import { useUnitSelection } from "@/lib/unit-selection";
+import { formatINR, formatNight } from "@/lib/format";
 
 const InquirySchema = z.object({
   name: z.string().min(2, "Please share your name"),
@@ -42,9 +43,13 @@ function WhatsAppGlyph({ className }: { className?: string }) {
 export function InquiryForm({
   villaSlug,
   villaName,
+  unitLabel,
 }: {
   villaSlug?: string;
   villaName?: string;
+  /** "Room" (hotel) / "Bed" (hostel) — when set, the form prompts the guest to
+   *  pick one and shows the selected unit's price. Omitted for villas. */
+  unitLabel?: "Room" | "Bed";
 }) {
   const [submitted, setSubmitted] = useState(false);
   const [range, setRange] = useState<DateRange | undefined>(undefined);
@@ -110,8 +115,10 @@ export function InquiryForm({
 
   const selectionText = selection
     ? ` (${selection.item.quantity}× ${selection.item.unitName}${
-        selection.bedLabels?.length ? ` — ${selection.bedLabels.join(", ")}` : ""
-      })`
+        selection.item.unitPrice != null
+          ? ` @ ${formatNight(selection.item.unitPrice)}`
+          : ""
+      }${selection.bedLabels?.length ? ` — ${selection.bedLabels.join(", ")}` : ""})`
     : "";
   const waText = encodeURIComponent(
     villaName
@@ -131,17 +138,49 @@ export function InquiryForm({
         </p>
       )}
 
-      {selection && (
-        <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2.5 text-xs">
-          <p className="font-medium text-foreground">
-            {selection.item.quantity}× {selection.item.unitName}
+      {selection ? (
+        (() => {
+          const { unitName, quantity, unitPrice } = selection.item;
+          const noun = unitLabel ?? "Room";
+          const plural = quantity === 1 ? "" : "s";
+          const subtotal = unitPrice != null ? unitPrice * quantity : undefined;
+          return (
+            <div className="rounded-lg border border-primary/30 bg-primary/5 px-3.5 py-3 text-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-medium text-foreground">{unitName}</p>
+                  {unitPrice != null && (
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {formatNight(unitPrice)} · {quantity} {noun}
+                      {plural}
+                    </p>
+                  )}
+                </div>
+                {subtotal != null && (
+                  <div className="text-right">
+                    <p className="font-numeric font-bold tabular-nums text-foreground">
+                      {formatINR(subtotal)}
+                    </p>
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                      / night
+                    </p>
+                  </div>
+                )}
+              </div>
+              {selection.bedLabels && selection.bedLabels.length > 0 && (
+                <p className="mt-1.5 border-t border-primary/15 pt-1.5 text-xs text-muted-foreground">
+                  {selection.bedLabels.join(", ")}
+                </p>
+              )}
+            </div>
+          );
+        })()
+      ) : (
+        unitLabel && (
+          <p className="rounded-lg border border-dashed border-border bg-muted/40 px-3.5 py-2.5 text-xs text-muted-foreground">
+            Select a {unitLabel.toLowerCase()} above to see its price and inquire.
           </p>
-          {selection.bedLabels && selection.bedLabels.length > 0 && (
-            <p className="mt-0.5 text-muted-foreground">
-              {selection.bedLabels.join(", ")}
-            </p>
-          )}
-        </div>
+        )
       )}
 
       {/* Compact date + guests row */}

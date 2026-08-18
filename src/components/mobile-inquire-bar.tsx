@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/sheet";
 import { InquiryForm } from "@/components/inquiry-form";
 import { ConnectWithHost } from "@/components/connect-with-host";
+import { useUnitSelection } from "@/lib/unit-selection";
 
 /**
  * Mobile-only sticky bottom bar on villa detail pages: shows the price +
@@ -24,12 +25,21 @@ export function MobileInquireBar({
   villaSlug,
   villaName,
   pricePerNight,
+  unitLabel,
 }: {
   villaSlug: string;
   villaName: string;
   pricePerNight: number;
+  unitLabel?: "Room" | "Bed";
 }) {
   const [open, setOpen] = useState(false);
+  const selection = useUnitSelection(villaSlug);
+  // Once the guest picks a room/bed, the bar reflects that price instead of the
+  // "starting from" figure.
+  const barPrice = selection?.item.unitPrice ?? pricePerNight;
+  const barSubLabel = selection
+    ? `${selection.item.quantity} ${unitLabel ?? "Room"}${selection.item.quantity === 1 ? "" : "s"} · ${selection.item.unitName}`
+    : "per night + taxes";
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- post-hydration mount flag
@@ -86,9 +96,10 @@ export function MobileInquireBar({
       <div className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-between gap-3 border-t border-border bg-background/95 px-4 py-3 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] backdrop-blur lg:hidden">
         <div className="leading-tight">
           <p className="font-numeric text-lg font-bold tabular-nums text-foreground">
-            ₹{pricePerNight.toLocaleString("en-IN")}
+            ₹{barPrice.toLocaleString("en-IN")}
+            {selection && <span className="text-xs font-normal text-muted-foreground"> / night</span>}
           </p>
-          <p className="text-[10px] text-muted-foreground">per night + taxes</p>
+          <p className="max-w-[46vw] truncate text-[10px] text-muted-foreground">{barSubLabel}</p>
         </div>
         <button
           type="button"
@@ -145,7 +156,7 @@ export function MobileInquireBar({
           </div>
 
           <div className="h-[calc(85dvh-10.5rem)] overflow-y-auto px-5 py-5 pb-6 overscroll-contain">
-            <InquiryForm villaSlug={villaSlug} villaName={villaName} />
+            <InquiryForm villaSlug={villaSlug} villaName={villaName} unitLabel={unitLabel} />
           </div>
           <div className="sticky bottom-0 border-t border-border/60 bg-background px-5 py-3">
             <ConnectWithHost />

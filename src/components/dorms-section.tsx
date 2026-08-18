@@ -49,7 +49,7 @@ export function DormsSection({
               // Auto-assign dorm — record the bed count and jump to inquiry.
               setUnitSelection({
                 slug,
-                item: { unitId, unitName: unit.name, quantity: qty },
+                item: { unitId, unitName: unit.name, quantity: qty, unitPrice: unit.basePrice },
               });
               goToInquiry();
             }}
@@ -188,6 +188,7 @@ function BedSelection({
                 unitId: dorm.id,
                 unitName: dorm.name,
                 quantity: chosen.length,
+                unitPrice: dorm.basePrice,
                 selectedInventoryIds: chosen.map((b) => b.id),
               },
               bedLabels: chosen.map((b) => b.label),

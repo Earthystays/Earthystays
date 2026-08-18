@@ -80,6 +80,7 @@ const InquirySchema = z.object({
         unitId: z.string(),
         unitName: z.string(),
         quantity: z.coerce.number().int().min(1).max(50),
+        unitPrice: z.coerce.number().min(0).optional(),
         selectedInventoryIds: z.array(z.string()).optional(),
       }),
     )

@@ -1001,6 +1001,9 @@ function DetailPanel({
                   {q.bookingItems.map((it, i) => (
                     <span key={i}>
                       {it.quantity}× {it.unitName}
+                      {it.unitPrice != null
+                        ? ` @ ₹${it.unitPrice.toLocaleString("en-IN")}/night`
+                        : ""}
                       {it.selectedInventoryIds?.length
                         ? ` (${it.selectedInventoryIds.length} bed${it.selectedInventoryIds.length === 1 ? "" : "s"} selected)`
                         : ""}

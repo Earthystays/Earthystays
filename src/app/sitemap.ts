@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import type { MetadataRoute } from "next";
-import { getVillas } from "@/lib/data/villas";
+import { getVillas, getHotels, getHostels } from "@/lib/data/villas";
 import { propertyPath } from "@/lib/property-url";
 import { destinations } from "@/lib/data/locations";
 import { collections } from "@/lib/data/collections";
@@ -31,8 +31,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const staticPages: MetadataRoute.Sitemap = [
     { url: SITE, lastModified: now, changeFrequency: "daily", priority: 1 },
     { url: `${SITE}/villas`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
-    { url: `${SITE}/hotels`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
-    { url: `${SITE}/hostels`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
+    // Only advertise the hotels/hostels indexes once at least one is live.
+    ...(getHotels().length > 0
+      ? [{ url: `${SITE}/hotels`, lastModified: now, changeFrequency: "daily" as const, priority: 0.8 }]
+      : []),
+    ...(getHostels().length > 0
+      ? [{ url: `${SITE}/hostels`, lastModified: now, changeFrequency: "daily" as const, priority: 0.8 }]
+      : []),
     { url: `${SITE}/locations`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${SITE}/collections`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
     { url: `${SITE}/experiences`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },

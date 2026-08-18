@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { getHostels } from "@/lib/data/villas";
 import { PropertyBrowseIndex } from "@/components/property-browse-index";
 
 export const metadata: Metadata = {
@@ -14,6 +16,8 @@ export default async function HostelsIndexPage({
 }: {
   searchParams: SearchParams;
 }) {
+  // Keep the section invisible until the first hostel is live.
+  if (getHostels().length === 0) notFound();
   const sp = await searchParams;
   const stateFilter = typeof sp.state === "string" ? sp.state : undefined;
   return <PropertyBrowseIndex kind="hostel" stateFilter={stateFilter} />;

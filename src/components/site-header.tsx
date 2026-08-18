@@ -134,11 +134,15 @@ export function SiteHeader({
   transparent = false,
   villaStates = [],
   apartmentStates = [],
+  showHotels = false,
+  showHostels = false,
 }: {
   user: { name: string; email: string; isHost?: boolean } | null;
   transparent?: boolean;
   villaStates?: CityIndexState[];
   apartmentStates?: CityIndexState[];
+  showHotels?: boolean;
+  showHostels?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -181,7 +185,7 @@ export function SiteHeader({
         </Link>
 
         <nav className="hidden md:flex items-center gap-9 lg:gap-10">
-          <StayMenu isOverlay={isOverlay} />
+          <StayMenu isOverlay={isOverlay} showHotels={showHotels} showHostels={showHostels} />
           <Link
             href="/experiences"
             className={`text-base lg:text-lg transition-colors ${
@@ -319,6 +323,24 @@ export function SiteHeader({
                     states={apartmentStates}
                     onNavigate={() => setOpen(false)}
                   />
+                  {showHotels && (
+                    <Link
+                      href="/hotels"
+                      onClick={() => setOpen(false)}
+                      className="block rounded-md px-3 py-3 text-base hover:bg-muted"
+                    >
+                      Hotels
+                    </Link>
+                  )}
+                  {showHostels && (
+                    <Link
+                      href="/hostels"
+                      onClick={() => setOpen(false)}
+                      className="block rounded-md px-3 py-3 text-base hover:bg-muted"
+                    >
+                      Hostels
+                    </Link>
+                  )}
                   {STAY_MOBILE_LINKS.filter(
                     (l) => l.href !== "/villas" && l.href !== "/apartments",
                   ).map((l) => (

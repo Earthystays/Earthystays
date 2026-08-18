@@ -5,7 +5,7 @@ import { SiteChrome } from "@/components/site-chrome";
 import { Toaster } from "@/components/ui/sonner";
 import { AnalyticsScripts } from "@/components/analytics-scripts";
 import { getCurrentUser } from "@/lib/session";
-import { getCityIndex } from "@/lib/data/villas";
+import { getCityIndex, getHotels, getHostels } from "@/lib/data/villas";
 
 const karla = Karla({
   variable: "--font-karla",
@@ -70,6 +70,10 @@ export default async function RootLayout({
     : null;
   const villaStates = getCityIndex("villa");
   const apartmentStates = getCityIndex("apartment");
+  // Hide the Hotels / Hostels nav sections until at least one such property
+  // is actually live — no empty sections before the first goes public.
+  const showHotels = getHotels().length > 0;
+  const showHostels = getHostels().length > 0;
 
   return (
     <html
@@ -81,6 +85,8 @@ export default async function RootLayout({
           user={user}
           villaStates={villaStates}
           apartmentStates={apartmentStates}
+          showHotels={showHotels}
+          showHostels={showHostels}
         >
           {children}
         </SiteChrome>

@@ -85,8 +85,25 @@ export const STAY_MOBILE_LINKS: { label: string; href: string }[] = [
   { label: "All destinations", href: "/locations" },
 ];
 
-export function StayMenu({ isOverlay }: { isOverlay: boolean }) {
+export function StayMenu({
+  isOverlay,
+  showHotels = false,
+  showHostels = false,
+}: {
+  isOverlay: boolean;
+  showHotels?: boolean;
+  showHostels?: boolean;
+}) {
   const [open, setOpen] = useState(false);
+  // Drop the Hotels / Hostels links until at least one such property is live.
+  const columns = STAY_COLUMNS.map((col) => ({
+    ...col,
+    links: col.links.filter(
+      (l) =>
+        (l.href !== "/hotels" || showHotels) &&
+        (l.href !== "/hostels" || showHostels),
+    ),
+  }));
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger
@@ -105,7 +122,7 @@ export function StayMenu({ isOverlay }: { isOverlay: boolean }) {
         className="w-[min(1040px,calc(100vw-2rem))] rounded-[18px] border border-border/50 p-8 px-10 shadow-[0_12px_30px_rgba(0,0,0,0.06)]"
       >
         <div className="grid grid-cols-2 gap-x-12 gap-y-8 md:grid-cols-4">
-          {STAY_COLUMNS.map((col, i) => (
+          {columns.map((col, i) => (
             <div
               key={col.heading}
               className={i > 0 ? "md:border-l md:border-[#F1F1F1] md:pl-12" : ""}

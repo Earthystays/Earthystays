@@ -12,11 +12,15 @@ export function SiteChrome({
   user,
   villaStates,
   apartmentStates,
+  showHotels = false,
+  showHostels = false,
 }: {
   children: ReactNode;
   user: { name: string; email: string; isHost?: boolean } | null;
   villaStates: CityIndexState[];
   apartmentStates: CityIndexState[];
+  showHotels?: boolean;
+  showHostels?: boolean;
 }) {
   const path = usePathname();
   // Admin and host dashboards bring their own chrome — no public
@@ -38,6 +42,8 @@ export function SiteChrome({
         transparent={isHome}
         villaStates={villaStates}
         apartmentStates={apartmentStates}
+        showHotels={showHotels}
+        showHostels={showHostels}
       />
       <main className={`flex-1 ${isHome ? "-mt-20" : ""}`}>{children}</main>
       <SiteFooter />

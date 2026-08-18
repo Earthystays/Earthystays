@@ -37,6 +37,23 @@ const BED_STATUS_STYLE: Record<string, string> = {
 
 type Kind = "room" | "dorm";
 
+/** Quick-add suggestions for per-room / per-dorm amenities. */
+const COMMON_UNIT_AMENITIES = [
+  "Wi-Fi",
+  "Air Conditioning",
+  "TV",
+  "Attached Bathroom",
+  "Balcony",
+  "Mini Bar",
+  "Work Desk",
+  "Locker",
+  "Reading Light",
+  "Charging Point",
+  "Fan",
+  "Towels",
+  "Hair Dryer",
+];
+
 /** Blank unit template for the "add" form. */
 function blankUnit(kind: Kind): AccommodationUnit {
   return {
@@ -74,7 +91,23 @@ export function UnitsEditor({
   const [draft, setDraft] = useState<AccommodationUnit | null>(null);
   const [blocked, setBlocked] = useState<Record<string, string[]>>(initialBlockedDates);
   const [dateToBlock, setDateToBlock] = useState("");
+  const [amenityInput, setAmenityInput] = useState("");
   const [pending, startTransition] = useTransition();
+
+  function addAmenity(name: string) {
+    const v = name.trim();
+    if (!v) return;
+    setDraft((d) => {
+      if (!d) return d;
+      const list = d.amenities ?? [];
+      if (list.some((a) => a.toLowerCase() === v.toLowerCase())) return d;
+      return { ...d, amenities: [...list, v] };
+    });
+    setAmenityInput("");
+  }
+  function removeAmenity(name: string) {
+    setDraft((d) => (d ? { ...d, amenities: (d.amenities ?? []).filter((a) => a !== name) } : d));
+  }
 
   function onToggleDate(unitId: string, date: string) {
     if (!date) return;
@@ -249,6 +282,21 @@ export function UnitsEditor({
                 onChange={(e) => set("bedConfiguration", e.target.value)}
                 placeholder={type === "hotel" ? "1 Queen Bed" : "8 Single Beds"}
               />
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {(kind === "dorm"
+                  ? ["Single Bed", "Bunk Bed", "Double Bed"]
+                  : ["1 King Bed", "1 Queen Bed", "2 Twin Beds", "1 King + Sofa"]
+                ).map((b) => (
+                  <button
+                    key={b}
+                    type="button"
+                    onClick={() => set("bedConfiguration", b)}
+                    className="rounded-full border border-dashed border-border px-2.5 py-1 text-xs text-muted-foreground hover:border-primary hover:text-foreground"
+                  >
+                    {b}
+                  </button>
+                ))}
+              </div>
             </UField>
           </div>
 
@@ -447,6 +495,65 @@ export function UnitsEditor({
               />
             </UField>
           </div>
+
+          <UField
+            label={kind === "dorm" ? "Dorm amenities" : "Room amenities"}
+            hint="Shown on this room/dorm card — separate from the property's common amenities."
+          >
+            <div className="grid gap-2">
+              {(draft.amenities?.length ?? 0) > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {draft.amenities!.map((a) => (
+                    <span
+                      key={a}
+                      className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2.5 py-1 text-xs"
+                    >
+                      {a}
+                      <button
+                        type="button"
+                        onClick={() => removeAmenity(a)}
+                        className="text-muted-foreground hover:text-destructive"
+                        aria-label={`Remove ${a}`}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <Input
+                  value={amenityInput}
+                  onChange={(e) => setAmenityInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addAmenity(amenityInput);
+                    }
+                  }}
+                  placeholder="e.g. Air Conditioning"
+                  className="h-9"
+                />
+                <Button type="button" size="sm" variant="outline" onClick={() => addAmenity(amenityInput)}>
+                  Add
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {COMMON_UNIT_AMENITIES.filter(
+                  (a) => !(draft.amenities ?? []).some((x) => x.toLowerCase() === a.toLowerCase()),
+                ).map((a) => (
+                  <button
+                    key={a}
+                    type="button"
+                    onClick={() => addAmenity(a)}
+                    className="rounded-full border border-dashed border-border px-2.5 py-1 text-xs text-muted-foreground hover:border-primary hover:text-foreground"
+                  >
+                    + {a}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </UField>
 
           <UField label="Photos">
             <PhotoUploader

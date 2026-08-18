@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 import { readJson, writeJson } from "@/lib/storage";
 import { getVillaBySlugWithHidden } from "@/lib/data/villas";
 import { removeUnit, upsertUnit } from "@/lib/data/units";
+import {
+  clearUnitBlockedDates,
+  toggleUnitBlockedDate,
+} from "@/lib/data/unit-blocked-dates";
 import type { AccommodationUnit, Villa } from "@/lib/types";
 
 // Admin auth is enforced by middleware (src/proxy.ts matches /admin/:path*),
@@ -72,6 +76,18 @@ export async function deleteUnit(
   const { list, villa, inList } = await loadListAndVilla(slug);
   villa.units = removeUnit(villa.units ?? [], unitId);
   await writeJson("villas.json", persist(list, villa, inList));
+  await clearUnitBlockedDates(slug, unitId); // don't leave orphaned blocks
   revalidate(slug);
   return { ok: true };
+}
+
+/** Block or unblock a single date for one unit (Phase H). */
+export async function toggleUnitDate(
+  slug: string,
+  unitId: string,
+  date: string,
+): Promise<{ blocked: boolean; dates: string[] }> {
+  const res = await toggleUnitBlockedDate(slug, unitId, date);
+  revalidate(slug);
+  return res;
 }

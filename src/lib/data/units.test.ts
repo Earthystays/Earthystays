@@ -8,10 +8,13 @@ import {
   inventoryNoun,
   isMultiUnitType,
   isUnitAvailable,
+  nightsInRange,
+  rangeIsBlocked,
   removeUnit,
   startingFromPrice,
   totalAvailableCount,
   unitAvailableCount,
+  unitAvailableForRange,
   upsertUnit,
 } from "./units";
 
@@ -154,6 +157,51 @@ describe("units helpers", () => {
     beds[1].status = "maintenance";
     const dorm = room({ kind: "dorm", inventory: 8, beds });
     expect(unitAvailableCount(dorm)).toBe(6);
+  });
+
+  it("nightsInRange lists booked nights, excluding checkout day", () => {
+    expect(nightsInRange("2026-09-12", "2026-09-15")).toEqual([
+      "2026-09-12",
+      "2026-09-13",
+      "2026-09-14",
+    ]);
+    expect(nightsInRange("2026-09-12", "2026-09-13")).toEqual(["2026-09-12"]);
+  });
+
+  it("nightsInRange handles invalid/empty ranges", () => {
+    expect(nightsInRange()).toEqual([]);
+    expect(nightsInRange("2026-09-15", "2026-09-12")).toEqual([]); // end<=start
+    expect(nightsInRange("2026-09-12", "2026-09-12")).toEqual([]); // zero nights
+  });
+
+  it("rangeIsBlocked detects any overlapping night", () => {
+    const blocked = ["2026-09-14"];
+    expect(rangeIsBlocked(blocked, "2026-09-12", "2026-09-15")).toBe(true);
+    // 12→14 books nights 12,13 — the block on the 14th (checkout day) is fine
+    expect(rangeIsBlocked(blocked, "2026-09-12", "2026-09-14")).toBe(false);
+    expect(rangeIsBlocked([], "2026-09-12", "2026-09-15")).toBe(false);
+  });
+
+  it("unitAvailableForRange falls back to pooled count without dates", () => {
+    expect(unitAvailableForRange(room({ inventory: 5 }))).toBe(5);
+  });
+
+  it("unitAvailableForRange zeroes out when a night is blocked", () => {
+    const r = room({ inventory: 5 });
+    expect(
+      unitAvailableForRange(r, {
+        unitBlocked: ["2026-09-13"],
+        checkIn: "2026-09-12",
+        checkOut: "2026-09-15",
+      }),
+    ).toBe(0);
+    expect(
+      unitAvailableForRange(r, {
+        propertyBlocked: ["2026-09-20"],
+        checkIn: "2026-09-12",
+        checkOut: "2026-09-15",
+      }),
+    ).toBe(5); // block outside the range
   });
 
   it("uses type-correct guest nouns", () => {

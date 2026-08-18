@@ -16,7 +16,7 @@ import type {
   InventoryUnitStatus,
 } from "@/lib/types";
 import { generateBeds } from "@/lib/data/units";
-import { saveUnit, deleteUnit } from "../../unit-actions";
+import { saveUnit, deleteUnit, toggleUnitDate } from "../../unit-actions";
 
 /** Statuses an operator sets by hand ("held" is transient, set by checkout). */
 const BED_STATUSES: { value: InventoryUnitStatus; label: string }[] = [
@@ -58,10 +58,13 @@ export function UnitsEditor({
   slug,
   type,
   initialUnits,
+  initialBlockedDates = {},
 }: {
   slug: string;
   type: "hotel" | "hostel";
   initialUnits: AccommodationUnit[];
+  /** Per-unit blocked dates: { [unitId]: ["YYYY-MM-DD"] } (Phase H). */
+  initialBlockedDates?: Record<string, string[]>;
 }) {
   const kind: Kind = type === "hotel" ? "room" : "dorm";
   const nounSingular = type === "hotel" ? "Room type" : "Dorm type";
@@ -69,7 +72,21 @@ export function UnitsEditor({
 
   const [units, setUnits] = useState<AccommodationUnit[]>(initialUnits);
   const [draft, setDraft] = useState<AccommodationUnit | null>(null);
+  const [blocked, setBlocked] = useState<Record<string, string[]>>(initialBlockedDates);
+  const [dateToBlock, setDateToBlock] = useState("");
   const [pending, startTransition] = useTransition();
+
+  function onToggleDate(unitId: string, date: string) {
+    if (!date) return;
+    startTransition(async () => {
+      try {
+        const res = await toggleUnitDate(slug, unitId, date);
+        setBlocked((prev) => ({ ...prev, [unitId]: res.dates }));
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Could not update dates");
+      }
+    });
+  }
 
   const set = <K extends keyof AccommodationUnit>(k: K, val: AccommodationUnit[K]) =>
     setDraft((d) => (d ? { ...d, [k]: val } : d));
@@ -176,6 +193,11 @@ export function UnitsEditor({
               <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
                 {u.inventory} {invNoun}
               </span>
+              {(blocked[u.id]?.length ?? 0) > 0 && (
+                <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+                  {blocked[u.id].length} blocked
+                </span>
+              )}
               <div className="flex gap-1">
                 <button
                   type="button"
@@ -433,6 +455,54 @@ export function UnitsEditor({
               onChange={(photos) => set("images", photos as ImageT[])}
             />
           </UField>
+
+          {/* Per-unit unavailable dates — only for a saved unit (needs its id) */}
+          {draft.id && (
+            <div className="grid gap-2 rounded-lg border border-border bg-background p-4">
+              <Label className="text-sm">Unavailable dates</Label>
+              <p className="text-xs text-muted-foreground">
+                Block specific nights for this {nounSingular.toLowerCase()} (e.g.
+                maintenance or an offline booking). Saved immediately.
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <Input
+                  type="date"
+                  value={dateToBlock}
+                  onChange={(e) => setDateToBlock(e.target.value)}
+                  className="h-9 w-auto"
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={!dateToBlock || pending}
+                  onClick={() => {
+                    onToggleDate(draft.id, dateToBlock);
+                    setDateToBlock("");
+                  }}
+                >
+                  Block date
+                </Button>
+              </div>
+              {(blocked[draft.id]?.length ?? 0) > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {blocked[draft.id].map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => onToggleDate(draft.id, d)}
+                      className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2.5 py-1 text-xs hover:border-destructive hover:text-destructive"
+                      title="Click to unblock"
+                    >
+                      {d} <span aria-hidden>×</span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">No blocked dates.</p>
+              )}
+            </div>
+          )}
 
           <div className="flex items-center gap-3">
             <Button type="button" onClick={onSave} disabled={pending} className="gap-1.5">

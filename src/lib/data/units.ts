@@ -134,6 +134,63 @@ export function removeUnit(
   return units.filter((u) => u.id !== unitId);
 }
 
+/**
+ * The night-start dates ("YYYY-MM-DD") a stay occupies: check-in through the
+ * night before check-out. Checkout day itself is not a booked night. Returns
+ * [] for an invalid or empty range. Computed in UTC to avoid DST drift.
+ */
+export function nightsInRange(checkIn?: string, checkOut?: string): string[] {
+  if (!checkIn || !checkOut) return [];
+  const start = Date.parse(`${checkIn}T00:00:00Z`);
+  const end = Date.parse(`${checkOut}T00:00:00Z`);
+  if (Number.isNaN(start) || Number.isNaN(end) || end <= start) return [];
+  const out: string[] = [];
+  const DAY = 86400000;
+  for (let t = start; t < end; t += DAY) {
+    out.push(new Date(t).toISOString().slice(0, 10));
+  }
+  return out;
+}
+
+/** Whether any night in [checkIn, checkOut) is present in `blocked`. */
+export function rangeIsBlocked(
+  blocked: Iterable<string>,
+  checkIn?: string,
+  checkOut?: string,
+): boolean {
+  const set = blocked instanceof Set ? blocked : new Set(blocked);
+  if (set.size === 0) return false;
+  return nightsInRange(checkIn, checkOut).some((d) => set.has(d));
+}
+
+/**
+ * Date-aware availability for a unit. Base is the pooled/named count; if a
+ * date range is given and any of its nights is blocked (per-unit block or a
+ * property-wide block), the unit is unavailable (0) for that stay.
+ *
+ * With no date range this is just `unitAvailableCount` — matching the guest
+ * cards, which are date-independent in v1.
+ */
+export function unitAvailableForRange(
+  unit: AccommodationUnit,
+  opts: {
+    unitBlocked?: Iterable<string>;
+    propertyBlocked?: Iterable<string>;
+    checkIn?: string;
+    checkOut?: string;
+  } = {},
+): number {
+  const base = unitAvailableCount(unit);
+  if (base <= 0) return 0;
+  const { checkIn, checkOut } = opts;
+  if (!checkIn || !checkOut) return base;
+  const blocked = new Set<string>([
+    ...(opts.unitBlocked ?? []),
+    ...(opts.propertyBlocked ?? []),
+  ]);
+  return rangeIsBlocked(blocked, checkIn, checkOut) ? 0 : base;
+}
+
 /** Guest-facing noun for the unit of inventory, driven by property type. */
 export function inventoryNoun(
   type: PropertyType | undefined,

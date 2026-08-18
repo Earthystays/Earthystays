@@ -25,7 +25,13 @@ export function SiteChrome({
   const path = usePathname();
   // Admin and host dashboards bring their own chrome — no public
   // header/footer/WhatsApp float there.
-  const isDashboard = path?.startsWith("/admin") || path?.startsWith("/host");
+  // NB: use "/host/" (with trailing slash) + exact "/host" so this doesn't
+  // also match the public "/hostels" section, which needs the normal chrome.
+  const isDashboard =
+    path === "/admin" ||
+    path?.startsWith("/admin/") ||
+    path === "/host" ||
+    path?.startsWith("/host/");
 
   if (isDashboard) {
     return <div className="flex-1">{children}</div>;

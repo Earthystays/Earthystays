@@ -4,7 +4,10 @@ import { LoginForm } from "./form";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { getCurrentUser } from "@/lib/session";
 
-export const metadata: Metadata = { title: "Sign in" };
+export const metadata: Metadata = {
+  title: "Sign in",
+  robots: { index: false, follow: true },
+};
 
 export default async function LoginPage({
   searchParams,

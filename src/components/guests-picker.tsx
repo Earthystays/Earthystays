@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Minus, Plus, Users as UsersIcon } from "lucide-react";
+import { Info, Minus, Plus, Users as UsersIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export type Guests = {
@@ -21,26 +21,54 @@ export const DEFAULT_GUESTS: Guests = {
 type Props = {
   value: Guests;
   onChange: (g: Guests) => void;
-  /** Called when the user hits "Apply & Search". Receives the chosen Guests
+  /** Called when the user hits the confirm button. Receives the chosen Guests
    *  directly so callers don't have to wait for state to update. */
   onApplyAndSearch?: (g: Guests) => void;
   className?: string;
+  /** Single, compact trigger button (used inside the villa inquiry form). */
+  compactTrigger?: boolean;
+  /** Label for the confirm button. Defaults to "Apply & Search". */
+  applyLabel?: string;
+  /** Show the "Children and infants are included…" info line above the footer. */
+  showFooterNote?: boolean;
+  /** Plain counts (2) vs padded/plus (02, 1+). Defaults to false. */
+  plainCounts?: boolean;
 };
 
-export function GuestsPicker({ value, onChange, onApplyAndSearch, className = "" }: Props) {
+export function GuestsPicker({
+  value,
+  onChange,
+  onApplyAndSearch,
+  className = "",
+  compactTrigger = false,
+  applyLabel = "Apply & Search",
+  showFooterNote = false,
+  plainCounts = false,
+}: Props) {
   const [open, setOpen] = useState(false);
+  const [dropUp, setDropUp] = useState(false);
   const [draft, setDraft] = useState<Guests>(value);
   const ref = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
-  // Prime draft from current value when the popover opens.
-  // `open` is an external trigger (parent controls it) so the effect is the
-  // right tool here — we can't derive this purely in render.
+  function toggle() {
+    setOpen((o) => {
+      if (!o) {
+        const rect = triggerRef.current?.getBoundingClientRect();
+        if (rect) {
+          const below = window.innerHeight - rect.bottom;
+          setDropUp(rect.top > below);
+        }
+      }
+      return !o;
+    });
+  }
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: prime local draft from parent value on open
     if (open) setDraft(value);
   }, [open, value]);
 
-  // Click outside to close (no apply)
   useEffect(() => {
     if (!open) return;
     function onClick(e: MouseEvent) {
@@ -72,56 +100,77 @@ export function GuestsPicker({ value, onChange, onApplyAndSearch, className = ""
     setDraft((d) => ({ ...d, [key]: mutator(d[key]) }));
   }
 
-  // Trigger summary — Total people (excluding infants per industry norm)
   const totalPeople = value.adults + value.children;
-  const summary = `${totalPeople} Guest${totalPeople === 1 ? "" : "s"}, ${value.rooms}+ Room${value.rooms === 1 ? "" : "s"}`;
+  const summary = plainCounts
+    ? `${totalPeople} Guest${totalPeople === 1 ? "" : "s"} · ${value.rooms} Room${value.rooms === 1 ? "" : "s"}`
+    : `${totalPeople} Guest${totalPeople === 1 ? "" : "s"}, ${value.rooms}+ Room${value.rooms === 1 ? "" : "s"}`;
+
+  const numFmt = plainCounts ? (n: number) => String(n) : (n: number) => String(n).padStart(2, "0");
+  const roomsFmt = plainCounts ? (n: number) => String(n) : (n: number) => `${n}+`;
 
   return (
     <div ref={ref} className={`relative ${className}`}>
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-start gap-2.5 px-5 py-2.5 text-left transition-colors hover:bg-muted/40"
-      >
-        <UsersIcon className="mt-1 h-4 w-4 shrink-0 text-terracotta" />
-        <span className="min-w-0 flex-1">
-          <span className="block text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
-            Guests
+      {compactTrigger ? (
+        <button
+          ref={triggerRef}
+          type="button"
+          onClick={toggle}
+          className="flex w-full items-center gap-3 rounded-md border border-border/70 bg-background px-4 py-3 text-left transition-colors hover:bg-muted/40"
+        >
+          <UsersIcon className="h-4 w-4 shrink-0 text-forest-green" />
+          <span className="min-w-0 flex-1 text-[14px] text-foreground">{summary}</span>
+        </button>
+      ) : (
+        <button
+          ref={triggerRef}
+          type="button"
+          onClick={toggle}
+          className="flex w-full items-start gap-2.5 px-5 py-2.5 text-left transition-colors hover:bg-muted/40"
+        >
+          <UsersIcon className="mt-1 h-4 w-4 shrink-0 text-terracotta" />
+          <span className="min-w-0 flex-1">
+            <span className="block text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+              Guests
+            </span>
+            <span className="block text-[15px] text-foreground">{summary}</span>
           </span>
-          <span className="block text-[15px] text-foreground">{summary}</span>
-        </span>
-      </button>
+        </button>
+      )}
 
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-3 w-[360px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-border/60 bg-card shadow-2xl">
+        <div
+          className={`absolute right-0 z-50 flex max-h-[80vh] w-[360px] max-w-[calc(100vw-2rem)] flex-col overflow-y-auto rounded-2xl border border-border/60 bg-card shadow-2xl ${
+            dropUp ? "bottom-full mb-3" : "top-full mt-3"
+          }`}
+        >
           <div className="grid divide-y divide-border/60">
             <StepperRow
               title="Adults"
-              hint="Age 13 years and more"
+              hint="Age 13 years and above"
               value={draft.adults}
               min={1}
               max={30}
-              format={(n) => String(n).padStart(2, "0")}
+              format={numFmt}
               onMinus={() => set("adults", (n) => Math.max(1, n - 1))}
               onPlus={() => set("adults", (n) => Math.min(30, n + 1))}
             />
             <StepperRow
               title="Children"
-              hint="Age 3-12 years"
+              hint="Age 3–12 years"
               value={draft.children}
               min={0}
               max={20}
-              format={(n) => String(n).padStart(2, "0")}
+              format={numFmt}
               onMinus={() => set("children", (n) => Math.max(0, n - 1))}
               onPlus={() => set("children", (n) => Math.min(20, n + 1))}
             />
             <StepperRow
               title="Infants"
-              hint="Age 0-2 years"
+              hint="Age 0–2 years"
               value={draft.infants}
               min={0}
               max={10}
-              format={(n) => String(n).padStart(2, "0")}
+              format={numFmt}
               onMinus={() => set("infants", (n) => Math.max(0, n - 1))}
               onPlus={() => set("infants", (n) => Math.min(10, n + 1))}
             />
@@ -130,26 +179,32 @@ export function GuestsPicker({ value, onChange, onApplyAndSearch, className = ""
               value={draft.rooms}
               min={1}
               max={20}
-              format={(n) => `${n}+`}
+              format={roomsFmt}
               onMinus={() => set("rooms", (n) => Math.max(1, n - 1))}
               onPlus={() => set("rooms", (n) => Math.min(20, n + 1))}
             />
           </div>
+          {showFooterNote && (
+            <div className="flex items-start gap-2 border-t border-border/60 bg-sand/40 px-4 py-3 text-xs text-muted-foreground">
+              <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span>Children and infants are included in the total guests count.</span>
+            </div>
+          )}
           <div className="flex items-center gap-3 border-t border-border/60 bg-muted/30 p-4">
             <Button
               type="button"
               variant="outline"
               onClick={clear}
-              className="h-11 flex-1 justify-center rounded-md text-sm font-bold uppercase tracking-wide"
+              className="h-11 flex-1 justify-center rounded-md text-sm font-semibold tracking-wide"
             >
               Clear
             </Button>
             <Button
               type="button"
               onClick={applyAndSearch}
-              className="h-11 flex-1 justify-center rounded-md bg-foreground text-background hover:bg-foreground/90 text-sm font-bold uppercase tracking-wide"
+              className="h-11 flex-1 justify-center rounded-md text-sm font-semibold tracking-wide"
             >
-              Apply & Search
+              {applyLabel}
             </Button>
           </div>
         </div>
@@ -178,10 +233,10 @@ function StepperRow({
   onPlus: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between px-5 py-4">
+    <div className="flex items-center justify-between px-5 py-3.5">
       <div className="min-w-0">
-        <p className="text-lg font-semibold text-foreground">{title}</p>
-        {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
+        <p className="text-[15px] font-semibold text-foreground">{title}</p>
+        {hint && <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>}
       </div>
       <div className="flex items-center gap-3">
         <button
@@ -189,11 +244,11 @@ function StepperRow({
           onClick={onMinus}
           disabled={value <= min}
           aria-label={`Decrease ${title.toLowerCase()}`}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-border bg-background text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
         >
-          <Minus className="h-4 w-4" />
+          <Minus className="h-3.5 w-3.5" />
         </button>
-        <span className="font-numeric w-9 text-center text-xl font-bold tabular-nums text-foreground">
+        <span className="font-numeric w-7 text-center text-base font-semibold tabular-nums text-foreground">
           {format(value)}
         </span>
         <button
@@ -201,9 +256,9 @@ function StepperRow({
           onClick={onPlus}
           disabled={value >= max}
           aria-label={`Increase ${title.toLowerCase()}`}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-border bg-background text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="h-3.5 w-3.5" />
         </button>
       </div>
     </div>

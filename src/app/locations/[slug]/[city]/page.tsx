@@ -6,6 +6,7 @@ import { getVillasByCity } from "@/lib/data/villas";
 import { getCityCover } from "@/lib/data/location-covers";
 import { VillaCard } from "@/components/villa-card";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { BreadcrumbJsonLd } from "@/components/jsonld-breadcrumb";
 import { getCurrentUser } from "@/lib/session";
 
 type PageProps = { params: Promise<{ slug: string; city: string }> };
@@ -40,8 +41,14 @@ export default async function CityPage({ params }: PageProps) {
   const user = await getCurrentUser();
   const wishlist = new Set(user?.wishlist ?? []);
 
+  const crumbs = [
+    { label: "Home", href: "/" },
+    { label: cityData.name, href: `/locations/${state.slug}/${cityData.slug}` },
+  ];
+
   return (
     <div>
+      <BreadcrumbJsonLd items={crumbs} />
       <section className="relative h-[50vh] min-h-[360px]">
         <Image
           src={getCityCover(state.slug, cityData.slug) ?? cityData.image.src}
@@ -53,14 +60,7 @@ export default async function CityPage({ params }: PageProps) {
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/30 to-black/70" />
         <div className="container-page absolute inset-x-0 bottom-0 pb-10 text-white">
-          <Breadcrumbs
-            items={[
-              { label: "Home", href: "/" },
-              { label: "Locations", href: "/locations" },
-              { label: state.name, href: `/locations/${state.slug}` },
-              { label: cityData.name },
-            ]}
-          />
+          <Breadcrumbs items={crumbs} />
           <p className="mt-4 text-xs uppercase tracking-[0.22em] text-white/80">
             {state.name} · {state.region}
           </p>

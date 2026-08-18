@@ -1,113 +1,107 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { readJson, writeJson } from "@/lib/storage";
-import type { Experience } from "@/lib/types";
-import { isSeedExperience } from "@/lib/data/experiences";
+import type { Experience, ExperienceStatus } from "@/lib/types";
+import { readExperiences, saveExperiences, experienceHref } from "@/lib/data/experiences";
+import { slugify } from "@/lib/slug";
 
-const FILE = "admin-experiences.json";
+type Result = { ok: boolean; error?: string; slug?: string };
 
-type AdminExperiences = {
-  overrides?: Record<
-    string,
-    { name?: string; blurb?: string; image?: { src: string; alt: string } }
-  >;
-  added?: Experience[];
-  deleted?: string[];
-};
-
-function slugify(s: string): string {
-  return s
-    .toLowerCase()
-    .trim()
-    .replace(/&/g, "and")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
-function revalidateAll() {
+function revalidate(exp?: Pick<Experience, "slug" | "citySlug">) {
   revalidatePath("/");
   revalidatePath("/experiences");
+  if (exp?.citySlug) revalidatePath(`/experiences/${exp.citySlug}`);
+  if (exp) revalidatePath(experienceHref(exp));
   revalidatePath("/admin/experiences");
 }
 
-export async function addExperience(formData: FormData): Promise<{
-  ok: boolean;
-  error?: string;
-}> {
-  const name = String(formData.get("name") ?? "").trim();
-  const blurb = String(formData.get("blurb") ?? "").trim();
-  const imageSrc = String(formData.get("imageSrc") ?? "").trim();
-  const imageAlt = String(formData.get("imageAlt") ?? "").trim() || name;
-
+/** Create or update — the editor sends the whole Experience object. The
+ *  slug is derived from the name on create and never changes afterwards. */
+export async function saveExperience(
+  input: Experience,
+  originalSlug?: string,
+): Promise<Result> {
+  const name = (input.name ?? "").trim();
   if (name.length < 2) return { ok: false, error: "Name is required." };
-  if (!imageSrc) return { ok: false, error: "Upload a cover image." };
+  if (!input.image?.src) return { ok: false, error: "A cover image is required." };
 
-  const slug = slugify(name);
-  const admin = await readJson<AdminExperiences>(FILE, {});
-  admin.added = admin.added ?? [];
-  admin.deleted = (admin.deleted ?? []).filter((s) => s !== slug);
+  const list = await readExperiences();
+  const now = new Date().toISOString();
 
-  if (isSeedExperience(slug) || admin.added.some((e) => e.slug === slug)) {
-    return {
-      ok: false,
-      error: `An experience with the slug "${slug}" already exists.`,
+  if (originalSlug) {
+    const idx = list.findIndex((e) => e.slug === originalSlug);
+    if (idx === -1) return { ok: false, error: "Experience not found." };
+    const merged: Experience = {
+      ...list[idx],
+      ...input,
+      slug: originalSlug,
+      updatedAt: now,
+      createdAt: list[idx].createdAt ?? now,
     };
+    list[idx] = merged;
+    await saveExperiences(list);
+    revalidate(merged);
+    return { ok: true, slug: merged.slug };
   }
 
-  admin.added.push({
+  // Create
+  let slug = slugify(name);
+  if (!slug) return { ok: false, error: "Could not derive a slug from the name." };
+  if (list.some((e) => e.slug === slug)) {
+    // De-dupe by appending a short suffix.
+    slug = `${slug}-${Math.random().toString(36).slice(2, 5)}`;
+  }
+  const created: Experience = {
+    ...input,
     slug,
-    name,
-    blurb,
-    image: { src: imageSrc, alt: imageAlt },
-  });
-
-  await writeJson(FILE, admin);
-  revalidateAll();
-  return { ok: true };
+    status: input.status ?? "draft",
+    createdAt: now,
+    updatedAt: now,
+  };
+  list.unshift(created);
+  await saveExperiences(list);
+  revalidate(created);
+  return { ok: true, slug };
 }
 
-export async function updateExperience(
+export async function setExperienceStatus(
   slug: string,
-  formData: FormData,
-): Promise<{ ok: boolean; error?: string }> {
-  const name = String(formData.get("name") ?? "").trim();
-  const blurb = String(formData.get("blurb") ?? "").trim();
-  const imageSrc = String(formData.get("imageSrc") ?? "").trim();
-  const imageAlt = String(formData.get("imageAlt") ?? "").trim() || name;
-
-  if (name.length < 2) return { ok: false, error: "Name is required." };
-  if (!imageSrc) return { ok: false, error: "Cover image is required." };
-
-  const admin = await readJson<AdminExperiences>(FILE, {});
-
-  if (isSeedExperience(slug)) {
-    admin.overrides = admin.overrides ?? {};
-    admin.overrides[slug] = {
-      name,
-      blurb,
-      image: { src: imageSrc, alt: imageAlt },
-    };
-  } else {
-    admin.added = (admin.added ?? []).map((e) =>
-      e.slug === slug
-        ? { ...e, name, blurb, image: { src: imageSrc, alt: imageAlt } }
-        : e,
-    );
-  }
-
-  await writeJson(FILE, admin);
-  revalidateAll();
+  status: ExperienceStatus,
+): Promise<Result> {
+  const list = await readExperiences();
+  const idx = list.findIndex((e) => e.slug === slug);
+  if (idx === -1) return { ok: false, error: "Not found." };
+  list[idx] = { ...list[idx], status, updatedAt: new Date().toISOString() };
+  await saveExperiences(list);
+  revalidate(list[idx]);
   return { ok: true };
 }
 
-export async function deleteExperience(slug: string): Promise<{ ok: boolean }> {
-  const admin = await readJson<AdminExperiences>(FILE, {});
-  admin.added = (admin.added ?? []).filter((e) => e.slug !== slug);
-  if (isSeedExperience(slug)) {
-    admin.deleted = Array.from(new Set([...(admin.deleted ?? []), slug]));
-  }
-  await writeJson(FILE, admin);
-  revalidateAll();
+export async function duplicateExperience(slug: string): Promise<Result> {
+  const list = await readExperiences();
+  const src = list.find((e) => e.slug === slug);
+  if (!src) return { ok: false, error: "Not found." };
+  let newSlug = `${src.slug}-copy`;
+  while (list.some((e) => e.slug === newSlug)) newSlug = `${newSlug}-${Math.floor(Math.random() * 9)}`;
+  const now = new Date().toISOString();
+  const copy: Experience = {
+    ...src,
+    slug: newSlug,
+    name: `${src.name} (copy)`,
+    status: "draft",
+    createdAt: now,
+    updatedAt: now,
+  };
+  list.unshift(copy);
+  await saveExperiences(list);
+  revalidate(copy);
+  return { ok: true, slug: newSlug };
+}
+
+export async function deleteExperience(slug: string): Promise<Result> {
+  const list = await readExperiences();
+  const next = list.filter((e) => e.slug !== slug);
+  await saveExperiences(next);
+  revalidate();
   return { ok: true };
 }

@@ -11,17 +11,26 @@ import { toast } from "sonner";
 export function ShareIconButton({
   slug,
   villaName,
+  path,
+  ariaLabel = "Share this villa",
+  size = "md",
 }: {
   slug: string;
   villaName: string;
+  /** Relative URL to share — defaults to `/villas/{slug}` for existing callers. */
+  path?: string;
+  ariaLabel?: string;
+  /** "lg" = 48px circle with 22px icon (listing-card spec). */
+  size?: "md" | "lg";
 }) {
   async function onClick(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
+    const relPath = path ?? `/villas/${slug}`;
     const url =
       typeof window !== "undefined"
-        ? `${window.location.origin}/villas/${slug}`
-        : `/villas/${slug}`;
+        ? `${window.location.origin}${relPath}`
+        : relPath;
     const title = `${villaName} — Earthy Stays`;
     if (typeof navigator !== "undefined" && "share" in navigator) {
       try {
@@ -43,10 +52,16 @@ export function ShareIconButton({
     <button
       type="button"
       onClick={onClick}
-      aria-label="Share this villa"
-      className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-foreground shadow-sm transition-colors hover:bg-white"
+      aria-label={ariaLabel}
+      className={`group/share inline-flex items-center justify-center rounded-full bg-white/95 text-foreground transition-colors duration-[180ms] hover:bg-[#F7F7F7] ${
+        size === "lg"
+          ? "h-12 w-12 shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
+          : "h-9 w-9 shadow-sm"
+      }`}
     >
-      <Share2 className="h-4 w-4" />
+      <Share2
+        className={`transition-transform duration-[180ms] group-hover/share:rotate-[5deg] motion-reduce:transition-none ${size === "lg" ? "h-[22px] w-[22px]" : "h-4 w-4"}`}
+      />
     </button>
   );
 }

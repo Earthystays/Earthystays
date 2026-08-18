@@ -411,6 +411,27 @@ function ReviewForm({
           </div>
         </div>
 
+        {/* SOURCE */}
+        <div className="grid gap-1.5">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+            Source platform
+          </Label>
+          <select
+            name="source"
+            defaultValue={initial?.source ?? "direct"}
+            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+          >
+            <option value="direct">Direct (Earthy Stays)</option>
+            <option value="google">Google</option>
+            <option value="airbnb">Airbnb</option>
+            <option value="booking">Booking.com</option>
+          </select>
+          <p className="text-[11px] text-muted-foreground">
+            Imported reviews show the platform&apos;s badge on the villa page — paste the
+            guest&apos;s review text and rating exactly as written on the platform.
+          </p>
+        </div>
+
         {/* RATING */}
         <div className="grid gap-1.5">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">

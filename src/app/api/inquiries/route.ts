@@ -1,9 +1,27 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { appendJson } from "@/lib/storage";
+import { getCurrentUser } from "@/lib/session";
+import { getVillaBySlugWithHidden } from "@/lib/data/villas";
+import { notifyHostOfBookingRequest } from "@/lib/notify";
 import { notifyInquiryToWhatsApp } from "@/lib/whatsapp-notifier";
+import type { BookingItem } from "@/lib/types";
 
-export type InquiryStatus = "new" | "open" | "shared" | "closed";
+/**
+ * Six-step pipeline. Legacy values `shared` and `closed` are preserved for
+ * inquiries created before the pipeline expanded — the admin renders them
+ * as "Quote Sent" and "Booked" respectively but new admin-driven status
+ * changes write one of the six canonical values.
+ */
+export type InquiryStatus =
+  | "new"
+  | "open"
+  | "quote-sent"
+  | "negotiating"
+  | "booked"
+  | "lost"
+  | "shared" // legacy → displays as "Quote Sent"
+  | "closed"; // legacy → displays as "Booked"
 
 export type StoredInquiry = {
   id: string;
@@ -21,12 +39,22 @@ export type StoredInquiry = {
   rooms?: number;
   message?: string;
   villa?: string;
+  /** Experience slug when kind === "experience". */
+  experience?: string;
+  /** Structured room/dorm/bed line-items when the guest picked specific
+   *  accommodation units on a hotel/hostel listing (Phase G). */
+  bookingItems?: BookingItem[];
   // Partner-inquiry-specific fields:
   city?: string;
   propertyType?: string; // "1 villa" | "2-5 villas" | "Apartment(s)" | etc.
   createdAt: string;
   updatedAt?: string;
   note?: string; // internal team note (e.g. "shared 3 options on whatsapp")
+  /** Marketplace: the host's response to a booking request for their
+   *  listing. The Earthy Stays team still owns the final `status`. */
+  hostDecision?: "accepted" | "declined";
+  /** Set when a signed-in guest submitted — unlocks guest↔host messaging. */
+  guestUserId?: string;
 };
 
 const InquirySchema = z.object({
@@ -43,8 +71,19 @@ const InquirySchema = z.object({
   rooms: z.coerce.number().int().min(0).max(20).optional(),
   message: z.string().optional(),
   villa: z.string().optional(),
+  experience: z.string().optional(),
   city: z.string().optional(),
   propertyType: z.string().optional(),
+  bookingItems: z
+    .array(
+      z.object({
+        unitId: z.string(),
+        unitName: z.string(),
+        quantity: z.coerce.number().int().min(1).max(50),
+        selectedInventoryIds: z.array(z.string()).optional(),
+      }),
+    )
+    .optional(),
 });
 
 export async function POST(req: Request) {
@@ -64,6 +103,7 @@ export async function POST(req: Request) {
   }
 
   const d = parsed.data;
+  const sessionUser = await getCurrentUser();
   const inquiry: StoredInquiry = {
     id: `inq_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     kind: d.kind ?? "guest",
@@ -79,8 +119,11 @@ export async function POST(req: Request) {
     rooms: d.rooms,
     message: d.message,
     villa: d.villa,
+    experience: d.experience,
     city: d.city,
     propertyType: d.propertyType,
+    bookingItems: d.bookingItems,
+    guestUserId: sessionUser?.id,
     createdAt: new Date().toISOString(),
   };
 
@@ -95,6 +138,37 @@ export async function POST(req: Request) {
   // Fire-and-forget WhatsApp ping to the admin. No-op when env vars
   // for CallMeBot aren't set (see lib/whatsapp-notifier.ts).
   await notifyInquiryToWhatsApp(inquiry);
+
+  // If this request targets a host-managed listing, email that host too
+  // (env-gated like everything below).
+  const villa = inquiry.villa ? getVillaBySlugWithHidden(inquiry.villa) : undefined;
+  if (villa?.hostId) await notifyHostOfBookingRequest(villa, inquiry);
+
+  // Mirror this inquiry into the Earthy Leads dashboard as a Website lead
+  // (env-gated; no-op until LEADS_DASHBOARD_URL/SECRET are set).
+  if (process.env.LEADS_DASHBOARD_URL && process.env.LEADS_DASHBOARD_SECRET) {
+    try {
+      await fetch(`${process.env.LEADS_DASHBOARD_URL}/api/leads/from-website`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-webhook-secret": process.env.LEADS_DASHBOARD_SECRET,
+        },
+        body: JSON.stringify({
+          name: inquiry.name,
+          phone: inquiry.phone,
+          email: inquiry.email,
+          villaInterested: villa?.name ?? inquiry.villa,
+          checkIn: inquiry.checkIn,
+          checkOut: inquiry.checkOut,
+          guests: inquiry.guests,
+          message: inquiry.message || `New ${inquiry.kind ?? "guest"} inquiry from the website.`,
+        }),
+      });
+    } catch (err) {
+      console.error("[inquiry] failed to notify leads dashboard", err);
+    }
+  }
 
   if (process.env.RESEND_API_KEY && process.env.INQUIRY_TO_EMAIL) {
     try {

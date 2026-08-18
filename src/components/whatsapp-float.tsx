@@ -1,4 +1,7 @@
+"use client";
+
 import { WhatsAppIcon } from "@/components/icons";
+import { trackWhatsAppClick } from "@/lib/track-whatsapp";
 
 const PHONE_E164 = "919657100004";
 const WHATSAPP_URL = `https://wa.me/${PHONE_E164}?text=${encodeURIComponent(
@@ -11,6 +14,7 @@ export function WhatsAppFloat() {
       href={WHATSAPP_URL}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={() => trackWhatsAppClick("float")}
       aria-label="Chat with Earthy Stays on WhatsApp"
       className="group fixed bottom-24 left-4 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg ring-4 ring-emerald-500/20 transition-all hover:scale-105 hover:bg-emerald-600 hover:ring-emerald-500/30 lg:bottom-6 lg:left-6 lg:h-14 lg:w-14"
     >

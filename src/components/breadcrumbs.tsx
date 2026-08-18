@@ -5,7 +5,7 @@ export type Crumb = { label: string; href?: string };
 
 export function Breadcrumbs({ items }: { items: Crumb[] }) {
   return (
-    <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+    <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1 text-sm text-muted-foreground">
       {items.map((item, i) => {
         const last = i === items.length - 1;
         return (
@@ -17,7 +17,7 @@ export function Breadcrumbs({ items }: { items: Crumb[] }) {
             ) : (
               <span className={last ? "text-foreground" : ""}>{item.label}</span>
             )}
-            {!last && <ChevronRight className="h-3 w-3 opacity-60" />}
+            {!last && <ChevronRight className="h-3.5 w-3.5 opacity-60" />}
           </span>
         );
       })}

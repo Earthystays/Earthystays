@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowLeft } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -8,12 +9,14 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { InquiryForm } from "@/components/inquiry-form";
+import { ConnectWithHost } from "@/components/connect-with-host";
 
 /**
  * Mobile-only sticky bottom bar on villa detail pages: shows the price +
- * "Enquire" button. Tapping the button opens the full InquiryForm (same
- * one that lives in the desktop sidebar — name, phone, check-in/out, guests)
- * inside a bottom-anchored sheet, so mobile and desktop use identical fields.
+ * "Enquire" button. Tapping the button opens the InquiryForm inside a
+ * partial-height (88vh) bottom-anchored sheet with a drag-handle at the
+ * top — swipe it down with your thumb to dismiss (and reopen anytime;
+ * form state is preserved via keepMounted).
  *
  * Hides on desktop (lg:hidden).
  */
@@ -32,6 +35,50 @@ export function MobileInquireBar({
     // eslint-disable-next-line react-hooks/set-state-in-effect -- post-hydration mount flag
     setMounted(true);
   }, []);
+
+  // Drag-to-dismiss: track pointer Y on the handle, translate the sheet
+  // downward as the finger moves. Release past 120px → close; otherwise
+  // spring back.
+  const popupRef = useRef<HTMLDivElement | null>(null);
+  const dragStartY = useRef<number | null>(null);
+  const dragDelta = useRef(0);
+
+  function setTranslate(y: number) {
+    const el = popupRef.current;
+    if (!el) return;
+    el.style.transform = y > 0 ? `translateY(${y}px)` : "";
+    el.style.transition = "none";
+  }
+  function resetTranslate(animated: boolean) {
+    const el = popupRef.current;
+    if (!el) return;
+    el.style.transition = animated ? "transform 180ms ease-out" : "none";
+    el.style.transform = "";
+  }
+
+  function onDragStart(e: React.PointerEvent) {
+    dragStartY.current = e.clientY;
+    dragDelta.current = 0;
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  }
+  function onDragMove(e: React.PointerEvent) {
+    if (dragStartY.current === null) return;
+    const dy = e.clientY - dragStartY.current;
+    dragDelta.current = dy;
+    if (dy > 0) setTranslate(dy);
+  }
+  function onDragEnd() {
+    if (dragStartY.current === null) return;
+    const shouldClose = dragDelta.current > 120;
+    dragStartY.current = null;
+    if (shouldClose) {
+      resetTranslate(true);
+      setOpen(false);
+    } else {
+      resetTranslate(true);
+    }
+  }
+
   if (!mounted) return null;
 
   return (
@@ -53,19 +100,55 @@ export function MobileInquireBar({
       </div>
 
       <Sheet open={open} onOpenChange={setOpen}>
-        {/* Bottom-anchored sheet on mobile, full height up to 95vh.
-            Holds the same InquiryForm desktop users see in the sidebar. */}
         <SheetContent
           side="bottom"
-          className="h-[100dvh] overflow-y-auto rounded-t-2xl p-0"
+          showCloseButton={false}
+          keepMounted
+          ref={popupRef}
+          className="h-[85dvh] max-h-[85dvh] overflow-hidden rounded-t-2xl p-0 shadow-2xl"
         >
-          <SheetHeader className="sticky top-0 z-10 border-b border-border/60 bg-background px-5 py-4">
-            <SheetTitle className="font-display text-xl font-bold tracking-tight">
-              Send Inquiry
-            </SheetTitle>
-          </SheetHeader>
-          <div className="px-5 py-6 pb-24">
+          {/* Drag handle strip: entire top area is a pointer target so
+              the user can grab from the pill OR the header. */}
+          <div
+            onPointerDown={onDragStart}
+            onPointerMove={onDragMove}
+            onPointerUp={onDragEnd}
+            onPointerCancel={onDragEnd}
+            className="touch-none select-none"
+            style={{ touchAction: "none" }}
+          >
+            <div className="flex justify-center pt-2.5 pb-1">
+              <span
+                aria-hidden
+                className="h-1.5 w-11 rounded-full bg-muted-foreground/40"
+              />
+            </div>
+            <SheetHeader className="gap-0 border-b border-border/60 bg-background px-4 py-3">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={() => setOpen(false)}
+                  aria-label="Back to property"
+                  className="-ml-2 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-foreground hover:bg-muted"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </button>
+                <SheetTitle className="min-w-0 flex-1 truncate font-display text-lg font-bold tracking-tight">
+                  Send inquiry
+                </SheetTitle>
+                <span className="text-[11px] text-muted-foreground">
+                  Swipe ↓ to minimize
+                </span>
+              </div>
+            </SheetHeader>
+          </div>
+
+          <div className="h-[calc(85dvh-10.5rem)] overflow-y-auto px-5 py-5 pb-6 overscroll-contain">
             <InquiryForm villaSlug={villaSlug} villaName={villaName} />
+          </div>
+          <div className="sticky bottom-0 border-t border-border/60 bg-background px-5 py-3">
+            <ConnectWithHost />
           </div>
         </SheetContent>
       </Sheet>

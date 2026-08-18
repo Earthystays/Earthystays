@@ -11,23 +11,34 @@ export async function GET(req: Request) {
   const state = url.searchParams.get("state");
   const errorParam = url.searchParams.get("error");
 
+  // Production behind Nginx: req.url resolves to localhost:3000 because Next.js
+  // doesn't see the forwarded host. Derive the real public origin from the
+  // configured redirect URI so subsequent redirects land on the live domain.
+  const siteOrigin = process.env.GOOGLE_REDIRECT_URI
+    ? new URL(process.env.GOOGLE_REDIRECT_URI).origin
+    : url.origin;
+
   if (errorParam) {
-    return NextResponse.redirect(new URL(`/login?googleError=${errorParam}`, req.url));
+    return NextResponse.redirect(new URL(`/login?googleError=${errorParam}`, siteOrigin));
   }
   if (!code || !state) {
-    return NextResponse.redirect(new URL("/login?googleError=invalid-callback", req.url));
+    return NextResponse.redirect(new URL("/login?googleError=invalid-callback", siteOrigin));
   }
 
   const next = verifyState(state);
   if (!next) {
-    return NextResponse.redirect(new URL("/login?googleError=bad-state", req.url));
+    return NextResponse.redirect(new URL("/login?googleError=bad-state", siteOrigin));
   }
 
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
   if (!clientId || !clientSecret) {
-    return NextResponse.redirect(new URL("/login?googleError=not-configured", req.url));
+    return NextResponse.redirect(new URL("/login?googleError=not-configured", siteOrigin));
   }
+
+  const redirectUri =
+    process.env.GOOGLE_REDIRECT_URI ||
+    `${url.origin}/api/auth/google/callback`;
 
   // Exchange auth code for tokens
   let tokens: { access_token?: string; id_token?: string };
@@ -39,17 +50,17 @@ export async function GET(req: Request) {
         code,
         client_id: clientId,
         client_secret: clientSecret,
-        redirect_uri: `${url.origin}/api/auth/google/callback`,
+        redirect_uri: redirectUri,
         grant_type: "authorization_code",
       }).toString(),
     });
     if (!tokenRes.ok) throw new Error("token exchange failed");
     tokens = await tokenRes.json();
   } catch {
-    return NextResponse.redirect(new URL("/login?googleError=token-exchange", req.url));
+    return NextResponse.redirect(new URL("/login?googleError=token-exchange", siteOrigin));
   }
   if (!tokens.access_token) {
-    return NextResponse.redirect(new URL("/login?googleError=no-token", req.url));
+    return NextResponse.redirect(new URL("/login?googleError=no-token", siteOrigin));
   }
 
   // Fetch profile
@@ -61,11 +72,11 @@ export async function GET(req: Request) {
     if (!profileRes.ok) throw new Error("userinfo failed");
     profile = await profileRes.json();
   } catch {
-    return NextResponse.redirect(new URL("/login?googleError=profile-fetch", req.url));
+    return NextResponse.redirect(new URL("/login?googleError=profile-fetch", siteOrigin));
   }
 
   if (!profile.email) {
-    return NextResponse.redirect(new URL("/login?googleError=no-email", req.url));
+    return NextResponse.redirect(new URL("/login?googleError=no-email", siteOrigin));
   }
 
   // Find or create user
@@ -88,5 +99,5 @@ export async function GET(req: Request) {
     secure: process.env.NODE_ENV === "production",
   });
 
-  return NextResponse.redirect(new URL(next, req.url));
+  return NextResponse.redirect(new URL(next, siteOrigin));
 }

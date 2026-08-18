@@ -11,6 +11,7 @@ import { VillaListItem } from "@/components/villa-list-item";
 import { VillaFiltersSidebar } from "@/components/villa-filters-sidebar";
 import { MobileFiltersDrawer } from "@/components/mobile-filters-drawer";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { BreadcrumbJsonLd } from "@/components/jsonld-breadcrumb";
 import { SortDropdown } from "@/components/sort-dropdown";
 import { getCurrentUser } from "@/lib/session";
 
@@ -67,39 +68,32 @@ export default async function StatePage({ params, searchParams }: PageProps) {
   const user = await getCurrentUser();
   const wishlist = new Set(user?.wishlist ?? []);
 
+  const crumbs = [
+    { label: "Home", href: "/" },
+    { label: state.name, href: `/locations/${state.slug}` },
+  ];
+
   return (
-    <div className="container-page py-8 lg:py-12">
-      <Breadcrumbs
-        items={[
-          { label: "Home", href: "/" },
-          { label: "Locations", href: "/locations" },
-          { label: state.name },
-        ]}
-      />
+    <div className="bg-[#FAF8F5]">
+    <div className="container-page !max-w-[1600px] py-8 lg:px-8 lg:py-12">
+      <BreadcrumbJsonLd items={crumbs} />
+      <Breadcrumbs items={crumbs} />
 
-      <header className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="font-display text-3xl sm:text-4xl">
-            Villas in {state.name}
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {villas.length} {villas.length === 1 ? "stay" : "stays"} match your filters.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <MobileFiltersDrawer
-            amenities={amenities}
-            priceMin={bounds.min}
-            priceMax={bounds.max}
-          />
-          <SortDropdown currentSort={filters.sort ?? "featured"} />
-        </div>
-      </header>
+      <div className="mt-4 flex items-center justify-end gap-2">
+        <MobileFiltersDrawer
+          amenities={amenities}
+          destinations={destinations}
+          priceMin={bounds.min}
+          priceMax={bounds.max}
+        />
+        <SortDropdown currentSort={filters.sort ?? "featured"} />
+      </div>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[260px_1fr]">
+      <div className="mt-8 grid gap-8 lg:grid-cols-[320px_1fr]">
         <div className="hidden lg:sticky lg:top-32 lg:block lg:self-start">
           <VillaFiltersSidebar
             amenities={amenities}
+            destinations={destinations}
             priceMin={bounds.min}
             priceMax={bounds.max}
           />
@@ -117,18 +111,21 @@ export default async function StatePage({ params, searchParams }: PageProps) {
             </div>
           ) : (
             <div className="grid gap-5">
-              {villas.map((villa) => (
+              {villas.map((villa, idx) => (
                 <VillaListItem
                   key={villa.slug}
                   villa={villa}
                   loggedIn={!!user}
                   inWishlist={wishlist.has(villa.slug)}
+                  index={idx}
                 />
               ))}
             </div>
           )}
         </div>
       </div>
+
+    </div>
     </div>
   );
 }

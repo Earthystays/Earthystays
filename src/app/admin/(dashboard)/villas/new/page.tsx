@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getAllDestinations } from "@/lib/data/locations";
 import { getAllCollections } from "@/lib/data/collections";
+import { getAllExperiences } from "@/lib/data/experiences";
 import { INDIAN_STATES } from "@/lib/india-states";
 import { NewVillaForm } from "./form";
 import { VILLA_AMENITIES, VILLA_FACILITIES, CANCELLATION_PRESETS, MEAL_PRESETS } from "./constants";
@@ -39,6 +40,11 @@ export default function NewVillaPage() {
           })),
         }))}
         collections={getAllCollections().map((c) => ({ slug: c.slug, name: c.name }))}
+        experienceOptions={getAllExperiences().map((e) => ({
+          slug: e.slug,
+          name: e.name,
+          blurb: e.blurb,
+        }))}
         amenities={[...VILLA_AMENITIES, ...customA].map(withIcon)}
         facilities={[...VILLA_FACILITIES, ...customF].map(withIcon)}
         states={[...INDIAN_STATES]}

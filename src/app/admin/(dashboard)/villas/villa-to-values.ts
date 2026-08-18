@@ -49,6 +49,7 @@ export function villaToFormValues(
     city: villa.city ?? "",
     latitude: villa.latitude !== undefined ? String(villa.latitude) : "",
     longitude: villa.longitude !== undefined ? String(villa.longitude) : "",
+    googlePlaceId: villa.googlePlaceId ?? "",
     cancellationPreset: villa.cancellationPolicy?.preset ?? "",
     cancellationDescription: villa.cancellationPolicy?.description ?? "",
     mealsPreset: villa.meals?.preset ?? "",
@@ -63,9 +64,11 @@ export function villaToFormValues(
         : "",
     faqs: villa.faqs ?? [],
     externalListings: villa.externalListings ?? [],
+    experiences: villa.experiences ?? [],
     featured: villa.featured ?? false,
     featuredRank:
       villa.featuredRank !== undefined ? String(villa.featuredRank) : "",
     images: villa.images,
+    brochure: villa.brochure ?? null,
   };
 }

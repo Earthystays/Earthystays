@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { track } from "@/lib/analytics";
 
 /**
  * "Request Callback" CTA + modal. A short two-field form (name + phone)
@@ -69,6 +70,21 @@ export function CallbackModal({
           toast.error("Could not send. Try again or call us directly.");
           return;
         }
+        // Fire client-side + server-side (Conversions API) copies of the
+        // same event with one event_id so Meta dedupes them.
+        const eventId = track("Lead", { method: "callback-form" });
+        void fetch("/api/meta-capi", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            event: "Lead",
+            eventId,
+            phone: phone.trim(),
+            eventSourceUrl: window.location.href,
+          }),
+        }).catch(() => {
+          // best-effort — the client-side pixel event already fired
+        });
         toast.success("Thanks! Our team will call you shortly.");
         setFirstName("");
         setLastName("");

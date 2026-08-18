@@ -9,6 +9,30 @@ type Space = {
   count: number;
 };
 
+/**
+ * Priority order for Spaces tiles. The first match wins:
+ *   1. Bedrooms (sorted numerically — Bedroom 1, Bedroom 2, Bedroom 10)
+ *   2. Living Area / Living Room
+ *   3. Swimming Pool / Pool
+ *   4. Kitchen
+ *   5. Exterior / Facade
+ *   50. Anything else (Dining, Balcony, Garden, Bath, etc.) — alpha-sorted
+ *   99. Literal "Other" — always last
+ */
+function tagPriority(tag: string): { primary: number; secondary: number | string } {
+  const t = tag.toLowerCase().trim();
+  if (t.includes("bedroom") || t.includes("suite")) {
+    const num = t.match(/\d+/);
+    return { primary: 1, secondary: num ? parseInt(num[0], 10) : 0 };
+  }
+  if (t.includes("living")) return { primary: 2, secondary: t };
+  if (t.includes("pool") || t.includes("swimming")) return { primary: 3, secondary: t };
+  if (t.includes("kitchen")) return { primary: 4, secondary: t };
+  if (t.includes("exterior") || t.includes("facade")) return { primary: 5, secondary: t };
+  if (t === "other" || t === "others") return { primary: 99, secondary: t };
+  return { primary: 50, secondary: t };
+}
+
 function buildSpaces(images: VillaImage[]): Space[] {
   const map = new Map<string, Space>();
   for (const img of images) {
@@ -20,7 +44,17 @@ function buildSpaces(images: VillaImage[]): Space[] {
       s.count += 1;
     }
   }
-  return Array.from(map.values());
+  const list = Array.from(map.values());
+  list.sort((a, b) => {
+    const pa = tagPriority(a.tag);
+    const pb = tagPriority(b.tag);
+    if (pa.primary !== pb.primary) return pa.primary - pb.primary;
+    if (typeof pa.secondary === "number" && typeof pb.secondary === "number") {
+      return pa.secondary - pb.secondary;
+    }
+    return String(pa.secondary).localeCompare(String(pb.secondary));
+  });
+  return list;
 }
 
 export function SpacesGrid({

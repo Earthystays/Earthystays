@@ -11,6 +11,9 @@ import { categorizePhoto } from "@/lib/photo-categories";
 import { ShareButton } from "@/components/share-button";
 
 const ALL = "All" as const;
+/** Sentinel filter value — separate from any user-typed tag string so an
+ *  admin who literally labels a photo "Untagged" doesn't collide with it. */
+const UNTAGGED = "__untagged__" as const;
 
 export function PhotoViewer({ villa }: { villa: Villa }) {
   const sp = useSearchParams();
@@ -25,10 +28,13 @@ export function PhotoViewer({ villa }: { villa: Villa }) {
     setFilter(urlTag || ALL);
   }, [urlTag]);
 
-  // For each image, the display label = explicit tag if present, else auto-category.
+  // For each image, track whether it has an explicit admin-set tag
+  // (separate from the auto-categorised displayTag) so we can offer an
+  // "Untagged" filter that surfaces only photos still needing a label.
   const enriched = villa.images.map((img, i) => ({
     ...img,
     idx: i + 1,
+    hasTag: !!(img.tag && img.tag.trim()),
     displayTag: (img.tag && img.tag.trim()) || categorizePhoto(img.alt),
   }));
 
@@ -42,7 +48,14 @@ export function PhotoViewer({ villa }: { villa: Villa }) {
     }
   }
 
-  const visible = filter === ALL ? enriched : enriched.filter((e) => e.displayTag === filter);
+  const untaggedCount = enriched.filter((e) => !e.hasTag).length;
+
+  const visible =
+    filter === ALL
+      ? enriched
+      : filter === UNTAGGED
+        ? enriched.filter((e) => !e.hasTag)
+        : enriched.filter((e) => e.displayTag === filter);
 
   async function share() {
     const url = typeof window !== "undefined" ? window.location.href : "";
@@ -88,6 +101,16 @@ export function PhotoViewer({ villa }: { villa: Villa }) {
             active={filter === ALL}
             onClick={() => setFilter(ALL)}
           />
+          {/* "Untagged" pill — only rendered when there are photos missing
+              an explicit tag. Hides automatically once admin tags them all. */}
+          {untaggedCount > 0 && (
+            <FilterPill
+              label="Untagged"
+              count={untaggedCount}
+              active={filter === UNTAGGED}
+              onClick={() => setFilter(UNTAGGED)}
+            />
+          )}
           {order.map((tag) => (
             <FilterPill
               key={tag}

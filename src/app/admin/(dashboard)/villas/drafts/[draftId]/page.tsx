@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAllDestinations } from "@/lib/data/locations";
 import { getAllCollections } from "@/lib/data/collections";
+import { getAllExperiences } from "@/lib/data/experiences";
 import { INDIAN_STATES } from "@/lib/india-states";
 import { NewVillaForm } from "../../new/form";
 import {
@@ -49,6 +50,7 @@ const EMPTY: AddVillaValues = {
   locationNote: "",
   state: "",
   city: "",
+  googlePlaceId: "",
   latitude: "",
   longitude: "",
   cancellationPreset: "",
@@ -58,9 +60,11 @@ const EMPTY: AddVillaValues = {
   videoSrc: "",
   faqs: [],
   externalListings: [],
+  experiences: [],
   featured: false,
   featuredRank: "",
   images: [],
+  brochure: null,
 };
 
 type PageProps = { params: Promise<{ draftId: string }> };
@@ -106,6 +110,11 @@ export default async function ResumeDraftPage({ params }: PageProps) {
           })),
         }))}
         collections={getAllCollections().map((c) => ({ slug: c.slug, name: c.name }))}
+        experienceOptions={getAllExperiences().map((e) => ({
+          slug: e.slug,
+          name: e.name,
+          blurb: e.blurb,
+        }))}
         amenities={[...VILLA_AMENITIES, ...customA].map(withIcon)}
         facilities={[...VILLA_FACILITIES, ...customF].map(withIcon)}
         states={[...INDIAN_STATES]}

@@ -14,9 +14,11 @@ const JPEG_QUALITY = 80;
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
 const MAX_IMAGE_BYTES = 25 * 1024 * 1024; // 25MB per image
 const MAX_VIDEO_BYTES = 100 * 1024 * 1024; // 100MB per video
+const MAX_PDF_BYTES = 10 * 1024 * 1024; // 10MB per PDF (brochures)
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/avif"];
 const VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
-const ALLOWED = [...IMAGE_TYPES, ...VIDEO_TYPES];
+const PDF_TYPES = ["application/pdf"];
+const ALLOWED = [...IMAGE_TYPES, ...VIDEO_TYPES, ...PDF_TYPES];
 
 function safeName(name: string): string {
   return (
@@ -65,9 +67,10 @@ export async function POST(req: Request) {
       );
     }
     const isVideo = VIDEO_TYPES.includes(file.type);
-    const maxBytes = isVideo ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES;
+    const isPdf = PDF_TYPES.includes(file.type);
+    const maxBytes = isPdf ? MAX_PDF_BYTES : isVideo ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES;
     if (file.size > maxBytes) {
-      const limitMb = isVideo ? "100MB" : "25MB";
+      const limitMb = isPdf ? "10MB" : isVideo ? "100MB" : "25MB";
       return NextResponse.json(
         {
           ok: false,
@@ -79,6 +82,28 @@ export async function POST(req: Request) {
     const base = path.basename(file.name, path.extname(file.name));
     const id = crypto.randomBytes(4).toString("hex");
     const inputBuffer = Buffer.from(await file.arrayBuffer());
+
+    if (isPdf) {
+      // Verify magic bytes: real PDFs begin with "%PDF-".
+      if (
+        inputBuffer.length < 5 ||
+        inputBuffer.subarray(0, 5).toString("ascii") !== "%PDF-"
+      ) {
+        return NextResponse.json(
+          { ok: false, error: `Not a valid PDF: ${file.name}` },
+          { status: 415 },
+        );
+      }
+      const filename = `${Date.now()}-${id}-${safeName(base)}.pdf`;
+      const filepath = path.join(UPLOAD_DIR, filename);
+      await fs.writeFile(filepath, inputBuffer);
+      uploaded.push({
+        url: `/uploads/${filename}`,
+        name: file.name,
+        size: inputBuffer.length,
+      });
+      continue;
+    }
 
     if (isVideo) {
       // Videos are saved as-is — no transcoding.

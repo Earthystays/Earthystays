@@ -10,6 +10,7 @@
 :root {
   /* Primary Brand Colors */
   --forest-green: #3E4A3A;
+  --forest-deep:  #203126;
   --olive-green:  #5D6B4A;
   --sage-green:   #7F8F6F;
 
@@ -20,6 +21,7 @@
 
   /* Accent */
   --terracotta:  #A4553A;
+  --gold:        #D4A64D;
 
   /* Dark Mode anchors */
   --charcoal:    #1E1E1E;
@@ -166,20 +168,26 @@
 
   /* Brand utilities — usable as bg-forest, text-terracotta, etc. */
   --color-forest: var(--forest-green);
+  --color-forest-deep: var(--forest-deep);
   --color-olive: var(--olive-green);
   --color-sage: var(--sage-green);
   --color-sand: var(--sand);
   --color-beige: var(--warm-beige);
   --color-stone: var(--stone);
   --color-terracotta: var(--terracotta);
+  --color-gold: var(--gold);
   --color-chrome: var(--chrome);
 
   /* Typography */
-  --font-sans: var(--font-dm-sans);
-  --font-display: var(--font-inter);
+  --font-sans: var(--font-karla);
+  --font-display: var(--font-playfair);
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
-  --font-heading: var(--font-inter);
-  --font-numeric: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-playfair);
+  --font-numeric: var(--font-manrope-next), ui-sans-serif, system-ui, sans-serif;
+  /* Listing-card design system faces (owner's spec) — generate the
+     font-cormorant / font-manrope utilities. */
+  --font-cormorant: var(--font-cormorant-next), var(--font-playfair), serif;
+  --font-manrope: var(--font-manrope-next), ui-sans-serif, system-ui, sans-serif;
 
   /* Radius scale */
   --radius-sm: calc(var(--radius) * 0.6);
@@ -191,20 +199,52 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* Dedicated face for property/experience titles only (Manrope 600) — do
+   not repoint at h1-h6 or any shared heading class. */
+@utility font-title {
+  font-family: var(--font-manrope-next), ui-sans-serif, system-ui, sans-serif;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+  /* Visible keyboard focus ring (WCAG 2.4.7). Only shows for keyboard/AT
+     navigation, never on mouse clicks, so it doesn't affect pointer UX. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
   body {
     @apply bg-background text-foreground;
+    /* Kill accidental horizontal scroll from any child. `clip` doesn't create a
+       scroll container, so position:sticky on descendants keeps working. */
+    overflow-x: clip;
+    /* Long unbreakable tokens (URLs, slug-like villa names, emails) wrap
+       instead of blowing out narrow cards on mobile. */
+    overflow-wrap: anywhere;
+    width: 100%;
   }
   html {
-    @apply font-sans;
+    @apply font-sans bg-background;
+    /* Same clip on html — without this, iOS Safari's rubber-band drag pulls
+       the layout sideways and exposes white to the left/right of the page. */
+    overflow-x: clip;
+    width: 100%;
+    /* Prevent iOS Safari from auto-inflating text after a pinch-zoom/rotate. */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  /* Media never overflows its container. */
+  img, video, svg {
+    max-width: 100%;
+    height: auto;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-    font-weight: 700;
-    letter-spacing: -0.018em;
+    font-family: var(--font-playfair), ui-serif, Georgia, serif;
+    font-weight: 600;
+    letter-spacing: -0.005em;
   }
 }
 
@@ -396,7 +436,7 @@
 }
 
 .rdp-popover .rdp-caption_label {
-  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-karla), ui-sans-serif, system-ui, sans-serif;
   font-size: 1rem;
   font-weight: 600;
   letter-spacing: -0.012em;
@@ -469,4 +509,28 @@
 }
 .animate-marquee:hover {
   animation-play-state: paused;
+}
+
+/* ----------------------------------------------------------
+   Listing-card reveal — soft fade-up cascade on first paint.
+   Pure CSS so cards are never stuck hidden (works without JS).
+   Stagger comes from an inline animation-delay per card.
+   ---------------------------------------------------------- */
+@keyframes card-reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.card-reveal {
+  animation: card-reveal-up 400ms ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-reveal {
+    animation: none;
+  }
 }

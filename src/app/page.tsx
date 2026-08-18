@@ -5,7 +5,7 @@ import { SearchBar } from "@/components/search-bar";
 import { SectionHeader } from "@/components/section-header";
 import { getAllDestinations } from "@/lib/data/locations";
 import { getAllCollections } from "@/lib/data/collections";
-import { getAllExperiences } from "@/lib/data/experiences";
+import { getPublishedExperiences } from "@/lib/data/experiences";
 import { CuratedExperiences } from "@/components/curated-experiences";
 import { ScrollSlider } from "@/components/scroll-slider";
 import { getStateCover } from "@/lib/data/location-covers";
@@ -19,7 +19,7 @@ import {
   type RecentCandidate,
 } from "@/components/recently-visited";
 import { getFeaturedReviews } from "@/lib/data/reviews";
-import { OrganizationJsonLd } from "@/components/jsonld-organization";
+import { OrganizationJsonLd, WebSiteJsonLd } from "@/components/jsonld-organization";
 import { LocationChipsFilter } from "@/components/location-chips-filter";
 import { getBanners } from "@/lib/data/banners";
 import { getCurrentUser } from "@/lib/session";
@@ -69,14 +69,16 @@ export default async function HomePage() {
 
   return (
     <div className="flex flex-col">
-      {/* Organization JSON-LD — helps Google understand the brand */}
+      {/* Organization + WebSite JSON-LD — helps Google understand the brand */}
       <OrganizationJsonLd />
+      <WebSiteJsonLd />
 
       {/* Hero slider */}
       <HeroSlider slides={slides} />
 
-      {/* Search bar, just below the hero with a small breathing gap */}
-      <div className="relative z-10 mt-6 sm:mt-8">
+      {/* Search bar — mobile sits below the hero; desktop overlaps the
+          bottom edge of the hero (StayVista-style) for a tighter visual link. */}
+      <div className="relative z-10 mt-6 sm:mt-8 lg:-mt-14 xl:-mt-20">
         <SearchBar
           destinations={getAllDestinations()}
           villas={allVillas.map((v) => ({
@@ -94,7 +96,6 @@ export default async function HomePage() {
         <SectionHeader
           eyebrow="Guest favourites"
           title="Best Rated Villas"
-          description="Top-rated homes from our collection — picked by guests who actually stayed."
           ctaLabel="See all villas"
           ctaHref="/villas"
         />
@@ -103,6 +104,7 @@ export default async function HomePage() {
           allProperties={allVillas.filter((v) => (v.type ?? "villa") === "villa")}
           loggedIn={!!user}
           wishlist={wishlist}
+          kind="villa"
         />
       </section>
 
@@ -112,7 +114,6 @@ export default async function HomePage() {
           <SectionHeader
             eyebrow="Guest favourites"
             title="Best Rated Apartments"
-            description="Top-rated city apartments — perfect for short trips and workcations."
             ctaLabel="See all apartments"
             ctaHref="/apartments"
           />
@@ -121,6 +122,7 @@ export default async function HomePage() {
             allProperties={allVillas.filter((v) => v.type === "apartment")}
             loggedIn={!!user}
             wishlist={wishlist}
+            kind="apartment"
           />
         </section>
       )}
@@ -131,7 +133,6 @@ export default async function HomePage() {
           <SectionHeader
             eyebrow="Browse by theme"
             title="Collections"
-            description="Curated picks — pool villas, pet friendly, beachfront, more."
             ctaLabel="All collections"
             ctaHref="/collections"
           />
@@ -167,7 +168,6 @@ export default async function HomePage() {
         <SectionHeader
           eyebrow="Where to go"
           title="Locations"
-          description="From beachfront pools to hillside fireplaces — pick a place, we'll do the rest."
           ctaLabel="All destinations"
           ctaHref="/locations"
         />
@@ -204,7 +204,13 @@ export default async function HomePage() {
       </section>
 
       {/* Curated Experiences — premium concierge offerings */}
-      <CuratedExperiences experiences={getAllExperiences()} />
+      <CuratedExperiences
+        experiences={[...getPublishedExperiences()].sort(
+          (a, b) =>
+            (b.featured ? 1 : 0) - (a.featured ? 1 : 0) ||
+            (a.featuredOrder ?? 99) - (b.featuredOrder ?? 99),
+        )}
+      />
 
       {/* Recently visited (client-side, only renders if visitor has history) */}
       <RecentlyVisited candidates={recentCandidates} />

@@ -14,6 +14,7 @@ import {
 import type { Destination } from "@/lib/types";
 import { SingleDatePicker } from "@/components/single-date-picker";
 import { GuestsPicker, DEFAULT_GUESTS, type Guests } from "@/components/guests-picker";
+import { track } from "@/lib/analytics";
 
 type DateRange = { from?: Date; to?: Date };
 
@@ -119,6 +120,13 @@ export function SearchBar({
 
   function go(g: Guests = guests) {
     const params = buildParams({ place, range, guests: g });
+    const total = g.adults + g.children;
+    track("Search", {
+      ...(place?.label ? { location: place.label } : {}),
+      ...(range?.from ? { checkIn: toISO(range.from)! } : {}),
+      ...(range?.to ? { checkOut: toISO(range.to)! } : {}),
+      ...(total > 0 ? { guests: total } : {}),
+    });
     setSheetOpen(false);
     router.push(`/villas${params.toString() ? `?${params.toString()}` : ""}`);
   }

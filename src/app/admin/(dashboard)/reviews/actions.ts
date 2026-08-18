@@ -2,8 +2,16 @@
 
 import { revalidatePath } from "next/cache";
 import { readJson, writeJson } from "@/lib/storage";
-import type { GuestType, StoredReview } from "@/lib/data/reviews";
+import type { GuestType, ReviewSource, StoredReview } from "@/lib/data/reviews";
 import { getVillaBySlug } from "@/lib/data/villas";
+
+const SOURCE_SET = new Set<ReviewSource>(["direct", "google", "airbnb", "booking"]);
+
+function readSource(v: FormDataEntryValue | null): ReviewSource {
+  return typeof v === "string" && SOURCE_SET.has(v as ReviewSource)
+    ? (v as ReviewSource)
+    : "direct";
+}
 
 const FILE = "reviews.json";
 
@@ -45,6 +53,7 @@ export async function saveReview(
   const ratingRaw = String(formData.get("rating") ?? "5");
   const rating = Math.min(5, Math.max(1, Number(ratingRaw)));
   const guestType = readGuestType(formData.get("guestType"));
+  const source = readSource(formData.get("source"));
   const featured = bool(formData.get("featured"));
   const showPhoto = formData.get("showPhoto") === null
     ? true // not in form (e.g. legacy submission) → default true
@@ -82,6 +91,7 @@ export async function saveReview(
     quote,
     rating,
     guestType,
+    source,
     featured,
     showPhoto,
     active,
@@ -98,7 +108,6 @@ export async function saveReview(
       quote,
       rating,
       createdAt: new Date().toISOString(),
-      source: "direct",
     } as StoredReview);
   }
   await writeJson(FILE, list);
@@ -118,5 +127,57 @@ export async function deleteReview(id: string): Promise<{ ok: boolean }> {
   revalidatePath("/admin/reviews");
   revalidatePath("/");
   revalidatePath("/villas");
+  return { ok: true };
+}
+
+/* --- Guest-submission moderation ------------------------------------ */
+
+function revalidateReviewSurfaces(villaSlug?: string) {
+  revalidatePath("/admin/reviews");
+  revalidatePath("/");
+  if (villaSlug) revalidatePath(`/villas/${villaSlug}`);
+}
+
+export async function moderateReview(
+  id: string,
+  status: "pending" | "approved" | "rejected" | "spam",
+): Promise<{ ok: boolean; error?: string }> {
+  const list = await readJson<StoredReview[]>(FILE, []);
+  const r = list.find((x) => x.id === id);
+  if (!r) return { ok: false, error: "Review not found" };
+  r.status = status;
+  r.updatedAt = new Date().toISOString();
+  await writeJson(FILE, list);
+  revalidateReviewSurfaces(r.villaSlug);
+  return { ok: true };
+}
+
+export async function toggleReviewFlag(
+  id: string,
+  flag: "featured" | "active",
+): Promise<{ ok: boolean; error?: string }> {
+  const list = await readJson<StoredReview[]>(FILE, []);
+  const r = list.find((x) => x.id === id);
+  if (!r) return { ok: false, error: "Review not found" };
+  if (flag === "featured") r.featured = !r.featured;
+  else r.active = r.active === false ? true : false;
+  await writeJson(FILE, list);
+  revalidateReviewSurfaces(r.villaSlug);
+  return { ok: true };
+}
+
+export async function replyToReview(
+  id: string,
+  text: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const list = await readJson<StoredReview[]>(FILE, []);
+  const r = list.find((x) => x.id === id);
+  if (!r) return { ok: false, error: "Review not found" };
+  r.reply = text.trim()
+    ? { text: text.trim().slice(0, 1000), by: "team", at: new Date().toISOString() }
+    : undefined;
+  r.updatedAt = new Date().toISOString();
+  await writeJson(FILE, list);
+  revalidateReviewSurfaces(r.villaSlug);
   return { ok: true };
 }

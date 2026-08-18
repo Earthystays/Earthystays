@@ -352,7 +352,7 @@ const SEED: Villa[] = [
  * which lets admins delete bundled seed villas permanently (otherwise the
  * SEED would just bring them back on every page load).
  */
-function loadVillas(): Villa[] {
+function loadAllVillas(): Villa[] {
   const added = readJsonSync<Villa[]>("villas.json", []);
   const deleted = new Set(readJsonSync<string[]>("deleted-villas.json", []));
   const bySlug = new Map<string, Villa>(
@@ -365,12 +365,37 @@ function loadVillas(): Villa[] {
   return Array.from(bySlug.values());
 }
 
+/** A listing is publicly visible when it predates the marketplace (no
+ *  status — team-managed) or the team has approved it. Host drafts,
+ *  pending, rejected and hidden listings never reach public surfaces. */
+function isPublic(v: Villa): boolean {
+  return !v.status || v.status === "approved";
+}
+
+/** Public-facing loader — every guest surface goes through this. */
+function loadVillas(): Villa[] {
+  return loadAllVillas().filter(isPublic);
+}
+
 export function getVillas(): Villa[] {
   return loadVillas();
 }
 
 export function getVillaBySlug(slug: string) {
   return loadVillas().find((v) => v.slug === slug);
+}
+
+/** Unfiltered accessors for the admin panel and host dashboard. */
+export function getVillasWithHidden(): Villa[] {
+  return loadAllVillas();
+}
+
+export function getVillaBySlugWithHidden(slug: string) {
+  return loadAllVillas().find((v) => v.slug === slug);
+}
+
+export function getVillasByHost(hostId: string): Villa[] {
+  return loadAllVillas().filter((v) => v.hostId === hostId);
 }
 
 const FEATURED_CAP = 6;
@@ -483,6 +508,16 @@ export type VillaFilters = {
 
 export function getVillasByType(type: "villa" | "apartment") {
   return loadVillas().filter((v) => (v.type ?? "villa") === type);
+}
+
+/** Public hotels (Phase I) — used by the /hotels routes & sitemap. */
+export function getHotels(): Villa[] {
+  return loadVillas().filter((v) => v.type === "hotel");
+}
+
+/** Public hostels (Phase I) — used by the /hostels routes & sitemap. */
+export function getHostels(): Villa[] {
+  return loadVillas().filter((v) => v.type === "hostel");
 }
 
 export function getAllAmenities(): string[] {

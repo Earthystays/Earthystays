@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { Menu, Phone, Send, ChevronDown } from "lucide-react";
+import { Menu, Phone, Send, ChevronDown, User } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -18,14 +18,15 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { UserMenu } from "@/components/user-menu";
-import { PropertyTypeMenu } from "@/components/property-type-menu";
+import { StayMenu, STAY_MOBILE_LINKS } from "@/components/stay-menu";
 import { CallbackModal } from "@/components/callback-modal";
+import { trackWhatsAppClick } from "@/lib/track-whatsapp";
+import { track } from "@/lib/analytics";
 import type { CityIndexState } from "@/lib/data/villas";
 
 const DISCOVER_GROUP = [
   { href: "/collections", label: "Collections" },
   { href: "/locations", label: "Locations" },
-  { href: "/experiences", label: "Experiences" },
 ] as const;
 
 const SECONDARY_NAV = [
@@ -50,8 +51,9 @@ function WhatsAppIcon({ className }: { className?: string }) {
 }
 
 function DiscoverMenu({ isOverlay }: { isOverlay: boolean }) {
+  const [open, setOpen] = useState(false);
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger
         className={`group inline-flex items-center gap-1.5 text-base transition-colors lg:text-lg ${
           isOverlay
@@ -67,6 +69,7 @@ function DiscoverMenu({ isOverlay }: { isOverlay: boolean }) {
           <Link
             key={item.href}
             href={item.href}
+            onClick={() => setOpen(false)}
             className="block rounded-md px-3 py-2.5 text-sm text-foreground transition-colors hover:bg-muted/60"
           >
             {item.label}
@@ -92,6 +95,7 @@ function GetInTouchMenu() {
         <DropdownMenuContent align="end" sideOffset={8} className="w-60 p-2">
           <DropdownMenuItem
             onClick={() => {
+              track("Contact", { method: "phone", source: "header-desktop" });
               window.location.href = `tel:${PHONE_E164}`;
             }}
             className="gap-3 px-3 py-2.5 text-sm"
@@ -101,6 +105,7 @@ function GetInTouchMenu() {
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => {
+              trackWhatsAppClick("header-desktop");
               window.open(WHATSAPP_URL, "_blank", "noopener,noreferrer");
             }}
             className="gap-3 px-3 py-2.5 text-sm"
@@ -130,7 +135,7 @@ export function SiteHeader({
   villaStates = [],
   apartmentStates = [],
 }: {
-  user: { name: string; email: string } | null;
+  user: { name: string; email: string; isHost?: boolean } | null;
   transparent?: boolean;
   villaStates?: CityIndexState[];
   apartmentStates?: CityIndexState[];
@@ -138,6 +143,7 @@ export function SiteHeader({
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [mobileCallbackOpen, setMobileCallbackOpen] = useState(false);
+  const [stayOpen, setStayOpen] = useState(false);
 
   // Toggle scrolled state for transparent mode (turn solid when past 80px)
   useEffect(() => {
@@ -175,18 +181,17 @@ export function SiteHeader({
         </Link>
 
         <nav className="hidden md:flex items-center gap-9 lg:gap-10">
-          <PropertyTypeMenu
-            label="Villas"
-            href="/villas"
-            states={villaStates}
-            isOverlay={isOverlay}
-          />
-          <PropertyTypeMenu
-            label="Apartments"
-            href="/apartments"
-            states={apartmentStates}
-            isOverlay={isOverlay}
-          />
+          <StayMenu isOverlay={isOverlay} />
+          <Link
+            href="/experiences"
+            className={`text-base lg:text-lg transition-colors ${
+              isOverlay
+                ? "text-white/95 hover:text-white"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Experiences
+          </Link>
           <DiscoverMenu isOverlay={isOverlay} />
           {SECONDARY_NAV.map((item) => (
             <Link
@@ -216,6 +221,7 @@ export function SiteHeader({
             <a
               href={`tel:${PHONE_E164}`}
               aria-label={`Call ${PHONE_DISPLAY}`}
+              onClick={() => track("Contact", { method: "phone", source: "header-mobile-pill" })}
               className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
                 isOverlay
                   ? "border-white/50 text-white hover:bg-white/10"
@@ -246,19 +252,94 @@ export function SiteHeader({
                 />
               </SheetTitle>
             </SheetHeader>
-            <nav className="mt-6 flex flex-col gap-1 px-4">
-              <MobileTypeGroup
-                label="Villas"
-                href="/villas"
-                states={villaStates}
-                onNavigate={() => setOpen(false)}
-              />
-              <MobileTypeGroup
-                label="Apartments"
-                href="/apartments"
-                states={apartmentStates}
-                onNavigate={() => setOpen(false)}
-              />
+            <div className="mt-4 mx-4 rounded-2xl bg-foreground p-4">
+              {user ? (
+                <div className="flex items-center gap-3">
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-background text-foreground text-sm font-medium">
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-medium text-background">
+                      {user.name}
+                    </div>
+                    <div className="truncate text-xs text-background/70">
+                      {user.email}
+                    </div>
+                  </div>
+                  <form action="/api/auth/logout" method="post">
+                    <button
+                      type="submit"
+                      className="rounded-full border border-background/40 px-3 py-1 text-xs text-background hover:bg-background hover:text-foreground"
+                    >
+                      Sign out
+                    </button>
+                  </form>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-background text-foreground">
+                    <User className="h-5 w-5" />
+                  </div>
+                  <Link
+                    href="/login"
+                    onClick={() => setOpen(false)}
+                    className="flex-1 rounded-full border border-background/60 px-4 py-2 text-center text-sm font-medium text-background hover:bg-background hover:text-foreground"
+                  >
+                    Login / Sign up
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            <nav className="mt-4 flex flex-col gap-1 px-4">
+              <button
+                type="button"
+                onClick={() => setStayOpen((v) => !v)}
+                aria-expanded={stayOpen}
+                className="flex items-center justify-between rounded-md px-3 py-3 text-base hover:bg-muted"
+              >
+                Stay
+                <ChevronDown
+                  className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
+                    stayOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+              {stayOpen && (
+                <div className="ml-3 mb-1 border-l border-border/40 pl-2">
+                  <MobileTypeGroup
+                    label="Villas"
+                    href="/villas"
+                    states={villaStates}
+                    onNavigate={() => setOpen(false)}
+                  />
+                  <MobileTypeGroup
+                    label="Apartments"
+                    href="/apartments"
+                    states={apartmentStates}
+                    onNavigate={() => setOpen(false)}
+                  />
+                  {STAY_MOBILE_LINKS.filter(
+                    (l) => l.href !== "/villas" && l.href !== "/apartments",
+                  ).map((l) => (
+                    <Link
+                      key={l.href}
+                      href={l.href}
+                      onClick={() => setOpen(false)}
+                      className="block rounded-md px-3 py-3 text-base hover:bg-muted"
+                    >
+                      {l.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
+              <Link
+                href="/experiences"
+                onClick={() => setOpen(false)}
+                className="rounded-md px-3 py-3 text-base hover:bg-muted"
+              >
+                Experiences
+              </Link>
               <div className="px-3 pb-1 pt-4 text-[10px] uppercase tracking-[0.18em] text-muted-foreground/80">
                 Discover
               </div>
@@ -284,42 +365,39 @@ export function SiteHeader({
               ))}
 
               <div className="mt-6 border-t border-border/60 pt-4 grid gap-1 text-sm">
-                {user ? (
+                {user && (
                   <>
                     <Link
                       href="/wishlist"
                       onClick={() => setOpen(false)}
                       className="rounded-md px-3 py-3 hover:bg-muted"
                     >
-                      Wishlist ({user.email})
+                      Wishlist
                     </Link>
-                    <form action="/api/auth/logout" method="post">
-                      <button type="submit" className="w-full text-left rounded-md px-3 py-3 hover:bg-muted">
-                        Sign out
-                      </button>
-                    </form>
-                  </>
-                ) : (
-                  <>
                     <Link
-                      href="/login"
+                      href="/messages"
                       onClick={() => setOpen(false)}
                       className="rounded-md px-3 py-3 hover:bg-muted"
                     >
-                      Sign in
+                      Messages
                     </Link>
-                    <Link
-                      href="/signup"
-                      onClick={() => setOpen(false)}
-                      className="rounded-md px-3 py-3 hover:bg-muted"
-                    >
-                      Create account
-                    </Link>
+                    {user.isHost && (
+                      <Link
+                        href="/host"
+                        onClick={() => setOpen(false)}
+                        className="rounded-md px-3 py-3 font-medium hover:bg-muted"
+                      >
+                        Switch to hosting
+                      </Link>
+                    )}
                   </>
                 )}
                 <a
                   href={`tel:${PHONE_E164}`}
-                  onClick={() => setOpen(false)}
+                  onClick={() => {
+                    track("Contact", { method: "phone", source: "header-mobile-drawer" });
+                    setOpen(false);
+                  }}
                   className="flex items-center gap-3 rounded-md px-3 py-3 hover:bg-muted"
                 >
                   <Phone className="h-4 w-4" />
@@ -329,7 +407,10 @@ export function SiteHeader({
                   href={WHATSAPP_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={() => setOpen(false)}
+                  onClick={() => {
+                    trackWhatsAppClick("header-mobile");
+                    setOpen(false);
+                  }}
                   className="flex items-center gap-3 rounded-md px-3 py-3 hover:bg-muted"
                 >
                   <WhatsAppIcon className="h-4 w-4 text-emerald-600" />
@@ -374,17 +455,35 @@ function MobileTypeGroup({
   states: CityIndexState[];
   onNavigate: () => void;
 }) {
+  const [expanded, setExpanded] = useState(false);
   const singular = label.replace(/s$/, "");
+  const hasChildren = states.length > 0;
+
   return (
     <div>
-      <Link
-        href={href}
-        onClick={onNavigate}
-        className="block rounded-md px-3 py-3 text-base hover:bg-muted"
-      >
-        {label}
-      </Link>
-      {states.length > 0 && (
+      <div className="flex items-center">
+        <Link
+          href={href}
+          onClick={onNavigate}
+          className="flex-1 rounded-md px-3 py-3 text-base hover:bg-muted"
+        >
+          {label}
+        </Link>
+        {hasChildren && (
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            aria-label={`${expanded ? "Hide" : "Show"} ${label.toLowerCase()} by location`}
+            aria-expanded={expanded}
+            className="ml-1 rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <ChevronDown
+              className={`h-4 w-4 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+            />
+          </button>
+        )}
+      </div>
+      {hasChildren && expanded && (
         <div className="ml-3 mt-1 mb-2 grid gap-px border-l border-border/40 pl-3">
           {states.flatMap((s) =>
             s.cities.map((c) => (

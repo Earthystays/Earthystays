@@ -4,7 +4,13 @@ import { useEffect, useRef, useState } from "react";
 
 export type DetailTab = { id: string; label: string };
 
-export function DetailTabs({ tabs }: { tabs: DetailTab[] }) {
+export function DetailTabs({
+  tabs,
+  className,
+}: {
+  tabs: DetailTab[];
+  className?: string;
+}) {
   const [active, setActive] = useState<string>(tabs[0]?.id ?? "");
   const lockedUntil = useRef<number>(0);
 
@@ -55,10 +61,10 @@ export function DetailTabs({ tabs }: { tabs: DetailTab[] }) {
   if (tabs.length === 0) return null;
 
   return (
-    <div className="sticky top-20 z-30 border-b border-border bg-background/95 backdrop-blur-md">
+    <div className="sticky top-20 z-30 mt-6 border-b border-border bg-background/95 backdrop-blur-md">
       <nav
         aria-label="Villa sections"
-        className="container-page flex gap-8 overflow-x-auto text-[15px] sm:gap-10 sm:text-base whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className={`container-page flex gap-8 overflow-x-auto text-[15px] sm:gap-10 sm:text-base whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className ?? ""}`}
       >
         {tabs.map((t) => (
           <a

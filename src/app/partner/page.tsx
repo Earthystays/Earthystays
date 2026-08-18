@@ -2,6 +2,7 @@ import Image from "next/image";
 import type { Metadata } from "next";
 import { BadgeCheck, Sparkles, Wallet, ShieldCheck, Mail, Phone } from "lucide-react";
 import { PartnerForm } from "@/components/partner-form";
+import { TrackedTelLink } from "@/components/tracked-tel-link";
 
 export const metadata: Metadata = {
   title: "Partner with us",
@@ -116,13 +117,14 @@ export default function PartnerPage() {
               <Mail className="h-4 w-4 text-terracotta" />
               reservations@earthyrooms.com
             </a>
-            <a
+            <TrackedTelLink
               href="tel:+919657100004"
+              source="partner-page"
               className="inline-flex items-center gap-2 text-sm text-foreground hover:text-terracotta"
             >
               <Phone className="h-4 w-4 text-terracotta" />
               +91 9657100004
-            </a>
+            </TrackedTelLink>
           </div>
         </div>
       </section>

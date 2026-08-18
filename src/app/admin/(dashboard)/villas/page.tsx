@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { Plus, FileText } from "lucide-react";
-import { getVillas } from "@/lib/data/villas";
+import { getVillasWithHidden } from "@/lib/data/villas";
+import { getUsers } from "@/lib/data/users";
 import { buttonVariants } from "@/components/ui/button";
-import { VillasTable } from "./villas-table";
+import { VillasTable, type HostInfo } from "./villas-table";
 import { ImportListingButton } from "./import-modal";
 import { getAllDrafts } from "@/lib/data/villa-drafts";
 
@@ -15,8 +16,14 @@ export default async function AdminVillasPage({
 }: {
   searchParams: SearchParams;
 }) {
-  const villas = getVillas();
+  const villas = getVillasWithHidden();
   const drafts = await getAllDrafts();
+  // userId → host details for the Host column (only ids actually assigned).
+  const assignedIds = new Set(villas.map((v) => v.hostId).filter(Boolean));
+  const hostsById: Record<string, HostInfo> = {};
+  for (const u of await getUsers()) {
+    if (assignedIds.has(u.id)) hostsById[u.id] = { name: u.name, email: u.email };
+  }
   const sp = await searchParams;
   const added = sp.added;
   const deleted = sp.deleted;
@@ -72,7 +79,7 @@ export default async function AdminVillasPage({
         </div>
       )}
 
-      <VillasTable villas={villas} />
+      <VillasTable villas={villas} hostsById={hostsById} />
 
       <p className="mt-4 text-xs text-muted-foreground">
         Deletions stick — bundled seed villas you delete are recorded in <code className="rounded bg-muted px-1 py-0.5">data/deleted-villas.json</code> so they don&apos;t reappear. Properties you add go to <code className="rounded bg-muted px-1 py-0.5">data/villas.json</code>.

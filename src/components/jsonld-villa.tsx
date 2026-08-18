@@ -1,9 +1,10 @@
 import type { Villa } from "@/lib/types";
 import { getStateBySlug } from "@/lib/data/locations";
 import { getAverageRating, getReviewsByVilla } from "@/lib/data/reviews";
+import { propertyUrl } from "@/lib/property-url";
 
 /**
- * LodgingBusiness JSON-LD for villa detail pages.
+ * VacationRental JSON-LD for villa detail pages.
  *
  * Tells Google this URL is a specific accommodation with photos, location,
  * star rating, review count, and price. When Google parses this correctly,
@@ -12,12 +13,24 @@ import { getAverageRating, getReviewsByVilla } from "@/lib/data/reviews";
  *   - Price chip
  *   - Image carousel preview
  *   - Map / address row
+ *
+ * aggregateRating is only emitted when there's at least one real review —
+ * a "4.8 · 0 reviews" placeholder would be invalid markup and risks a
+ * Google Search Console manual action for misleading structured data.
  */
 export function VillaJsonLd({ villa }: { villa: Villa }) {
   const state = getStateBySlug(villa.destinationSlug);
-  const url = `https://earthystays.com/villas/${villa.slug}`;
+  const url = propertyUrl(villa);
+  // Schema.org type per property kind — hotels/hostels are LodgingBusinesses,
+  // villas/apartments are VacationRentals.
+  const schemaType =
+    villa.type === "hotel"
+      ? "Hotel"
+      : villa.type === "hostel"
+        ? "Hostel"
+        : "VacationRental";
   const images = villa.images
-    .slice(0, 6)
+    .slice(0, 20)
     .map((img) =>
       img.src.startsWith("http") ? img.src : `https://earthystays.com${img.src}`,
     );
@@ -32,8 +45,9 @@ export function VillaJsonLd({ villa }: { villa: Villa }) {
 
   const data = {
     "@context": "https://schema.org",
-    "@type": "LodgingBusiness",
+    "@type": schemaType,
     "@id": url,
+    identifier: villa.slug,
     name: villa.name,
     description: villa.description || villa.tagline,
     url,
@@ -56,6 +70,25 @@ export function VillaJsonLd({ villa }: { villa: Villa }) {
     priceRange: villa.pricePerNight
       ? `₹${villa.pricePerNight.toLocaleString("en-IN")}`
       : undefined,
+    // Required by Google's VacationRental spec: the accommodation itself
+    // (rooms/occupancy/amenities) nests under containsPlace, not the
+    // listing root — a flat structure is reported as invalid.
+    containsPlace: {
+      "@type": "Accommodation",
+      name: villa.name,
+      numberOfBedrooms: villa.bedrooms,
+      numberOfBathroomsTotal: villa.bathrooms,
+      occupancy: {
+        "@type": "QuantitativeValue",
+        value: villa.maxGuests,
+      },
+      amenityFeature: villa.amenities.map((a) => ({
+        "@type": "LocationFeatureSpecification",
+        name: a,
+        value: true,
+      })),
+      petsAllowed: villa.amenities.some((a) => /pet/i.test(a)),
+    },
     aggregateRating:
       ratingValue > 0 && reviewCount > 0
         ? {
@@ -78,16 +111,12 @@ export function VillaJsonLd({ villa }: { villa: Villa }) {
             },
             author: { "@type": "Person", name: r.guestName },
             reviewBody: r.quote,
+            // Required for vacation-rental reviews — Google flags review
+            // items without it as invalid.
+            datePublished: r.createdAt.slice(0, 10),
             ...(r.title ? { name: r.title } : {}),
           }))
         : undefined,
-    numberOfRooms: villa.bedrooms,
-    petsAllowed: villa.amenities.some((a) => /pet/i.test(a)),
-    amenityFeature: villa.amenities.map((a) => ({
-      "@type": "LocationFeatureSpecification",
-      name: a,
-      value: true,
-    })),
   };
 
   return (

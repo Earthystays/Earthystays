@@ -37,14 +37,21 @@ export function getViewScoresSync(): Record<string, number> {
   return scores;
 }
 
-/** Raw count of views in the last 30 days — for the admin "most viewed
- *  this month" widget. */
-export function getRecentViewCountsSync(): Record<string, number> {
+/** Raw count of views per villa. Defaults to the last 30 days; pass a
+ *  range (epoch ms, inclusive) to scope to the admin dashboard's selected
+ *  window. Note events older than 60 days are pruned, so ranges further
+ *  back than that will undercount. */
+export function getRecentViewCountsSync(range?: {
+  start: number;
+  end: number;
+}): Record<string, number> {
   const store = readJsonSync<ViewStore>(FILE, {});
   const now = Date.now();
+  const start = range?.start ?? now - RECENT_MS;
+  const end = range?.end ?? now;
   const counts: Record<string, number> = {};
   for (const [slug, events] of Object.entries(store)) {
-    counts[slug] = events.filter((t) => now - t < RECENT_MS).length;
+    counts[slug] = events.filter((t) => t >= start && t <= end).length;
   }
   return counts;
 }

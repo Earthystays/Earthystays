@@ -4,7 +4,10 @@ import { SignupForm } from "./form";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { getCurrentUser } from "@/lib/session";
 
-export const metadata: Metadata = { title: "Create an account" };
+export const metadata: Metadata = {
+  title: "Create an account",
+  robots: { index: false, follow: true },
+};
 
 export default async function SignupPage({
   searchParams,

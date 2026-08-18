@@ -23,12 +23,14 @@ export function ShareButton({
   url,
   variant = "overlay",
   size = "default",
+  ariaLabel = "Share this property",
 }: {
   title: string;
   description?: string;
   url?: string;
   variant?: "overlay" | "inline";
   size?: "default" | "sm";
+  ariaLabel?: string;
 }) {
   function getUrl() {
     return url || (typeof window !== "undefined" ? window.location.href : "");
@@ -93,7 +95,7 @@ export function ShareButton({
       <DropdownMenuTrigger
         onClick={(e) => e.stopPropagation()}
         className={triggerClass}
-        aria-label="Share this property"
+        aria-label={ariaLabel}
       >
         <Share2 className={size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4"} />
         {variant === "inline" && <span>Share</span>}

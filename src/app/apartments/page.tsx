@@ -10,12 +10,14 @@ import {
   getCityIndex,
   type VillaFilters as Filters,
 } from "@/lib/data/villas";
+import { destinations } from "@/lib/data/locations";
 import { SortDropdown } from "@/components/sort-dropdown";
 import { getCurrentUser } from "@/lib/session";
 
 export const metadata: Metadata = {
-  title: "Apartments",
-  description: "City apartments and serviced flats curated by Earthy Stays.",
+  title: "Serviced Apartments & City Stays in India | Earthy Stays",
+  description:
+    "Handpicked serviced apartments and city flats — fully furnished, hassle-free check-in, and dedicated support throughout your stay. Browse by city, price, and amenities.",
 };
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -57,23 +59,21 @@ export default async function ApartmentsPage({
   const user = await getCurrentUser();
   const wishlist = new Set(user?.wishlist ?? []);
 
-  let pageTitle = "Apartments";
   let cityLabel: string | undefined;
   if (stateSlug || citySlug) {
     const index = getCityIndex("apartment");
     const state = index.find((s) => s.stateSlug === stateSlug);
     const city = state?.cities.find((c) => c.slug === citySlug);
     if (city) {
-      pageTitle = `Apartments in ${city.name}`;
       cityLabel = city.name;
     } else if (state) {
-      pageTitle = `Apartments in ${state.stateName}`;
       cityLabel = state.stateName;
     }
   }
 
   return (
-    <div className="container-page py-8 lg:py-12">
+    <div className="bg-[#FAF8F5]">
+    <div className="container-page !max-w-[1600px] py-8 lg:px-8 lg:py-12">
       <Breadcrumbs
         items={[
           { label: "Home", href: "/" },
@@ -81,27 +81,21 @@ export default async function ApartmentsPage({
           ...(cityLabel ? [{ label: cityLabel }] : []),
         ]}
       />
-      <header className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="font-display text-3xl sm:text-4xl">{pageTitle}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {results.length} {results.length === 1 ? "apartment" : "apartments"} match your filters.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <MobileFiltersDrawer
-            amenities={amenities}
-            priceMin={bounds.min}
-            priceMax={bounds.max}
-          />
-          <SortDropdown currentSort={filters.sort ?? "featured"} />
-        </div>
-      </header>
+      <div className="mt-4 flex items-center justify-end gap-2">
+        <MobileFiltersDrawer
+          amenities={amenities}
+          destinations={destinations}
+          priceMin={bounds.min}
+          priceMax={bounds.max}
+        />
+        <SortDropdown currentSort={filters.sort ?? "featured"} />
+      </div>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[260px_1fr]">
+      <div className="mt-8 grid gap-8 lg:grid-cols-[320px_1fr]">
         <div className="hidden lg:sticky lg:top-32 lg:block lg:self-start">
           <VillaFiltersSidebar
             amenities={amenities}
+            destinations={destinations}
             priceMin={bounds.min}
             priceMax={bounds.max}
           />
@@ -117,18 +111,21 @@ export default async function ApartmentsPage({
             </div>
           ) : (
             <div className="grid gap-5">
-              {results.map((villa) => (
+              {results.map((villa, idx) => (
                 <VillaListItem
                   key={villa.slug}
                   villa={villa}
                   loggedIn={!!user}
                   inWishlist={wishlist.has(villa.slug)}
+                  index={idx}
                 />
               ))}
             </div>
           )}
         </div>
       </div>
+
+    </div>
     </div>
   );
 }

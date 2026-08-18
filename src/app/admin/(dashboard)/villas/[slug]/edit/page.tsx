@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getVillaBySlug } from "@/lib/data/villas";
+import { getVillaBySlugWithHidden } from "@/lib/data/villas";
 import { getAllDestinations } from "@/lib/data/locations";
 import { getAllCollections } from "@/lib/data/collections";
+import { getAllExperiences } from "@/lib/data/experiences";
 import { INDIAN_STATES } from "@/lib/india-states";
 import {
   VILLA_AMENITIES,
@@ -12,6 +13,8 @@ import {
 } from "../../new/constants";
 import { NewVillaForm } from "../../new/form";
 import { villaToFormValues } from "../../villa-to-values";
+import { UnitsEditor } from "./units-editor";
+import { getBlockedDatesForProperty } from "@/lib/data/unit-blocked-dates";
 import { getCustomAmenityNames, getCustomFacilityNames } from "@/lib/data/amenities-store";
 import { getAmenityIconName } from "@/lib/amenity-icons";
 
@@ -23,7 +26,7 @@ type PageProps = { params: Promise<{ slug: string }> };
 
 export default async function EditVillaPage({ params }: PageProps) {
   const { slug } = await params;
-  const villa = getVillaBySlug(slug);
+  const villa = getVillaBySlugWithHidden(slug);
   if (!villa) notFound();
 
   const customA = getCustomAmenityNames();
@@ -56,6 +59,11 @@ export default async function EditVillaPage({ params }: PageProps) {
           })),
         }))}
         collections={getAllCollections().map((c) => ({ slug: c.slug, name: c.name }))}
+        experienceOptions={getAllExperiences().map((e) => ({
+          slug: e.slug,
+          name: e.name,
+          blurb: e.blurb,
+        }))}
         amenities={[...VILLA_AMENITIES, ...customA].map(withIcon)}
         facilities={[...VILLA_FACILITIES, ...customF].map(withIcon)}
         states={[...INDIAN_STATES]}
@@ -63,6 +71,15 @@ export default async function EditVillaPage({ params }: PageProps) {
         mealPresets={MEAL_PRESETS.map((p) => ({ ...p }))}
         initialState={{ ok: false, values: initialValues }}
       />
+
+      {(villa.type === "hotel" || villa.type === "hostel") && (
+        <UnitsEditor
+          slug={villa.slug}
+          type={villa.type}
+          initialUnits={villa.units ?? []}
+          initialBlockedDates={await getBlockedDatesForProperty(villa.slug)}
+        />
+      )}
     </div>
   );
 }

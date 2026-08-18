@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { User as UserIcon, Heart, LogOut, UserPlus, LogIn } from "lucide-react";
+import { User as UserIcon, Heart, LogOut, UserPlus, LogIn, MessageSquare, ArrowLeftRight } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -13,7 +13,7 @@ export function UserMenu({
   user,
   variant = "default",
 }: {
-  user: { name: string; email: string } | null;
+  user: { name: string; email: string; isHost?: boolean } | null;
   variant?: "default" | "overlay";
 }) {
   const triggerOverlay =
@@ -69,6 +69,20 @@ export function UserMenu({
           <Heart className="h-4 w-4 text-foreground" />
           My wishlist
         </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => (window.location.href = "/messages")} className="gap-3 px-3 py-2.5 text-sm">
+          <MessageSquare className="h-4 w-4 text-foreground" />
+          My messages
+        </DropdownMenuItem>
+        <div className="my-1 border-t border-border/60" />
+        {user.isHost && (
+          <DropdownMenuItem
+            onClick={() => (window.location.href = "/host")}
+            className="gap-3 px-3 py-2.5 text-sm font-medium"
+          >
+            <ArrowLeftRight className="h-4 w-4 text-foreground" />
+            Switch to hosting
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem
           onClick={() => {
             const f = document.createElement("form");

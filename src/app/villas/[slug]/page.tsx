@@ -1,9 +1,11 @@
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
-import { Star, Users, BedDouble, Bath, MapPin, Check, ChefHat, Utensils, ChevronDown } from "lucide-react";
+import { Star, Users, BedDouble, Bath, MapPin, Check, ChefHat, Utensils, ChevronDown, FileText } from "lucide-react";
+import { LocationMap } from "@/components/location-map";
 import { VillaGallery } from "@/components/villa-gallery";
 import { VillaCard } from "@/components/villa-card";
 import { InquiryForm } from "@/components/inquiry-form";
+import { ConnectWithHost } from "@/components/connect-with-host";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { DetailTabs, type DetailTab } from "@/components/detail-tabs";
@@ -12,14 +14,25 @@ import { ExpandableText } from "@/components/expandable-text";
 import { SpacesGrid } from "@/components/spaces-grid";
 import { ScrollSlider } from "@/components/scroll-slider";
 import { ExternalReviews } from "@/components/external-reviews";
-import { VillaReviews } from "@/components/villa-reviews";
-import { getReviewsByVilla } from "@/lib/data/reviews";
+import { GuestReviews } from "@/components/reviews/guest-reviews";
+import { computeReviewSummary, getReviewsByVilla } from "@/lib/data/reviews";
+import {
+  getGoogleReviewsAsStored,
+  refreshGoogleReviewsIfStale,
+} from "@/lib/data/google-reviews";
 import { AmenitiesViewer } from "@/components/amenities-viewer";
 import { RecentlyVisitedTracker } from "@/components/recently-visited-tracker";
 import { VillaViewTracker } from "@/components/villa-view-tracker";
 import { MobileInquireBar } from "@/components/mobile-inquire-bar";
 import { VillaJsonLd } from "@/components/jsonld-villa";
+import { BreadcrumbJsonLd } from "@/components/jsonld-breadcrumb";
+import { EnhanceYourStay } from "@/components/enhance-your-stay";
 import { getVillaBySlug, getVillas } from "@/lib/data/villas";
+import { propertyPath } from "@/lib/property-url";
+import { HotelRooms } from "@/components/hotel-rooms";
+import { DormsSection } from "@/components/dorms-section";
+import { hasUnits as villaHasUnits, startingFromPrice } from "@/lib/data/units";
+import { getPublishedExperiences } from "@/lib/data/experiences";
 import { getStateBySlug } from "@/lib/data/locations";
 import { formatNight } from "@/lib/format";
 import { getAmenityIcon } from "@/lib/amenity-icons";
@@ -29,7 +42,11 @@ import { getCurrentUser } from "@/lib/session";
 type PageProps = { params: Promise<{ slug: string }> };
 
 export async function generateStaticParams() {
-  return getVillas().map((v) => ({ slug: v.slug }));
+  // Hotels & hostels have their own /hotels and /hostels routes — this route
+  // only pre-renders villas & apartments (and redirects the rest).
+  return getVillas()
+    .filter((v) => v.type !== "hotel" && v.type !== "hostel")
+    .map((v) => ({ slug: v.slug }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -43,8 +60,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function VillaDetailPage({ params }: PageProps) {
-  const { slug } = await params;
+/**
+ * Shared property detail view (Phase I). Rendered by the /villas, /hotels and
+ * /hostels routes so all three property kinds share one implementation. The
+ * route decides reachability; this component decides presentation.
+ */
+export async function PropertyDetail({ slug }: { slug: string }) {
   const villa = getVillaBySlug(slug);
   if (!villa) notFound();
 
@@ -54,23 +75,55 @@ export default async function VillaDetailPage({ params }: PageProps) {
   const similar = getVillas()
     .filter((v) => v.slug !== villa.slug && v.destinationSlug === villa.destinationSlug)
     .slice(0, 3);
-  const villaReviews = getReviewsByVilla(villa.slug);
+  // Own reviews + cached Google imports (fire-and-forget refresh when stale).
+  if (villa.googlePlaceId) refreshGoogleReviewsIfStale(villa.googlePlaceId);
+  const villaReviews = [
+    ...getReviewsByVilla(villa.slug),
+    ...(villa.googlePlaceId ? getGoogleReviewsAsStored(villa.googlePlaceId) : []),
+  ];
+  const reviewSummary = computeReviewSummary(villaReviews);
+  // Resolve assigned experience slugs against the live catalog so renamed
+  // or deleted experiences never render stale cards. When a villa has no
+  // (matching) assignments, fall back to published experiences in the same
+  // city so the cross-sell still appears — admins can override by assigning.
+  const published = getPublishedExperiences();
+  const villaCitySlug = villa.city ? slugify(villa.city) : null;
+  const villaStateName = state?.name?.toLowerCase() ?? null;
+  const assignedBySlug =
+    villa.experiences && villa.experiences.length > 0
+      ? published.filter((e) => villa.experiences!.includes(e.slug))
+      : [];
+  // Fallback matches experiences to the villa's region — by state/destination
+  // (experiences are seeded at state level, e.g. citySlug "goa") or by an
+  // exact town match if a town-specific experience exists.
+  const assignedExperiences =
+    assignedBySlug.length > 0
+      ? assignedBySlug
+      : published
+          .filter(
+            (e) =>
+              e.citySlug === villa.destinationSlug ||
+              (villaStateName && e.state?.toLowerCase() === villaStateName) ||
+              (villaCitySlug && e.citySlug === villaCitySlug),
+          )
+          .sort(
+            (a, b) =>
+              (b.featured ? 1 : 0) - (a.featured ? 1 : 0) ||
+              (a.featuredOrder ?? 99) - (b.featuredOrder ?? 99),
+          )
+          .slice(0, 4);
   const user = await getCurrentUser();
   const inWishlist = user?.wishlist.includes(villa.slug) ?? false;
   const wishlistSet = new Set(user?.wishlist ?? []);
 
-  const crumbs = [
-    { label: "Home", href: "/" },
-    { label: "Locations", href: "/locations" },
-  ];
-  if (state) crumbs.push({ label: state.name, href: `/locations/${state.slug}` });
+  const crumbs = [{ label: "Home", href: "/" }];
   if (state && cityInState) {
     crumbs.push({
       label: cityInState.name,
       href: `/locations/${state.slug}/${cityInState.slug}`,
     });
   }
-  crumbs.push({ label: villa.name, href: "#" });
+  crumbs.push({ label: villa.name, href: propertyPath(villa) });
 
   const chefAvailable = villa.amenities.some((a) =>
     a.toLowerCase().includes("chef"),
@@ -90,36 +143,48 @@ export default async function VillaDetailPage({ params }: PageProps) {
     a.toLowerCase().includes("pet"),
   );
 
+  // Hotel/hostel listings surface their room/dorm types where a villa shows
+  // its "Spaces". Everything else on the page is shared.
+  const isHotel = villa.type === "hotel";
+  const isHostel = villa.type === "hostel";
+  const showUnits = (isHotel || isHostel) && villaHasUnits(villa);
+  const spacesLabel = isHotel ? "Rooms" : isHostel ? "Dorms" : "Spaces";
+  const displayPrice = showUnits ? startingFromPrice(villa) : villa.pricePerNight;
+
   // Build the tabs based on what content actually exists for this villa
   const tabs: DetailTab[] = [{ id: "overview", label: "Overview" }];
   if (villa.video) tabs.push({ id: "video", label: "Video tour" });
   if (villa.highlights.length > 0) tabs.push({ id: "highlights", label: "Highlights" });
-  tabs.push({ id: "spaces", label: "Spaces" });
+  tabs.push({ id: "spaces", label: spacesLabel });
   tabs.push({ id: "amenities", label: "Amenities" });
   tabs.push({ id: "meals", label: "Meals" });
+  if (assignedExperiences.length > 0) {
+    tabs.push({ id: "experiences", label: "Experiences" });
+  }
   if (
     villa.cancellationPolicy &&
     (villa.cancellationPolicy.preset || villa.cancellationPolicy.description)
   ) {
     tabs.push({ id: "refund-policy", label: "Refund Policy" });
   }
-  tabs.push({ id: "reviews", label: "Reviews" });
   tabs.push({ id: "location", label: "Location" });
+  tabs.push({ id: "reviews", label: "Reviews" });
   tabs.push({ id: "faqs", label: "FAQ's" });
 
   return (
     <div>
       {/* JSON-LD so Google can show rich results (star rating, price, photos) */}
       <VillaJsonLd villa={villa} />
+      <BreadcrumbJsonLd items={crumbs} />
       {/* Record this view to localStorage so it surfaces on the home page later */}
       <RecentlyVisitedTracker slug={villa.slug} />
       {/* Record a server-side view event for popularity-based listing sort */}
-      <VillaViewTracker slug={villa.slug} />
-      <div className="container-page pt-8">
+      <VillaViewTracker slug={villa.slug} pricePerNight={villa.pricePerNight} />
+      <div className="container-page !max-w-[88rem] pt-8">
         <Breadcrumbs items={crumbs} />
       </div>
 
-      <div className="container-page mt-4">
+      <div className="container-page !max-w-[88rem] mt-4">
         <VillaGallery
           images={villa.images}
           slug={villa.slug}
@@ -133,40 +198,46 @@ export default async function VillaDetailPage({ params }: PageProps) {
         />
       </div>
 
-      {/* Sticky section tabs — directly under the gallery */}
-      <div className="mt-6">
-        <DetailTabs tabs={tabs} />
-      </div>
+      {/* Sticky section tabs — directly under the gallery. Rendered as a
+          direct child of the page root (not a tightly-fit wrapper div) so
+          its containing block spans the full page height — otherwise a
+          sticky element can only stay "stuck" for as long as its immediate
+          parent's box remains on screen, and a wrapper that's only as tall
+          as the tab bar itself gives it nowhere to stick to. */}
+      <DetailTabs tabs={tabs} className="!max-w-[88rem]" />
 
-      <div className="container-page mt-8 grid gap-12 lg:grid-cols-[minmax(0,1fr)_360px]">
+
+      <div className="container-page !max-w-[88rem] mt-8 grid gap-12 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="min-w-0 space-y-10">
           {/* Title block — inside the grid so the booking sidebar can
               start at the same vertical position instead of leaving a
               tall empty band on the right. */}
           <header>
-            <h1 className="font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl lg:text-4xl">
+            <h1 className="font-title text-2xl font-semibold tracking-tight text-foreground sm:text-3xl lg:text-4xl">
               {villa.name}
             </h1>
             <p className="mt-1 inline-flex items-center gap-1 text-sm text-muted-foreground sm:text-base">
               <MapPin className="h-3.5 w-3.5 text-terracotta" />
               {villa.city ? `${villa.city}, ` : ""}{state?.name}
             </p>
-            <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
-              <span className="inline-flex items-center gap-1.5">
-                <Star className="h-4 w-4 fill-terracotta text-terracotta" />
-                <span className="font-numeric font-semibold tabular-nums">
-                  {villa.rating.toFixed(2)}
+            {villa.reviewCount > 0 && (
+              <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
+                <span className="inline-flex items-center gap-1.5">
+                  <Star className="h-4 w-4 fill-terracotta text-terracotta" />
+                  <span className="font-numeric font-semibold tabular-nums">
+                    {villa.rating.toFixed(2)}
+                  </span>
+                  <span className="text-muted-foreground">/5</span>
                 </span>
-                <span className="text-muted-foreground">/5</span>
-              </span>
-              <span className="text-border">|</span>
-              <a
-                href="#reviews"
-                className="text-terracotta underline underline-offset-2 hover:text-terracotta/80"
-              >
-                {villa.reviewCount} reviews
-              </a>
-            </div>
+                <span className="text-border">|</span>
+                <a
+                  href="#reviews"
+                  className="text-terracotta underline underline-offset-2 hover:text-terracotta/80"
+                >
+                  {villa.reviewCount} reviews
+                </a>
+              </div>
+            )}
             {villa.tagline && (
               <p className="mt-3 max-w-2xl text-muted-foreground">{villa.tagline}</p>
             )}
@@ -174,10 +245,21 @@ export default async function VillaDetailPage({ params }: PageProps) {
 
           <div className="space-y-14">
           {/* Quick facts */}
-          <div className="grid grid-cols-3 gap-4 rounded-xl border border-border/60 p-5">
-            <Fact icon={<BedDouble className="h-4 w-4" />} label="Bedrooms" value={villa.bedrooms} />
-            <Fact icon={<Bath className="h-4 w-4" />} label="Bathrooms" value={villa.bathrooms} />
-            <Fact icon={<Users className="h-4 w-4" />} label="Max guests" value={villa.maxGuests} />
+          <div className="flex flex-wrap items-center gap-2 md:gap-3">
+            <Fact icon={<Users className="h-4 w-4 md:h-5 md:w-5" />} label={`Up to ${villa.maxGuests} Guests`} />
+            <Fact icon={<BedDouble className="h-4 w-4 md:h-5 md:w-5" />} label={`${villa.bedrooms} ${villa.bedrooms === 1 ? "Room" : "Rooms"}`} />
+            <Fact icon={<Bath className="h-4 w-4 md:h-5 md:w-5" />} label={`${villa.bathrooms} ${villa.bathrooms === 1 ? "Bath" : "Baths"}`} />
+            {villa.brochure && (
+              <a
+                href={villa.brochure.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3.5 py-2 text-sm font-medium text-foreground shadow-sm transition-colors hover:border-primary/40 hover:bg-primary/5 md:gap-2.5 md:px-5 md:py-3 md:text-base"
+              >
+                <FileText className="h-4 w-4 text-terracotta md:h-5 md:w-5" />
+                View Brochure
+              </a>
+            )}
           </div>
 
           {/* OVERVIEW */}
@@ -206,9 +288,16 @@ export default async function VillaDetailPage({ params }: PageProps) {
             </Section>
           )}
 
-          {/* SPACES */}
-          <Section id="spaces" title="Spaces">
-            <SpacesGrid images={villa.images} slug={villa.slug} />
+          {/* SPACES — villas show a photo grid; hotels/hostels show their
+              room / dorm types as bookable cards. */}
+          <Section id="spaces" title={spacesLabel}>
+            {showUnits && isHostel ? (
+              <DormsSection slug={villa.slug} units={villa.units!} />
+            ) : showUnits ? (
+              <HotelRooms slug={villa.slug} units={villa.units!} />
+            ) : (
+              <SpacesGrid images={villa.images} slug={villa.slug} />
+            )}
             {villa.houseRules.length > 0 && (
               <div className="mt-6">
                 <h3 className="text-sm font-medium text-foreground">House rules</h3>
@@ -305,6 +394,21 @@ export default async function VillaDetailPage({ params }: PageProps) {
             </div>
           </Section>
 
+          {/* ENHANCE YOUR STAY — concierge experiences assigned to this property */}
+          {assignedExperiences.length > 0 && (
+            <Section
+              id="experiences"
+              title="Enhance Your Stay"
+              sub="Handpicked add-ons our concierge can arrange for this property"
+            >
+              <EnhanceYourStay
+                experiences={assignedExperiences}
+                villaName={villa.name}
+                villaSlug={villa.slug}
+              />
+            </Section>
+          )}
+
           {/* REFUND POLICY */}
           {villa.cancellationPolicy &&
             (villa.cancellationPolicy.preset || villa.cancellationPolicy.description) && (
@@ -322,48 +426,6 @@ export default async function VillaDetailPage({ params }: PageProps) {
               </Section>
             )}
 
-          {/* REVIEWS */}
-          <Section id="reviews" title="Reviews">
-            {villaReviews.length > 0 ? (
-              <VillaReviews reviews={villaReviews} />
-            ) : (
-              <div className="rounded-2xl border border-border/60 bg-card p-6">
-                <div className="flex items-center gap-4">
-                  <div>
-                    <p className="font-numeric text-5xl font-semibold tracking-tight tabular-nums text-foreground">
-                      {villa.rating.toFixed(2)}
-                    </p>
-                    <div className="mt-1 flex items-center gap-0.5 text-terracotta">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`h-4 w-4 ${
-                            i < Math.round(villa.rating) ? "fill-terracotta" : "fill-none"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                  <div className="border-l border-border pl-4">
-                    <p className="text-sm text-muted-foreground">
-                      Loved by {villa.reviewCount} past guests
-                    </p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Detailed guest reviews coming soon. Our concierge is happy
-                      to share recent guest notes — just ask.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {villa.externalListings && villa.externalListings.length > 0 && (
-              <div className="mt-6">
-                <ExternalReviews villa={villa} />
-              </div>
-            )}
-          </Section>
-
           {/* LOCATION */}
           <Section id="location" title="Location">
             {(villa.city || villa.state) && (
@@ -374,18 +436,17 @@ export default async function VillaDetailPage({ params }: PageProps) {
             <p className="mt-2 text-muted-foreground">{villa.locationNote}</p>
             {typeof villa.latitude === "number" && typeof villa.longitude === "number" ? (
               <div className="mt-4 overflow-hidden rounded-xl border border-border/60">
-                <iframe
+                <LocationMap
+                  latitude={villa.latitude}
+                  longitude={villa.longitude}
                   title={`Map of ${villa.name}`}
-                  src={`https://www.openstreetmap.org/export/embed.html?bbox=${villa.longitude - 0.01}%2C${villa.latitude - 0.01}%2C${villa.longitude + 0.01}%2C${villa.latitude + 0.01}&layer=mapnik&marker=${villa.latitude}%2C${villa.longitude}`}
-                  className="aspect-[16/9] w-full"
-                  loading="lazy"
                 />
                 <div className="flex items-center justify-between bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
                   <span>
                     {villa.latitude.toFixed(4)}, {villa.longitude.toFixed(4)}
                   </span>
                   <a
-                    href={`https://www.openstreetmap.org/?mlat=${villa.latitude}&mlon=${villa.longitude}#map=15/${villa.latitude}/${villa.longitude}`}
+                    href={`https://www.google.com/maps?q=${villa.latitude},${villa.longitude}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-terracotta hover:underline"
@@ -397,6 +458,25 @@ export default async function VillaDetailPage({ params }: PageProps) {
             ) : (
               <div className="mt-4 aspect-[16/9] rounded-xl bg-muted flex items-center justify-center text-sm text-muted-foreground">
                 Add latitude & longitude in the admin to show a map here.
+              </div>
+            )}
+          </Section>
+
+          {/* REVIEWS */}
+          <Section id="reviews" title="Guest Reviews">
+            <GuestReviews
+              villaSlug={villa.slug}
+              villaName={villa.name}
+              reviews={villaReviews}
+              summary={reviewSummary}
+              fallbackRating={villa.rating}
+              fallbackCount={villa.reviewCount}
+              viewer={user ? { name: user.name, email: user.email } : null}
+            />
+
+            {villa.externalListings && villa.externalListings.length > 0 && (
+              <div className="mt-8">
+                <ExternalReviews villa={villa} />
               </div>
             )}
           </Section>
@@ -449,25 +529,33 @@ export default async function VillaDetailPage({ params }: PageProps) {
           </div>
         </div>
 
-        {/* Sticky inquiry */}
-        <aside className="lg:sticky lg:top-32 self-start">
-          <div className="rounded-2xl border border-border/60 bg-card p-6 shadow-sm">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">From</p>
-            <p className="mt-1 font-numeric text-3xl font-semibold tracking-tight tabular-nums text-foreground">
-              {formatNight(villa.pricePerNight)}
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Final pricing depends on dates & group size.
-            </p>
-            <div className="mt-5">
+        {/* Sticky inquiry — desktop only; mobile uses the sticky MobileInquireBar */}
+        <aside id="inquire" className="hidden scroll-mt-32 self-start lg:sticky lg:top-32 lg:block">
+          <div className="overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm">
+            {/* Price header — sand background, matches Experience inquiry card */}
+            <div className="bg-sand/60 px-6 pb-6 pt-7">
+              <p className="text-[11px] font-medium uppercase tracking-[0.15em] text-muted-foreground">
+                Starting from
+              </p>
+              <p className="mt-1 font-numeric text-[34px] font-bold leading-none tabular-nums text-foreground">
+                {formatNight(displayPrice)}
+              </p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Final pricing depends on dates & group size.
+              </p>
+            </div>
+            <div className="px-6 pb-6 pt-5">
               <InquiryForm villaSlug={villa.slug} villaName={villa.name} />
+            </div>
+            <div className="border-t border-border/60 px-6 py-4">
+              <ConnectWithHost />
             </div>
           </div>
         </aside>
       </div>
 
       {similar.length > 0 && (
-        <section className="container-page mt-24">
+        <section className="container-page !max-w-[88rem] mt-24">
           <h2 className="font-display text-3xl font-bold tracking-tight text-foreground">More in {state?.name}</h2>
           <ScrollSlider className="mt-8 -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-pl-5 px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-5 sm:scroll-pl-6 sm:px-6 sm:-mx-6 lg:scroll-pl-8 lg:px-8 lg:-mx-8">
             {similar.map((v) => (
@@ -496,6 +584,17 @@ export default async function VillaDetailPage({ params }: PageProps) {
   );
 }
 
+export default async function VillaDetailPage({ params }: PageProps) {
+  const { slug } = await params;
+  const villa = getVillaBySlug(slug);
+  // Hotels & hostels live at their own canonical URLs — send legacy /villas
+  // hits there (301-style) so old links keep working without duplicate content.
+  if (villa && (villa.type === "hotel" || villa.type === "hostel")) {
+    permanentRedirect(propertyPath(villa));
+  }
+  return <PropertyDetail slug={slug} />;
+}
+
 function Section({
   id,
   title,
@@ -518,14 +617,12 @@ function Section({
   );
 }
 
-function Fact({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
+function Fact({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
-    <div className="text-center">
-      <div className="flex items-center justify-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
-        {icon} {label}
-      </div>
-      <p className="mt-1 font-numeric text-2xl font-semibold tabular-nums">{value}</p>
-    </div>
+    <span className="inline-flex items-center gap-2 rounded-lg bg-accent/60 px-3.5 py-2 text-sm font-medium text-foreground md:gap-2.5 md:px-5 md:py-3 md:text-base">
+      <span className="text-primary">{icon}</span>
+      {label}
+    </span>
   );
 }
 

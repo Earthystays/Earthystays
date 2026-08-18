@@ -8,6 +8,10 @@ export type User = {
   passwordHash: string;
   wishlist: string[];
   createdAt: string;
+  /** True once the user starts hosting — unlocks /host. */
+  isHost?: boolean;
+  /** Host contact number for the Earthy Stays team (not public). */
+  hostPhone?: string;
 };
 
 const FILE = "users.json";
@@ -53,4 +57,28 @@ export async function setWishlist(userId: string, mutator: (current: string[]) =
   users[idx].wishlist = mutator(users[idx].wishlist);
   await writeJson(FILE, users);
   return users[idx].wishlist;
+}
+
+export async function makeHost(userId: string, phone?: string): Promise<User> {
+  const users = await getUsers();
+  const idx = users.findIndex((u) => u.id === userId);
+  if (idx < 0) throw new Error("User not found");
+  users[idx].isHost = true;
+  if (phone) users[idx].hostPhone = phone;
+  await writeJson(FILE, users);
+  return users[idx];
+}
+
+export async function revokeHost(userId: string): Promise<User> {
+  const users = await getUsers();
+  const idx = users.findIndex((u) => u.id === userId);
+  if (idx < 0) throw new Error("User not found");
+  users[idx].isHost = false;
+  await writeJson(FILE, users);
+  return users[idx];
+}
+
+export async function deleteUser(userId: string): Promise<void> {
+  const users = await getUsers();
+  await writeJson(FILE, users.filter((u) => u.id !== userId));
 }

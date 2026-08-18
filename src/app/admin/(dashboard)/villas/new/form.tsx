@@ -7,10 +7,27 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { PhotoUploader } from "@/components/photo-uploader";
 import { VideoInput } from "@/components/video-input";
+import { BrochureUploader } from "@/components/brochure-uploader";
 import { FaqEditor } from "@/components/faq-editor";
 import { ExternalListingsEditor } from "@/components/external-listings-editor";
-import { AlertTriangle, Check, Save, Loader2 } from "lucide-react";
+import { AlertTriangle, Check, Save, Loader2, ChevronLeft, ChevronRight, Home, Building2, Hotel, BedDouble } from "lucide-react";
+import type { PropertyType } from "@/lib/types";
 import { addVilla, autoSaveDraft, type AddVillaState, type AddVillaValues } from "./actions";
+
+/** Property-type options for the Add Property selector (Phase B).
+ *  Villa & apartment behave exactly as before; hotel & hostel add
+ *  room/dorm configuration in later steps. */
+const PROPERTY_TYPES: {
+  value: PropertyType;
+  label: string;
+  hint: string;
+  Icon: typeof Home;
+}[] = [
+  { value: "villa", label: "Villa", hint: "Entire property for private stays.", Icon: Home },
+  { value: "apartment", label: "Apartment", hint: "A self-contained entire home.", Icon: Building2 },
+  { value: "hotel", label: "Hotel", hint: "Rooms rented individually.", Icon: Hotel },
+  { value: "hostel", label: "Hostel", hint: "Dormitories and individual beds.", Icon: BedDouble },
+];
 import { getIconByName } from "@/lib/amenity-catalog";
 
 type LocationOpt = { slug: string; name: string };
@@ -35,6 +52,7 @@ type MealPreset = { value: string; label: string; description: string };
 export function NewVillaForm({
   destinations,
   collections,
+  experienceOptions,
   amenities,
   facilities,
   states,
@@ -45,6 +63,7 @@ export function NewVillaForm({
 }: {
   destinations: DestinationOption[];
   collections: { slug: string; name: string }[];
+  experienceOptions: { slug: string; name: string; blurb: string }[];
   amenities: AmenityChoice[];
   facilities: AmenityChoice[];
   states: string[];
@@ -57,6 +76,23 @@ export function NewVillaForm({
 }) {
   const [state, action, pending] = useActionState(addVilla, initialState ?? INITIAL);
   const v = state.values;
+
+  const STEPS = [
+    { id: "basics", title: "Basics", hint: "Name, capacity & pricing" },
+    { id: "location", title: "Location", hint: "Where the property is" },
+    { id: "details", title: "Details", hint: "Amenities, content & policies" },
+    { id: "media", title: "Media & publish", hint: "Photos, brochure & visibility" },
+  ] as const;
+  const [step, setStep] = useState(0);
+  const [propertyType, setPropertyType] = useState<PropertyType>(
+    v?.propertyType ?? "villa",
+  );
+  const isMultiUnit = propertyType === "hotel" || propertyType === "hostel";
+  const isLast = step === STEPS.length - 1;
+  const goStep = (i: number) => {
+    setStep(Math.max(0, Math.min(STEPS.length - 1, i)));
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const formRef = useRef<HTMLFormElement>(null);
   const reactId = useId();
@@ -204,7 +240,7 @@ export function NewVillaForm({
           }
           continue;
         }
-        if (key === "amenities" || key === "facilities" || key === "collections") {
+        if (key === "amenities" || key === "facilities" || key === "collections" || key === "experiences") {
           if (!Array.isArray(obj[key])) obj[key] = [];
           (obj[key] as string[]).push(String(value));
           continue;
@@ -259,9 +295,59 @@ export function NewVillaForm({
         </div>
       )}
 
+      <StepNav steps={STEPS} current={step} onSelect={goStep} />
+
+      <div hidden={step !== 0} className="grid gap-8">
+      {/* Property type — drives the rest of the form (Phase B). Villa &
+          apartment behave exactly as before; hotel & hostel unlock room /
+          dorm configuration in later steps. State is mirrored into a hidden
+          input so the existing addVilla action reads it unchanged. */}
+      <input type="hidden" name="propertyType" value={propertyType} />
+      <Section title="Property type">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {PROPERTY_TYPES.map(({ value, label, hint, Icon }) => {
+            const selected = propertyType === value;
+            return (
+              <button
+                type="button"
+                key={value}
+                onClick={() => setPropertyType(value)}
+                aria-pressed={selected}
+                className={`flex flex-col items-start gap-2 rounded-xl border px-4 py-4 text-left transition ${
+                  selected
+                    ? "border-primary bg-primary/5 ring-1 ring-primary"
+                    : "border-border bg-card hover:border-primary/50"
+                }`}
+              >
+                <span
+                  className={`flex h-9 w-9 items-center justify-center rounded-lg ${
+                    selected ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
+                  }`}
+                >
+                  <Icon className="h-5 w-5" />
+                </span>
+                <span className="font-medium">{label}</span>
+                <span className="text-xs text-muted-foreground">{hint}</span>
+              </button>
+            );
+          })}
+        </div>
+        {isMultiUnit && (
+          <p className="mt-3 flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2.5 text-xs text-foreground">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <span>
+              Save the basics here, then add{" "}
+              {propertyType === "hotel" ? "room types & inventory" : "dorm types & beds"}{" "}
+              from the property page. The fields below capture the {propertyType}&rsquo;s
+              starting price and headline capacity.
+            </span>
+          </p>
+        )}
+      </Section>
+
       <Section title="Identity">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field name="name" label="Villa name" error={state.fieldErrors?.name}>
+          <Field name="name" label={isMultiUnit ? "Property name" : "Villa name"} error={state.fieldErrors?.name}>
             <Input name="name" required placeholder="Casa Azul" defaultValue={v?.name ?? ""} />
           </Field>
           <Field name="slug" label="Slug (URL)" hint="lowercase, dashes only" error={state.fieldErrors?.slug}>
@@ -298,7 +384,7 @@ export function NewVillaForm({
           <Field name="maxGuests" label="Max guests" error={state.fieldErrors?.maxGuests}>
             <Input name="maxGuests" type="number" min={1} required defaultValue={v?.maxGuests ?? "8"} />
           </Field>
-          <Field name="pricePerNight" label="Price/night (₹)" error={state.fieldErrors?.pricePerNight}>
+          <Field name="pricePerNight" label={isMultiUnit ? "Starting price/night (₹)" : "Price/night (₹)"} error={state.fieldErrors?.pricePerNight}>
             <Input
               name="pricePerNight"
               type="number"
@@ -331,6 +417,9 @@ export function NewVillaForm({
         </div>
       </Section>
 
+      </div>
+
+      <div hidden={step !== 1} className="grid gap-8">
       <Section title="Location" hint="Lat/long enables a map embed on the detail page">
         {/* Hidden inputs the server action reads. They mirror the
             cascading controlled selects below so admin only picks State
@@ -483,8 +572,34 @@ export function NewVillaForm({
         <p className="text-xs text-muted-foreground">
           Tip: open the property in Google Maps, right-click → coordinates appear at the top of the menu.
         </p>
+        <Field
+          name="googlePlaceId"
+          label="Google Place ID (optional)"
+          hint="Enables Google review import on the villa page"
+        >
+          <Input
+            name="googlePlaceId"
+            placeholder="ChIJN1t_tDeuEmsRUsoyG83frY4"
+            defaultValue={v?.googlePlaceId ?? ""}
+          />
+        </Field>
+        <p className="text-xs text-muted-foreground">
+          Find it with Google&apos;s{" "}
+          <a
+            href="https://developers.google.com/maps/documentation/places/web-service/place-id"
+            target="_blank"
+            rel="noreferrer"
+            className="text-terracotta hover:underline"
+          >
+            Place ID finder
+          </a>{" "}
+          — search the property&apos;s name as it appears on Google Maps.
+        </p>
       </Section>
 
+      </div>
+
+      <div hidden={step !== 2} className="grid gap-8">
       <Section title="Collections" hint="Pick all that apply">
         <div className="flex flex-wrap gap-x-6 gap-y-2">
           {collections.map((c) => (
@@ -578,6 +693,38 @@ export function NewVillaForm({
         );
       })()}
 
+      {experienceOptions.length > 0 && (
+        <Section
+          title="Experiences"
+          hint='Concierge add-ons offered on this property’s page as "Enhance Your Stay" — pick the ones available at this location'
+        >
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {experienceOptions.map((e) => (
+              <label
+                key={e.slug}
+                className="flex cursor-pointer flex-col rounded-lg border border-border/60 bg-card px-3 py-2.5 transition-colors hover:bg-muted/50 has-[input:checked]:border-foreground has-[input:checked]:bg-muted/60"
+              >
+                <span className="inline-flex items-center gap-2 text-sm font-medium">
+                  <input
+                    type="checkbox"
+                    name="experiences"
+                    value={e.slug}
+                    defaultChecked={v?.experiences?.includes(e.slug) ?? false}
+                    className="h-4 w-4"
+                  />
+                  {e.name}
+                </span>
+                {e.blurb && (
+                  <span className="mt-1 pl-6 text-xs text-muted-foreground">
+                    {e.blurb}
+                  </span>
+                )}
+              </label>
+            ))}
+          </div>
+        </Section>
+      )}
+
       <Section title="Content">
         <Field name="highlights" label="Highlights" hint="One per line">
           <Textarea
@@ -597,6 +744,9 @@ export function NewVillaForm({
         </Field>
       </Section>
 
+      </div>
+
+      <div hidden={step !== 3} className="grid gap-8">
       <Section title="Photos" hint="Upload from your computer">
         <PhotoUploader name="imagesJson" initial={v?.images ?? []} />
         {state.fieldErrors?.images && (
@@ -606,6 +756,13 @@ export function NewVillaForm({
 
       <Section title="Video tour" hint="Optional — YouTube/Vimeo URL or upload an MP4">
         <VideoInput name="videoSrc" initial={v?.videoSrc ?? ""} />
+      </Section>
+
+      <Section
+        title="Property Brochure"
+        hint="Upload a PDF brochure that guests can view or download from the property listing."
+      >
+        <BrochureUploader name="brochureJson" initial={v?.brochure ?? null} />
       </Section>
 
       <Section title="FAQs" hint="Override the default FAQs with villa-specific Q&A">
@@ -716,26 +873,20 @@ export function NewVillaForm({
         <div className="grid gap-4">
           <div className="grid gap-2">
             <p className="text-sm font-medium text-foreground">Property type</p>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {(["villa", "apartment"] as const).map((t) => (
-                <label
-                  key={t}
-                  className="flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-card px-3 py-2.5 text-sm has-[input:checked]:border-primary has-[input:checked]:bg-primary/5"
-                >
-                  <input
-                    type="radio"
-                    name="propertyType"
-                    value={t}
-                    defaultChecked={(v?.propertyType ?? "villa") === t}
-                    className="h-4 w-4"
-                  />
-                  <span className="capitalize">{t}</span>
-                </label>
-              ))}
+            <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-sm">
+              <span className="capitalize font-medium">{propertyType}</span>
+              <button
+                type="button"
+                onClick={() => goStep(0)}
+                className="ml-auto text-xs text-primary underline-offset-2 hover:underline"
+              >
+                Change in step 1
+              </button>
             </div>
             <p className="text-xs text-muted-foreground">
               Villas appear under <code className="rounded bg-muted px-1">/villas</code>; apartments
-              under <code className="rounded bg-muted px-1">/apartments</code>.
+              under <code className="rounded bg-muted px-1">/apartments</code>. Hotels & hostels get
+              their own pages once rooms/dorms are added.
             </p>
           </div>
 
@@ -779,13 +930,45 @@ export function NewVillaForm({
         </div>
       </Section>
 
-      <div className="sticky bottom-4 flex items-center gap-4 rounded-2xl border border-border/60 bg-card/95 p-4 shadow-lg backdrop-blur">
-        <Button type="submit" disabled={pending} size="lg" className="rounded-full">
-          {pending ? "Saving…" : "Save property"}
-        </Button>
-        <a href="/admin/villas" className="text-sm text-muted-foreground hover:text-foreground">
-          Cancel
-        </a>
+      </div>
+
+      <div className="sticky bottom-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/60 bg-card/95 p-4 shadow-lg backdrop-blur">
+        <div className="flex items-center gap-3">
+          <a href="/admin/villas" className="text-sm text-muted-foreground hover:text-foreground">
+            Cancel
+          </a>
+          <span className="text-xs text-muted-foreground">
+            Step {step + 1} of {STEPS.length} · {STEPS[step].title}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          {step > 0 && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => goStep(step - 1)}
+              className="rounded-full"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Back
+            </Button>
+          )}
+          {!isLast ? (
+            <Button
+              type="button"
+              onClick={() => goStep(step + 1)}
+              size="lg"
+              className="rounded-full"
+            >
+              Next
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button type="submit" disabled={pending} size="lg" className="rounded-full">
+              {pending ? "Saving…" : "Save property"}
+            </Button>
+          )}
+        </div>
       </div>
     </form>
   );
@@ -809,6 +992,62 @@ const FIELD_LABELS: Record<string, string> = {
 
 function prettyField(field: string): string {
   return FIELD_LABELS[field] ?? field;
+}
+
+function StepNav({
+  steps,
+  current,
+  onSelect,
+}: {
+  steps: readonly { id: string; title: string; hint: string }[];
+  current: number;
+  onSelect: (i: number) => void;
+}) {
+  return (
+    <nav aria-label="Progress" className="rounded-2xl border border-border/60 bg-card p-2">
+      <ol className="grid gap-2 sm:grid-cols-4">
+        {steps.map((s, i) => {
+          const active = i === current;
+          const done = i < current;
+          return (
+            <li key={s.id}>
+              <button
+                type="button"
+                onClick={() => onSelect(i)}
+                className={`flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
+                  active
+                    ? "bg-foreground text-background"
+                    : "hover:bg-muted"
+                }`}
+              >
+                <span
+                  className={`mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-medium ${
+                    active
+                      ? "border-background/40 bg-background/10 text-background"
+                      : done
+                        ? "border-foreground bg-foreground text-background"
+                        : "border-border text-muted-foreground"
+                  }`}
+                >
+                  {done ? <Check className="h-3.5 w-3.5" /> : i + 1}
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium leading-tight">{s.title}</span>
+                  <span
+                    className={`block text-[11px] leading-tight ${
+                      active ? "text-background/70" : "text-muted-foreground"
+                    }`}
+                  >
+                    {s.hint}
+                  </span>
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
+  );
 }
 
 function Section({

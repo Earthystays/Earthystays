@@ -10,11 +10,17 @@ export function WishlistButton({
   initialActive,
   loggedIn,
   variant = "overlay",
+  size = "md",
+  type = "villa",
 }: {
   slug: string;
   initialActive: boolean;
   loggedIn: boolean;
   variant?: "overlay" | "inline";
+  /** "lg" = 48px circle with 22px icon (listing-card spec). */
+  size?: "md" | "lg";
+  /** What kind of listing this saves — routes to the right lookup on the API. */
+  type?: "villa" | "experience";
 }) {
   const router = useRouter();
   const path = usePathname();
@@ -26,7 +32,7 @@ export function WishlistButton({
     e.stopPropagation();
 
     if (!loggedIn) {
-      toast("Sign in to save villas", {
+      toast(`Sign in to save ${type === "experience" ? "experiences" : "villas"}`, {
         action: {
           label: "Sign in",
           onClick: () => router.push(`/login?next=${encodeURIComponent(path)}`),
@@ -39,7 +45,8 @@ export function WishlistButton({
     setActive(!wasActive); // optimistic
     start(async () => {
       try {
-        const res = await fetch(`/api/wishlist/${slug}`, {
+        const qs = type === "experience" ? "?type=experience" : "";
+        const res = await fetch(`/api/wishlist/${slug}${qs}`, {
           method: wasActive ? "DELETE" : "POST",
         });
         const j = await res.json();
@@ -80,10 +87,18 @@ export function WishlistButton({
       disabled={pending}
       aria-label={active ? "Remove from wishlist" : "Save to wishlist"}
       aria-pressed={active}
-      className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-foreground shadow-sm transition-all hover:bg-white hover:scale-110 disabled:opacity-60"
+      className={`group/heart inline-flex items-center justify-center rounded-full bg-white/90 text-foreground transition-colors duration-[180ms] hover:bg-[#F8F8F8] disabled:opacity-60 ${
+        size === "lg"
+          ? "h-12 w-12 shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
+          : "h-9 w-9 shadow-sm"
+      }`}
     >
       <Heart
-        className={`h-4 w-4 ${active ? "fill-rose-500 text-rose-500" : "text-foreground"}`}
+        className={`transition-[transform,color,fill] duration-[180ms] ease-out motion-reduce:transition-none ${size === "lg" ? "h-[22px] w-[22px]" : "h-4 w-4"} ${
+          active
+            ? "scale-[1.08] fill-[#2F4A3A] text-[#2F4A3A]"
+            : "text-[#666666] group-hover/heart:text-[#2F4A3A]"
+        }`}
         strokeWidth={active ? 0 : 1.8}
       />
     </button>

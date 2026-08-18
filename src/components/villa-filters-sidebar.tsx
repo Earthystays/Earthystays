@@ -2,37 +2,56 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
-import { Minus, Plus, X, ChevronDown } from "lucide-react";
+import {
+  Minus,
+  Plus,
+  ChevronDown,
+  RotateCcw,
+  Wallet,
+  BedDouble,
+  Users,
+  MapPin,
+  Leaf,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 
 const STEP = 1000;
 
+const FEATURED_AMENITIES: Array<{ label: string; value: string }> = [
+  { label: "Private pool", value: "Private Pool" },
+  { label: "Pet friendly", value: "Pet Friendly" },
+  { label: "Mountain view", value: "Mountain View" },
+  { label: "Beach access", value: "Beachfront" },
+  { label: "Chef", value: "Chef on Call" },
+  { label: "Hot tub", value: "Hot Tub" },
+];
+
 export function VillaFiltersSidebar({
   amenities,
+  destinations,
   priceMin,
   priceMax,
   defaultExpanded = true,
 }: {
   amenities: string[];
+  destinations: Array<{ slug: string; name: string }>;
   priceMin: number;
   priceMax: number;
-  /** Desktop sidebar wants sections expanded by default; mobile drawer
-   *  passes false so the drawer doesn't open as a wall of controls. */
   defaultExpanded?: boolean;
 }) {
   const router = useRouter();
   const sp = useSearchParams();
   const [, startTransition] = useTransition();
 
-  // Snap bounds to step
   const sliderMin = Math.floor(priceMin / STEP) * STEP;
   const sliderMax = Math.ceil(priceMax / STEP) * STEP;
 
   const urlMin = Number(sp.get("minPrice") ?? "") || sliderMin;
   const urlMax = Number(sp.get("maxPrice") ?? "") || sliderMax;
   const initialRooms = Number(sp.get("rooms") ?? 0) || 0;
+  const initialGuests = Number(sp.get("guests") ?? 0) || 0;
   const initialAmens = sp.getAll("amenity");
 
   const [range, setRange] = useState<[number, number]>([
@@ -42,12 +61,16 @@ export function VillaFiltersSidebar({
   const [minP, setMinP] = useState<string>(String(range[0]));
   const [maxP, setMaxP] = useState<string>(String(range[1]));
   const [rooms, setRooms] = useState<number>(initialRooms);
+  const [guests, setGuests] = useState<number>(initialGuests);
   const [selected, setSelected] = useState<string[]>(initialAmens);
-  // Section expansion follows the prop — desktop (true) opens everything so
-  // filters are scannable at a glance; mobile drawer (false) keeps them
-  // collapsed so the drawer isn't overwhelming on open.
+  const [showMoreAmenities, setShowMoreAmenities] = useState(false);
   const [openPrice, setOpenPrice] = useState(defaultExpanded);
   const [openAmen, setOpenAmen] = useState(defaultExpanded);
+  const [openLoc, setOpenLoc] = useState(defaultExpanded);
+
+  const featured = FEATURED_AMENITIES.filter((f) => amenities.includes(f.value));
+  const featuredValues = new Set(featured.map((f) => f.value));
+  const moreAmenities = amenities.filter((a) => !featuredValues.has(a));
 
   function push(mutator: (p: URLSearchParams) => void) {
     const next = new URLSearchParams(sp.toString());
@@ -66,7 +89,6 @@ export function VillaFiltersSidebar({
     });
   }
 
-  // Sync URL when rooms changes
   useEffect(() => {
     if (rooms === initialRooms) return;
     push((p) => {
@@ -76,7 +98,15 @@ export function VillaFiltersSidebar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rooms]);
 
-  // Sync URL when amenity selection changes
+  useEffect(() => {
+    if (guests === initialGuests) return;
+    push((p) => {
+      if (guests > 0) p.set("guests", String(guests));
+      else p.delete("guests");
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [guests]);
+
   useEffect(() => {
     if (
       selected.length === initialAmens.length &&
@@ -119,6 +149,7 @@ export function VillaFiltersSidebar({
     setMaxP(String(sliderMax));
     setRange([sliderMin, sliderMax]);
     setRooms(0);
+    setGuests(0);
     setSelected([]);
     startTransition(() => router.push("/villas"));
   }
@@ -127,49 +158,64 @@ export function VillaFiltersSidebar({
     setSelected((s) => (s.includes(a) ? s.filter((x) => x !== a) : [...s, a]));
   }
 
+  function setDestination(v: string | null) {
+    push((p) => {
+      if (v && v !== "any") p.set("destination", v);
+      else p.delete("destination");
+    });
+  }
+
   const priceActive = range[0] > sliderMin || range[1] < sliderMax;
+  const destinationActive = Boolean(sp.get("destination"));
+  const activeDestName =
+    destinations.find((d) => d.slug === sp.get("destination"))?.name ?? "All locations";
   const activeCount =
-    (priceActive ? 1 : 0) + (rooms > 0 ? 1 : 0) + selected.length;
+    (priceActive ? 1 : 0) +
+    (rooms > 0 ? 1 : 0) +
+    (guests > 0 ? 1 : 0) +
+    (destinationActive ? 1 : 0) +
+    selected.length;
 
   return (
-    <aside className="grid gap-6">
-      <div className="flex items-center justify-between">
-        <h2 className="font-display text-2xl">Filters</h2>
-        {activeCount > 0 && (
-          <button
-            type="button"
-            onClick={clearAll}
-            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-          >
-            <X className="h-3 w-3" /> Clear all
-          </button>
-        )}
+    <aside className="rounded-2xl border border-border/60 bg-[var(--sand)]/40 p-6 md:p-7 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:overscroll-contain">
+      {/* Header */}
+      <div className="flex items-baseline justify-between border-b border-border/50 pb-4">
+        <h2 className="font-display text-[26px] leading-none text-foreground">Filters</h2>
+        <button
+          type="button"
+          onClick={clearAll}
+          disabled={activeCount === 0}
+          className="inline-flex items-center gap-1.5 text-xs tracking-wide text-forest hover:text-forest-deep disabled:opacity-40"
+        >
+          Reset all
+          <RotateCcw className="h-3 w-3" />
+        </button>
       </div>
 
-      {/* PRICE RANGE — collapsible */}
-      <section className="grid gap-4 border-t border-border/60 pt-5">
+      {/* PRICE */}
+      <section className="border-b border-border/40 py-5">
         <button
           type="button"
           onClick={() => setOpenPrice((v) => !v)}
-          className="flex items-baseline justify-between"
+          className="flex w-full items-center gap-3 text-left"
         >
-          <h3 className="text-sm font-medium text-foreground">
-            Price Range
-            {priceActive && (
-              <span className="ml-2 text-xs font-normal text-terracotta">
-                ₹{range[0].toLocaleString("en-IN")} – ₹{range[1].toLocaleString("en-IN")}
-              </span>
-            )}
-          </h3>
+          <IconChip>
+            <Wallet className="h-4 w-4" strokeWidth={1.5} />
+          </IconChip>
+          <div className="flex-1">
+            <div className="text-sm font-medium text-foreground">Price Range</div>
+            <div className="text-[11.5px] text-muted-foreground">Per night</div>
+          </div>
           <ChevronDown
             className={`h-4 w-4 text-muted-foreground transition-transform ${
-              openPrice ? "rotate-180" : ""
+              openPrice ? "" : "-rotate-90"
             }`}
+            strokeWidth={1.6}
           />
         </button>
 
         {openPrice && (
-          <>
+          <div className="mt-5 grid gap-4">
             <div className="px-1">
               <Slider
                 min={sliderMin}
@@ -181,108 +227,271 @@ export function VillaFiltersSidebar({
                 aria-label="Price range"
                 className="my-2"
               />
-              <div className="mt-2 flex justify-between text-[11px] text-muted-foreground">
+              <div className="mt-1 flex justify-between text-[11px] text-muted-foreground">
                 <span>₹{sliderMin.toLocaleString("en-IN")}</span>
                 <span>₹{sliderMax.toLocaleString("en-IN")}</span>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              <label className="grid gap-1">
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Min</span>
+            <div className="grid grid-cols-[1fr_10px_1fr] items-end gap-2">
+              <label className="grid gap-1.5">
+                <span className="text-[10.5px] tracking-wide text-muted-foreground">
+                  Minimum
+                </span>
                 <Input
                   inputMode="numeric"
                   value={minP}
                   onChange={(e) => setMinP(e.target.value.replace(/[^\d]/g, ""))}
-                  placeholder={`₹${sliderMin}`}
+                  className="h-10 rounded-lg bg-background"
                 />
               </label>
-              <label className="grid gap-1">
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Max</span>
+              <div className="pb-3 text-center text-muted-foreground">–</div>
+              <label className="grid gap-1.5">
+                <span className="text-[10.5px] tracking-wide text-muted-foreground">
+                  Maximum
+                </span>
                 <Input
                   inputMode="numeric"
                   value={maxP}
                   onChange={(e) => setMaxP(e.target.value.replace(/[^\d]/g, ""))}
-                  placeholder={`₹${sliderMax}`}
+                  className="h-10 rounded-lg bg-background"
                 />
               </label>
             </div>
-            <Button variant="outline" onClick={applyInputs} className="w-full rounded-md">
-              Apply
+
+            <Button
+              onClick={applyInputs}
+              className="mt-1 h-11 w-full rounded-lg bg-forest text-sand hover:bg-forest-deep"
+            >
+              Apply Filters
             </Button>
-          </>
+          </div>
         )}
       </section>
 
-      {/* ROOMS */}
-      <section className="grid gap-3 border-t border-border/60 pt-5">
-        <h3 className="text-sm font-medium text-foreground">No. of Rooms</h3>
-        <div className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-1.5">
-          <span className="text-sm text-foreground">
-            {rooms === 0 ? "Any" : `${String(rooms).padStart(2, "0")}+`}
-          </span>
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => setRooms((r) => Math.max(0, r - 1))}
-              disabled={rooms === 0}
-              aria-label="Decrease rooms"
-              className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border text-foreground hover:bg-muted disabled:opacity-40"
-            >
-              <Minus className="h-3.5 w-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setRooms((r) => Math.min(20, r + 1))}
-              aria-label="Increase rooms"
-              className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border text-foreground hover:bg-muted"
-            >
-              <Plus className="h-3.5 w-3.5" />
-            </button>
+      {/* BEDROOMS */}
+      <CompactRow
+        icon={<BedDouble className="h-4 w-4" strokeWidth={1.5} />}
+        label="Bedrooms"
+      >
+        <Stepper
+          value={rooms}
+          onDec={() => setRooms((r) => Math.max(0, r - 1))}
+          onInc={() => setRooms((r) => Math.min(20, r + 1))}
+          format={(v) => (v === 0 ? "Any" : `${v}+`)}
+        />
+      </CompactRow>
+
+      {/* GUESTS */}
+      <CompactRow
+        icon={<Users className="h-4 w-4" strokeWidth={1.5} />}
+        label="Guests"
+      >
+        <Stepper
+          value={guests}
+          onDec={() => setGuests((g) => Math.max(0, g - 1))}
+          onInc={() => setGuests((g) => Math.min(20, g + 1))}
+          format={(v) => (v === 0 ? "Any" : `${v}+`)}
+        />
+      </CompactRow>
+
+      {/* LOCATION — collapsible list, single-select */}
+      <section className="border-b border-border/40 py-5">
+        <button
+          type="button"
+          onClick={() => setOpenLoc((v) => !v)}
+          className="flex w-full items-center gap-3 text-left"
+        >
+          <IconChip>
+            <MapPin className="h-4 w-4" strokeWidth={1.5} />
+          </IconChip>
+          <div className="flex-1">
+            <div className="text-sm font-medium text-foreground">Location</div>
+            <div className="text-[11.5px] text-muted-foreground">{activeDestName}</div>
           </div>
-        </div>
+          <ChevronDown
+            className={`h-4 w-4 text-muted-foreground transition-transform ${
+              openLoc ? "" : "-rotate-90"
+            }`}
+            strokeWidth={1.6}
+          />
+        </button>
+        {openLoc && (
+          <ul className="mt-4 grid max-h-72 gap-1.5 overflow-y-auto pr-2">
+            <li>
+              <label className="flex cursor-pointer items-center gap-2.5 rounded-md px-1 py-1 text-[13.5px] text-foreground hover:bg-background/60">
+                <input
+                  type="checkbox"
+                  checked={!destinationActive}
+                  onChange={() => setDestination(null)}
+                  className="h-4 w-4 accent-forest"
+                />
+                Any location
+              </label>
+            </li>
+            {destinations.map((d) => {
+              const active = sp.get("destination") === d.slug;
+              return (
+                <li key={d.slug}>
+                  <label className="flex cursor-pointer items-center gap-2.5 rounded-md px-1 py-1 text-[13.5px] text-foreground hover:bg-background/60">
+                    <input
+                      type="checkbox"
+                      checked={active}
+                      onChange={() => setDestination(active ? null : d.slug)}
+                      className="h-4 w-4 accent-forest"
+                    />
+                    {d.name}
+                  </label>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </section>
 
       {/* AMENITIES */}
-      <section className="grid gap-3 border-t border-border/60 pt-5">
+      <section className="border-b border-border/40 py-5">
         <button
           type="button"
           onClick={() => setOpenAmen((v) => !v)}
-          className="flex items-center justify-between"
+          className="flex w-full items-center justify-between"
         >
           <h3 className="text-sm font-medium text-foreground">
-            Key Amenities / Features
+            Amenities
             {selected.length > 0 && (
-              <span className="ml-2 text-xs font-normal text-terracotta">
+              <span className="ml-2 text-[11.5px] font-normal text-terracotta">
                 {selected.length} selected
               </span>
             )}
           </h3>
           <ChevronDown
             className={`h-4 w-4 text-muted-foreground transition-transform ${
-              openAmen ? "rotate-180" : ""
+              openAmen ? "" : "-rotate-90"
             }`}
+            strokeWidth={1.6}
           />
         </button>
         {openAmen && (
-          <ul className="grid max-h-80 gap-2 overflow-y-auto pr-2">
-            {amenities.map((a) => (
-              <li key={a}>
-                <label className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 text-sm text-foreground hover:bg-muted">
-                  <input
-                    type="checkbox"
-                    checked={selected.includes(a)}
-                    onChange={() => toggleAmenity(a)}
-                    className="h-4 w-4"
-                  />
-                  {a}
-                </label>
-              </li>
-            ))}
-          </ul>
+          <div className="mt-4 grid gap-2">
+            <ul className="grid gap-1.5">
+              {featured.map((f) => (
+                <li key={f.value}>
+                  <label className="flex cursor-pointer items-center gap-2.5 rounded-md px-1 py-1 text-[13.5px] text-foreground hover:bg-background/60">
+                    <input
+                      type="checkbox"
+                      checked={selected.includes(f.value)}
+                      onChange={() => toggleAmenity(f.value)}
+                      className="h-4 w-4 accent-forest"
+                    />
+                    {f.label}
+                  </label>
+                </li>
+              ))}
+            </ul>
+
+            {moreAmenities.length > 0 && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setShowMoreAmenities((v) => !v)}
+                  className="justify-self-start text-xs font-medium text-terracotta hover:underline"
+                >
+                  {showMoreAmenities ? "Fewer filters" : "More filters"}
+                </button>
+                {showMoreAmenities && (
+                  <ul className="grid max-h-80 gap-1.5 overflow-y-auto pr-2">
+                    {moreAmenities.map((a) => (
+                      <li key={a}>
+                        <label className="flex cursor-pointer items-center gap-2.5 rounded-md px-1 py-1 text-[13.5px] text-foreground hover:bg-background/60">
+                          <input
+                            type="checkbox"
+                            checked={selected.includes(a)}
+                            onChange={() => toggleAmenity(a)}
+                            className="h-4 w-4 accent-forest"
+                          />
+                          {a}
+                        </label>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            )}
+          </div>
         )}
       </section>
+
+      {/* Brand line */}
+      <div className="mt-5 flex items-center gap-2.5 text-[11.5px] italic tracking-wide text-forest/80">
+        <Leaf className="h-3.5 w-3.5" strokeWidth={1.4} />
+        <span className="font-display not-italic text-[13px]">
+          Handpicked homes. Genuine experiences.
+        </span>
+      </div>
     </aside>
+  );
+}
+
+function IconChip({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="flex h-8 w-8 flex-none items-center justify-center rounded-md bg-[var(--sand)]/70 text-forest">
+      {children}
+    </span>
+  );
+}
+
+function CompactRow({
+  icon,
+  label,
+  children,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="flex items-center gap-3 border-b border-border/40 py-4">
+      <IconChip>{icon}</IconChip>
+      <div className="flex-1 text-sm font-medium text-foreground">{label}</div>
+      {children}
+    </section>
+  );
+}
+
+function Stepper({
+  value,
+  onDec,
+  onInc,
+  format,
+}: {
+  value: number;
+  onDec: () => void;
+  onInc: () => void;
+  format: (v: number) => string;
+}) {
+  return (
+    <div className="inline-flex items-center overflow-hidden rounded-lg border border-border/70 bg-background">
+      <button
+        type="button"
+        onClick={onDec}
+        disabled={value === 0}
+        aria-label="Decrease"
+        className="flex h-8 w-8 items-center justify-center text-forest hover:bg-[var(--sand)]/60 disabled:opacity-40"
+      >
+        <Minus className="h-3.5 w-3.5" strokeWidth={1.6} />
+      </button>
+      <div className="min-w-[42px] border-x border-border/70 px-2 text-center text-[13px] text-foreground">
+        {format(value)}
+      </div>
+      <button
+        type="button"
+        onClick={onInc}
+        aria-label="Increase"
+        className="flex h-8 w-8 items-center justify-center text-forest hover:bg-[var(--sand)]/60"
+      >
+        <Plus className="h-3.5 w-3.5" strokeWidth={1.6} />
+      </button>
+    </div>
   );
 }
 

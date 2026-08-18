@@ -10,8 +10,12 @@ notifications. No Meta business verification, no template approval.
 
 On the phone that should receive the alerts:
 
-1. Save **+34 644 84 71 84** as a contact (name it `CallMeBot` so you
+1. Save **+34 644 41 87 20** as a contact (name it `CallMeBot` so you
    recognise replies). This is CallMeBot's bot number.
+
+   > ⚠️ CallMeBot rotates this number occasionally. If WhatsApp says the
+   > number isn't on WhatsApp, check the current one at
+   > <https://www.callmebot.com/blog/free-api-whatsapp-messages/>.
 2. Open WhatsApp → start a chat with that contact.
 3. Send the exact message:
 
@@ -22,7 +26,8 @@ On the phone that should receive the alerts:
 4. Within ~30 seconds the bot replies with your personal API key. Looks
    like `1234567`.
 
-If it doesn't reply, wait a couple of minutes and try once more.
+If it doesn't reply within ~2 minutes, CallMeBot asks that you wait
+24 hours before retrying (don't spam the message).
 
 ### 2. Add two env vars on the VPS
 

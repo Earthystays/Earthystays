@@ -7,10 +7,20 @@ import type { Villa } from "@/lib/types";
 import { formatINR } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { DeleteVillaButton } from "./delete-button";
+import { AssignHostButton } from "./assign-host-modal";
 
 type TypeFilter = "all" | "villa" | "apartment";
 
-export function VillasTable({ villas }: { villas: Villa[] }) {
+export type HostInfo = { name: string; email: string };
+
+export function VillasTable({
+  villas,
+  hostsById,
+}: {
+  villas: Villa[];
+  /** userId → host, for the Host column. */
+  hostsById: Record<string, HostInfo>;
+}) {
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [cityFilter, setCityFilter] = useState<string>("all");
@@ -142,23 +152,27 @@ export function VillasTable({ villas }: { villas: Villa[] }) {
       )}
 
       <div className="mt-4 overflow-hidden rounded-2xl border border-border/60 bg-card">
-        <table className="w-full text-sm">
-          <thead className="border-b border-border/60 bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
+        <table className="w-full text-sm table-fixed">
+          <colgroup>
+            <col className="w-[38%]" />
+            <col className="w-[16%]" />
+            <col className="w-[12%]" />
+            <col className="w-[12%]" />
+            <col className="w-[22%]" />
+          </colgroup>
+          <thead className="border-b border-border/60 bg-muted/40 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
             <tr>
-              <th className="px-5 py-3">Villa</th>
-              <th className="px-5 py-3">Type</th>
-              <th className="px-5 py-3">City</th>
-              <th className="px-5 py-3">State</th>
-              <th className="px-5 py-3">Beds · Guests</th>
-              <th className="px-5 py-3 text-right">Price / night</th>
-              <th className="px-5 py-3">Featured</th>
-              <th className="px-5 py-3 text-right">Actions</th>
+              <th className="px-5 py-3 font-medium">Property</th>
+              <th className="px-5 py-3 font-medium">Location</th>
+              <th className="px-5 py-3 font-medium">Details</th>
+              <th className="px-5 py-3 text-right font-medium">Price / night</th>
+              <th className="px-5 py-3 text-right font-medium">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border/60">
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-5 py-16 text-center">
+                <td colSpan={5} className="px-5 py-16 text-center">
                   <p className="font-display text-2xl">No matches</p>
                   <p className="mt-2 text-sm text-muted-foreground">
                     Try a different name, city, or clear the search.
@@ -166,65 +180,72 @@ export function VillasTable({ villas }: { villas: Villa[] }) {
                 </td>
               </tr>
             ) : (
-              filtered.map((v) => (
-                <tr key={v.slug} className="hover:bg-muted/30">
+              filtered.map((v) => {
+                const host = v.hostId ? hostsById[v.hostId] : undefined;
+                const stateOrDest = v.state || v.destinationSlug.replace(/-/g, " ");
+                return (
+                <tr key={v.slug} className="align-top hover:bg-muted/30">
                   <td className="px-5 py-4">
-                    <p className="font-medium text-foreground">
-                      {highlight(v.name, query)}
-                    </p>
-                    <p className="text-xs text-muted-foreground line-clamp-1">
-                      {v.tagline}
-                    </p>
+                    <div className="flex items-start gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium text-foreground">
+                          {highlight(v.name, query)}
+                        </p>
+                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                          {v.tagline}
+                        </p>
+                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                          <Badge variant="outline" className="rounded-full px-2 py-0 text-[10px] capitalize">
+                            {v.type ?? "villa"}
+                          </Badge>
+                          {v.featured && (
+                            <Badge variant="secondary" className="rounded-full px-2 py-0 text-[10px]">
+                              Featured
+                            </Badge>
+                          )}
+                          <span className="text-[11px] text-muted-foreground">
+                            {host ? host.name : <em className="not-italic opacity-70">Team-managed</em>}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </td>
                   <td className="px-5 py-4">
-                    <Badge variant="outline" className="rounded-full capitalize">
-                      {v.type ?? "villa"}
-                    </Badge>
+                    <p className="text-foreground">
+                      {v.city || <span className="text-xs italic text-muted-foreground">—</span>}
+                    </p>
+                    <p className="text-xs capitalize text-muted-foreground">{stateOrDest}</p>
                   </td>
-                  <td className="px-5 py-4 text-muted-foreground">
-                    {v.city || <span className="text-xs italic">—</span>}
+                  <td className="px-5 py-4 text-muted-foreground whitespace-nowrap">
+                    {v.bedrooms} BR · {v.maxGuests} guests
                   </td>
-                  <td className="px-5 py-4 text-muted-foreground">
-                    {v.state || v.destinationSlug.replace(/-/g, " ")}
-                  </td>
-                  <td className="px-5 py-4 text-muted-foreground">
-                    {v.bedrooms} BR · {v.maxGuests}
-                  </td>
-                  <td className="px-5 py-4 text-right text-muted-foreground tabular-nums">
+                  <td className="px-5 py-4 text-right text-foreground tabular-nums whitespace-nowrap">
                     {formatINR(v.pricePerNight)}
                   </td>
                   <td className="px-5 py-4">
-                    {v.featured ? (
-                      <Badge variant="secondary" className="rounded-full">
-                        Featured
-                      </Badge>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">—</span>
-                    )}
-                  </td>
-                  <td className="px-5 py-4">
-                    <div className="flex items-center justify-end gap-3 text-xs">
+                    <div className="flex items-center justify-end gap-1">
                       <Link
                         href={`/villas/${v.slug}`}
                         target="_blank"
-                        className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
                         title="View on public site"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
                       >
-                        <ExternalLink className="h-3.5 w-3.5" />
-                        View
+                        <ExternalLink className="h-4 w-4" />
                       </Link>
+                      <AssignHostButton slug={v.slug} villaName={v.name} host={host} />
                       <Link
                         href={`/admin/villas/${v.slug}/edit`}
-                        className="inline-flex items-center gap-1 text-terracotta hover:underline"
+                        title="Edit"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-terracotta hover:bg-muted"
                       >
-                        <Pencil className="h-3.5 w-3.5" />
-                        Edit
+                        <Pencil className="h-4 w-4" />
                       </Link>
                       <DeleteVillaButton slug={v.slug} name={v.name} />
                     </div>
                   </td>
                 </tr>
-              ))
+                );
+              })
             )}
           </tbody>
         </table>

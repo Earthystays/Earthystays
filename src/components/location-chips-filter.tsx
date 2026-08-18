@@ -1,8 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { VillaCard } from "@/components/villa-card";
 import { ScrollSlider } from "@/components/scroll-slider";
+import { slugify } from "@/lib/slug";
 import type { Villa } from "@/lib/types";
 
 /**
@@ -18,6 +20,7 @@ export function LocationChipsFilter({
   allProperties,
   loggedIn,
   wishlist,
+  kind = "villa",
 }: {
   /** Default-tab properties — typically the featured ones. */
   properties: Villa[];
@@ -28,9 +31,23 @@ export function LocationChipsFilter({
   allProperties?: Villa[];
   loggedIn: boolean;
   wishlist: Set<string>;
+  /** Drives where the "Explore more" tile links — /villas or /apartments. */
+  kind?: "villa" | "apartment";
 }) {
   const [activeCity, setActiveCity] = useState<string | null>(null);
   const fullList = allProperties ?? properties;
+  const listingBase = kind === "apartment" ? "/apartments" : "/villas";
+
+  // Build the "Explore more" link — when a city chip is active, point at
+  // the filtered listing for that city; otherwise the global listing.
+  const exploreHref = (() => {
+    if (!activeCity) return listingBase;
+    const sample = fullList.find((v) => (v.city ?? "").trim() === activeCity);
+    if (!sample) return listingBase;
+    const stateSlug = sample.destinationSlug;
+    const citySlug = slugify(activeCity);
+    return `${listingBase}?state=${stateSlug}&city=${citySlug}`;
+  })();
 
   const cities = useMemo(() => {
     const counts = new Map<string, number>();
@@ -83,6 +100,25 @@ export function LocationChipsFilter({
             />
           </div>
         ))}
+        {/* Mobile-only "Explore more" tile at the end of the slider — narrow
+            vertical strip matching the StayVista reference: thin border, white
+            interior, centered uppercase text wrapping onto two lines. Links
+            to the filtered listing for the active city, or all properties of
+            this kind when no city is selected. Hidden on desktop (sm+) since
+            the grid above already shows everything. */}
+        {filtered.length > 0 && (
+          <Link
+            href={exploreHref}
+            aria-label={`Explore more ${kind === "apartment" ? "apartments" : "villas"}${activeCity ? ` in ${activeCity}` : ""}`}
+            className="flex h-28 w-[28vw] max-w-[120px] shrink-0 snap-start self-center items-center justify-center rounded-lg border border-border bg-background px-3 text-center text-sm font-semibold uppercase tracking-wider text-foreground transition-colors hover:bg-muted sm:hidden"
+          >
+            <span>
+              Explore
+              <br />
+              More
+            </span>
+          </Link>
+        )}
       </ScrollSlider>
 
       {filtered.length === 0 && activeCity && (

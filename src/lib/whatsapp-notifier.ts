@@ -1,24 +1,30 @@
 /**
  * WhatsApp notification helper. Fires a message to the admin's phone
- * whenever a guest submits an inquiry. Uses CallMeBot — a free service
- * built for exactly this use case (server → one specific human's
- * WhatsApp). No Meta business verification, no template approval.
+ * whenever a guest submits an inquiry.
  *
- * Set these env vars to enable:
- *   WHATSAPP_NOTIFY_PHONE  — admin phone with country code, no plus,
- *                            no spaces. e.g. "919657100004"
- *   WHATSAPP_NOTIFY_APIKEY — CallMeBot API key (issued after the
- *                            admin texts CallMeBot from their phone)
+ * Two providers, checked in order:
  *
- * Setup steps documented in docs/whatsapp-notifications.md.
+ * 1. Meta WhatsApp Cloud API (official) — used when these are set:
+ *      WHATSAPP_CLOUD_TOKEN     — permanent System User access token
+ *      WHATSAPP_CLOUD_PHONE_ID  — the sender's "Phone number ID"
+ *      WHATSAPP_NOTIFY_PHONE    — admin phone, country code, no plus
+ *    Sends the approved "new_inquiry" template (business-initiated
+ *    messages must use a template). Template registered via the
+ *    Graph API — see docs/whatsapp-notifications.md.
  *
- * No-op when either env var is unset, so the site keeps working
- * without WhatsApp configured.
+ * 2. CallMeBot (legacy fallback) — used when only these are set:
+ *      WHATSAPP_NOTIFY_PHONE
+ *      WHATSAPP_NOTIFY_APIKEY
+ *
+ * No-op when neither provider is configured, so the site keeps
+ * working without WhatsApp.
  */
 
 import type { StoredInquiry } from "@/app/api/inquiries/route";
 
-const ENDPOINT = "https://api.callmebot.com/whatsapp.php";
+const CALLMEBOT_ENDPOINT = "https://api.callmebot.com/whatsapp.php";
+const GRAPH_VERSION = "v21.0";
+const TEMPLATE_NAME = process.env.WHATSAPP_TEMPLATE_NAME ?? "new_inquiry";
 
 const LABELS: Record<NonNullable<StoredInquiry["kind"]>, string> = {
   guest: "Booking inquiry",
@@ -31,12 +37,131 @@ export async function notifyInquiryToWhatsApp(
   inquiry: StoredInquiry,
 ): Promise<void> {
   const phone = process.env.WHATSAPP_NOTIFY_PHONE;
+  if (!phone) return;
+
+  const cloudToken = process.env.WHATSAPP_CLOUD_TOKEN;
+  const cloudPhoneId = process.env.WHATSAPP_CLOUD_PHONE_ID;
+  if (cloudToken && cloudPhoneId) {
+    await sendViaCloudApi(inquiry, phone, cloudToken, cloudPhoneId);
+    return;
+  }
+
   const apiKey = process.env.WHATSAPP_NOTIFY_APIKEY;
-  if (!phone || !apiKey) return;
+  if (apiKey) await sendViaCallMeBot(inquiry, phone, apiKey);
+}
 
-  const message = buildMessage(inquiry);
+/* ------------------------- Meta Cloud API ------------------------- */
 
-  const url = `${ENDPOINT}?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(
+/**
+ * Template body registered with Meta (category UTILITY, language en):
+ *
+ *   🔔 {{1}} — Earthy Stays
+ *   Name: {{2}}
+ *   Phone: {{3}}
+ *   Villa: {{4}}
+ *   Dates: {{5}}
+ *   Guests: {{6}}
+ *   Message: {{7}}
+ *
+ *   Open: https://earthystays.com/admin/inquiries
+ *
+ * Template parameters may not be empty or contain newlines, so blanks
+ * become "—" and the free-text message is flattened to one line.
+ */
+async function sendViaCloudApi(
+  inquiry: StoredInquiry,
+  to: string,
+  token: string,
+  phoneId: string,
+): Promise<void> {
+  const params = buildTemplateParams(inquiry);
+  try {
+    const res = await fetch(
+      `https://graph.facebook.com/${GRAPH_VERSION}/${phoneId}/messages`,
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          to,
+          type: "template",
+          template: {
+            name: TEMPLATE_NAME,
+            language: { code: "en" },
+            components: [
+              {
+                type: "body",
+                parameters: params.map((text) => ({ type: "text", text })),
+              },
+            ],
+          },
+        }),
+      },
+    );
+    if (!res.ok) {
+      console.error(
+        "[inquiry] whatsapp cloud api returned",
+        res.status,
+        await res.text().catch(() => ""),
+      );
+    }
+  } catch (err) {
+    console.error("[inquiry] whatsapp cloud api failed", err);
+  }
+}
+
+function buildTemplateParams(inquiry: StoredInquiry): string[] {
+  const label = LABELS[inquiry.kind ?? "guest"];
+
+  const dates =
+    [inquiry.checkIn, inquiry.checkOut].filter(Boolean).join(" → ") || "—";
+
+  const guestParts: string[] = [];
+  if (inquiry.adults !== undefined) guestParts.push(`${inquiry.adults}A`);
+  if (inquiry.children !== undefined && inquiry.children > 0)
+    guestParts.push(`${inquiry.children}C`);
+  if (inquiry.infants !== undefined && inquiry.infants > 0)
+    guestParts.push(`${inquiry.infants}I`);
+  let guests = guestParts.join(" + ") || String(inquiry.guests ?? "") || "—";
+  if (inquiry.rooms !== undefined && inquiry.rooms > 0)
+    guests += ` · ${inquiry.rooms} room${inquiry.rooms === 1 ? "" : "s"}`;
+
+  // Partner inquiries have no villa; surface city/type there instead.
+  const villa =
+    inquiry.villa ??
+    [inquiry.city, inquiry.propertyType].filter(Boolean).join(" · ") ??
+    "—";
+
+  return [
+    label,
+    sanitizeParam(inquiry.name),
+    sanitizeParam(inquiry.phone),
+    sanitizeParam(villa || "—"),
+    dates,
+    guests,
+    sanitizeParam(inquiry.message ?? "—"),
+  ];
+}
+
+/** Template params may not be empty or contain newlines/tabs/4+ spaces. */
+function sanitizeParam(value: string): string {
+  const flat = value.replace(/\s+/g, " ").trim();
+  return flat.length > 0 ? flat.slice(0, 900) : "—";
+}
+
+/* ------------------------- CallMeBot (legacy) ------------------------- */
+
+async function sendViaCallMeBot(
+  inquiry: StoredInquiry,
+  phone: string,
+  apiKey: string,
+): Promise<void> {
+  const message = buildFreeformMessage(inquiry);
+
+  const url = `${CALLMEBOT_ENDPOINT}?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(
     message,
   )}&apikey=${encodeURIComponent(apiKey)}`;
 
@@ -54,7 +179,7 @@ export async function notifyInquiryToWhatsApp(
   }
 }
 
-function buildMessage(inquiry: StoredInquiry): string {
+function buildFreeformMessage(inquiry: StoredInquiry): string {
   const label = LABELS[inquiry.kind ?? "guest"];
   const lines: string[] = [];
   lines.push(`🔔 ${label} — Earthy Stays`);

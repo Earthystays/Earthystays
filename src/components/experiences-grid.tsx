@@ -60,7 +60,7 @@ export function ExperiencesGrid({
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 p-5 text-white sm:p-6">
-              <h3 className="font-display text-xl font-semibold leading-tight sm:text-2xl">
+              <h3 className="font-title text-xl font-semibold leading-tight sm:text-2xl">
                 {e.name}
               </h3>
               <p className="mt-1 line-clamp-2 text-xs text-white/85 sm:text-sm">

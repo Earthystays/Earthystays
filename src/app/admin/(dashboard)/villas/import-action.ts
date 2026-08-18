@@ -8,7 +8,7 @@ import {
   importListingFromUrl,
   slugifyName,
 } from "@/lib/listing-import";
-import { getVillas } from "@/lib/data/villas";
+import { getVillasWithHidden } from "@/lib/data/villas";
 
 /**
  * One-click import: paste a URL → fetch metadata → create a stub villa →
@@ -31,7 +31,7 @@ export async function importListingAction(formData: FormData): Promise<
   const warnings: string[] = [];
 
   // Generate a unique slug
-  const allVillas = getVillas();
+  const allVillas = getVillasWithHidden();
   const usedSlugs = new Set(allVillas.map((v) => v.slug));
   const baseSlug = slugifyName(data.name ?? `${data.platform.toLowerCase()}-import`);
   let slug = baseSlug;

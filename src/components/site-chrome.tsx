@@ -14,14 +14,16 @@ export function SiteChrome({
   apartmentStates,
 }: {
   children: ReactNode;
-  user: { name: string; email: string } | null;
+  user: { name: string; email: string; isHost?: boolean } | null;
   villaStates: CityIndexState[];
   apartmentStates: CityIndexState[];
 }) {
   const path = usePathname();
-  const isAdmin = path?.startsWith("/admin");
+  // Admin and host dashboards bring their own chrome — no public
+  // header/footer/WhatsApp float there.
+  const isDashboard = path?.startsWith("/admin") || path?.startsWith("/host");
 
-  if (isAdmin) {
+  if (isDashboard) {
     return <div className="flex-1">{children}</div>;
   }
 

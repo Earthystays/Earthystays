@@ -4,16 +4,17 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { readJson, writeJson } from "@/lib/storage";
-import type { Villa } from "@/lib/types";
+import type { PropertyType, Villa } from "@/lib/types";
 import { parseVideoUrl } from "@/lib/video";
 import { deleteDraft, saveDraft } from "@/lib/data/villa-drafts";
+import { pingIndexNow } from "@/lib/indexnow";
 
 const VillaSchema = z.object({
   slug: z
     .string()
     .min(2)
     .regex(/^[a-z0-9-]+$/, "Slug: lowercase letters, numbers, dashes only"),
-  propertyType: z.enum(["villa", "apartment"]).default("villa"),
+  propertyType: z.enum(["villa", "apartment", "hotel", "hostel"]).default("villa"),
   name: z.string().min(2),
   tagline: z.string().min(5),
   description: z.string().min(20),
@@ -43,6 +44,7 @@ const VillaSchema = z.object({
   city: z.string().optional(),
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
+  googlePlaceId: z.string().trim().max(300).optional(),
   cancellationPreset: z
     .enum(["flexible", "moderate", "strict", "custom"])
     .optional(),
@@ -72,9 +74,44 @@ const VillaSchema = z.object({
       }),
     )
     .default([]),
+  experiences: z.array(z.string()).default([]),
   featured: z.boolean().default(false),
   featuredRank: z.coerce.number().int().min(1).max(6).optional(),
+  brochure: z
+    .object({
+      url: z.string().min(1),
+      fileName: z.string().min(1),
+      uploadedAt: z.string().min(1),
+    })
+    .nullable()
+    .optional(),
 });
+
+function parseBrochureJson(
+  raw: string | undefined | null,
+): { url: string; fileName: string; uploadedAt: string } | null {
+  if (!raw) return null;
+  try {
+    const x = JSON.parse(raw);
+    if (
+      x &&
+      typeof x.url === "string" &&
+      typeof x.fileName === "string" &&
+      x.url.startsWith("/uploads/") &&
+      x.url.toLowerCase().endsWith(".pdf")
+    ) {
+      return {
+        url: x.url,
+        fileName: x.fileName,
+        uploadedAt:
+          typeof x.uploadedAt === "string" ? x.uploadedAt : new Date().toISOString(),
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
 
 function numOrUndef(v: FormDataEntryValue | null): number | undefined {
   if (v === null) return undefined;
@@ -161,7 +198,7 @@ function parseFaqsJson(raw: string | undefined | null): { question: string; answ
 
 export type AddVillaValues = {
   slug: string;
-  propertyType: "villa" | "apartment";
+  propertyType: PropertyType;
   name: string;
   tagline: string;
   description: string;
@@ -184,6 +221,7 @@ export type AddVillaValues = {
   city: string;
   latitude: string;
   longitude: string;
+  googlePlaceId: string;
   cancellationPreset: string;
   cancellationDescription: string;
   mealsPreset: string;
@@ -191,9 +229,11 @@ export type AddVillaValues = {
   videoSrc: string;
   faqs: { question: string; answer: string }[];
   externalListings: { platform: string; url: string; rating?: number; reviewCount?: number }[];
+  experiences: string[];
   featured: boolean;
   featuredRank: string;
   images: { src: string; alt: string }[];
+  brochure: { url: string; fileName: string; uploadedAt: string } | null;
 };
 
 export type AddVillaState = {
@@ -216,9 +256,10 @@ export async function addVilla(
 
   const raw = {
     slug: String(form.get("slug") ?? "").trim().toLowerCase(),
-    propertyType: (String(form.get("propertyType") ?? "villa") === "apartment"
-      ? "apartment"
-      : "villa") as "villa" | "apartment",
+    propertyType: ((): PropertyType => {
+      const t = String(form.get("propertyType") ?? "villa");
+      return t === "apartment" || t === "hotel" || t === "hostel" ? t : "villa";
+    })(),
     name: String(form.get("name") ?? "").trim(),
     tagline: String(form.get("tagline") ?? "").trim(),
     description: String(form.get("description") ?? "").trim(),
@@ -240,6 +281,7 @@ export async function addVilla(
     city: String(form.get("city") ?? "").trim() || undefined,
     latitude: numOrUndef(form.get("latitude")),
     longitude: numOrUndef(form.get("longitude")),
+    googlePlaceId: String(form.get("googlePlaceId") ?? "").trim() || undefined,
     cancellationPreset: (form.get("cancellationPreset") as string) || undefined,
     cancellationDescription: String(form.get("cancellationDescription") ?? "").trim() || undefined,
     mealsPreset: (form.get("mealsPreset") as string) || undefined,
@@ -247,8 +289,10 @@ export async function addVilla(
     videoSrc: String(form.get("videoSrc") ?? "").trim(),
     faqs: parseFaqsJson(form.get("faqsJson") as string),
     externalListings: parseExternalListingsJson(form.get("externalListingsJson") as string),
+    experiences: form.getAll("experiences").map((v) => String(v)),
     featured: form.get("featured") === "on" || form.get("featured") === "true",
     featuredRank: numOrUndef(form.get("featuredRank")),
+    brochure: parseBrochureJson(form.get("brochureJson") as string),
   };
 
   // Snapshot the raw form values so we can repopulate the form on error
@@ -277,6 +321,7 @@ export async function addVilla(
     city: raw.city ?? "",
     latitude: raw.latitude !== undefined ? String(raw.latitude) : "",
     longitude: raw.longitude !== undefined ? String(raw.longitude) : "",
+    googlePlaceId: raw.googlePlaceId ?? "",
     cancellationPreset: raw.cancellationPreset ?? "",
     cancellationDescription: raw.cancellationDescription ?? "",
     mealsPreset: raw.mealsPreset ?? "",
@@ -284,10 +329,12 @@ export async function addVilla(
     videoSrc: raw.videoSrc,
     faqs: raw.faqs,
     externalListings: raw.externalListings,
+    experiences: raw.experiences,
     featured: raw.featured,
     featuredRank:
       raw.featuredRank !== undefined ? String(raw.featuredRank) : "",
     images: raw.images,
+    brochure: raw.brochure,
   };
 
   const parsed = VillaSchema.safeParse(raw);
@@ -334,6 +381,7 @@ export async function addVilla(
     city: d.city,
     latitude: typeof d.latitude === "number" ? d.latitude : undefined,
     longitude: typeof d.longitude === "number" ? d.longitude : undefined,
+    googlePlaceId: d.googlePlaceId || undefined,
     cancellationPolicy:
       d.cancellationPreset || d.cancellationDescription
         ? {
@@ -351,15 +399,46 @@ export async function addVilla(
     video: parseVideoUrl(d.videoSrc) ?? undefined,
     faqs: d.faqs.length > 0 ? d.faqs : undefined,
     externalListings: d.externalListings.length > 0 ? d.externalListings : undefined,
+    experiences: d.experiences.length > 0 ? d.experiences : undefined,
     featured: d.featured,
     featuredRank: d.featured ? d.featuredRank : undefined,
+    brochure: d.brochure ?? undefined,
   };
 
   const list = await readJson<Villa[]>("villas.json", []);
   const idx = list.findIndex((v) => v.slug === villa.slug);
-  if (idx >= 0) list[idx] = villa;
-  else list.push(villa);
+  let oldBrochureUrl: string | undefined;
+  if (idx >= 0) {
+    // Preserve marketplace fields the admin form doesn't carry — otherwise
+    // editing a host-owned listing would silently strip its host and status.
+    const prev = list[idx];
+    villa.hostId = prev.hostId;
+    villa.status = prev.status;
+    villa.rejectedReason = prev.rejectedReason;
+    villa.submittedAt = prev.submittedAt;
+    villa.minNights = prev.minNights;
+    // Room types / dorm types are managed by their own editor, not this
+    // form — carry them over so editing the basics never wipes inventory.
+    villa.units = prev.units;
+    if (prev.brochure?.url && prev.brochure.url !== villa.brochure?.url) {
+      oldBrochureUrl = prev.brochure.url;
+    }
+    list[idx] = villa;
+  } else {
+    list.push(villa);
+  }
   await writeJson("villas.json", list);
+
+  if (oldBrochureUrl && oldBrochureUrl.startsWith("/uploads/")) {
+    const { promises: fsp } = await import("fs");
+    const pathMod = await import("path");
+    const abs = pathMod.join(process.cwd(), "public", oldBrochureUrl.replace(/^\//, ""));
+    fsp.unlink(abs).catch(() => {});
+  }
+
+  // Let Bing (and other IndexNow-aware engines) know this page is new or
+  // changed, instead of waiting for the next scheduled crawl.
+  void pingIndexNow([`https://earthystays.com/villas/${villa.slug}`]);
 
   // If this publish originated from a draft, clean it up so it stops
   // showing in the drafts list.

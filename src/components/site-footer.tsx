@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { AtSign, Mail, Phone } from "lucide-react";
 import { CallbackModal } from "@/components/callback-modal";
+import { TrackedTelLink } from "@/components/tracked-tel-link";
 
 export function SiteFooter() {
   return (
@@ -23,9 +24,9 @@ export function SiteFooter() {
             <Link href="mailto:reservations@earthyrooms.com" className="inline-flex items-center gap-2 hover:text-foreground">
               <Mail className="h-4 w-4" /> reservations@earthyrooms.com
             </Link>
-            <Link href="tel:+919657100004" className="inline-flex items-center gap-2 hover:text-foreground">
+            <TrackedTelLink href="tel:+919657100004" source="footer" className="inline-flex items-center gap-2 hover:text-foreground">
               <Phone className="h-4 w-4" /> +91 9657100004
-            </Link>
+            </TrackedTelLink>
           </div>
         </div>
 
@@ -50,7 +51,6 @@ export function SiteFooter() {
                 triggerClassName="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
               />
             </li>
-            <li><Link href="/partner" className="hover:text-foreground">List your villa</Link></li>
             <li>
               <Link href="https://instagram.com" className="inline-flex items-center gap-2 hover:text-foreground">
                 <AtSign className="h-4 w-4" /> @earthystays

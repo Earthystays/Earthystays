@@ -10,6 +10,10 @@ import {
   Loader2,
   Star,
   Pencil,
+  Tag,
+  Check,
+  Filter,
+  Sparkles,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -54,11 +58,29 @@ const DATALIST_ID = "photo-tags";
 export function PhotoUploader({
   name,
   initial = [],
+  endpoint = "/api/admin/upload",
+  onChange,
 }: {
   name: string; // hidden input name (JSON serialized)
   initial?: UploadedPhoto[];
+  /** Upload API route — the host dashboard passes /api/host/upload,
+   *  which authenticates the user session instead of the admin cookie. */
+  endpoint?: string;
+  /** Notifies the parent whenever the photo list changes (used by the
+   *  host wizard, which keeps all step state client-side). */
+  onChange?: (photos: UploadedPhoto[]) => void;
 }) {
-  const [photos, setPhotos] = useState<UploadedPhoto[]>(initial);
+  const [photos, setPhotosState] = useState<UploadedPhoto[]>(initial);
+  const setPhotos: typeof setPhotosState = (action) => {
+    setPhotosState((prev) => {
+      const next =
+        typeof action === "function"
+          ? (action as (p: UploadedPhoto[]) => UploadedPhoto[])(prev)
+          : action;
+      onChange?.(next);
+      return next;
+    });
+  };
   const [uploading, startUploading] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -70,7 +92,7 @@ export function PhotoUploader({
 
     startUploading(async () => {
       try {
-        const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+        const res = await fetch(endpoint, { method: "POST", body: fd });
         const json = await res.json();
         if (!res.ok || !json.ok) {
           throw new Error(json.error ?? "Upload failed");
@@ -105,6 +127,62 @@ export function PhotoUploader({
       return copy;
     });
   }
+  /** Canonical hero-first ordering used by "Auto-arrange". Photos are
+   *  sorted by tag priority (Pool/Exterior first, then Living, Kitchen,
+   *  Bedrooms, Bathrooms, outdoor, view). Untagged photos keep their
+   *  relative order and sink to the end. */
+  const TAG_ORDER: string[] = [
+    "Pool",
+    "Exterior",
+    "View",
+    "Garden",
+    "Lawn",
+    "Living Area",
+    "Dining Area",
+    "Kitchen",
+    "Bar",
+    "Master Bedroom",
+    "Bedroom 1",
+    "Bedroom 2",
+    "Bedroom 3",
+    "Bedroom 4",
+    "Bedroom 5",
+    "Master Bathroom",
+    "Bathroom 1",
+    "Bathroom 2",
+    "Balcony",
+    "Terrace",
+    "Patio",
+    "Entrance",
+    "Hallway",
+    "Game Room",
+    "Office",
+    "Other",
+  ];
+  function tagRank(tag?: string) {
+    if (!tag || !tag.trim()) return 999;
+    const idx = TAG_ORDER.indexOf(tag.trim());
+    return idx === -1 ? 900 : idx;
+  }
+  function autoArrange() {
+    setPhotos((p) => {
+      const untaggedCount = p.filter((ph) => !ph.tag || !ph.tag.trim()).length;
+      const withIdx = p.map((ph, i) => ({ ph, i }));
+      withIdx.sort((a, b) => {
+        const ra = tagRank(a.ph.tag);
+        const rb = tagRank(b.ph.tag);
+        if (ra !== rb) return ra - rb;
+        return a.i - b.i;
+      });
+      const next = withIdx.map((x) => x.ph);
+      toast.success(
+        untaggedCount > 0
+          ? `Arranged ${p.length - untaggedCount} tagged photos · ${untaggedCount} untagged moved to end`
+          : `Arranged ${p.length} photos by room`,
+      );
+      return next;
+    });
+  }
   /** Move photo at index i to position 0 — becomes the cover photo. */
   function makePrimary(i: number) {
     if (i === 0) return;
@@ -116,6 +194,10 @@ export function PhotoUploader({
     });
   }
   const [editing, setEditing] = useState<number | null>(null);
+  const [showOnlyUntagged, setShowOnlyUntagged] = useState(false);
+
+  const taggedCount = photos.filter((p) => !!(p.tag && p.tag.trim())).length;
+  const allTagged = photos.length > 0 && taggedCount === photos.length;
 
   return (
     <div className="grid gap-4">
@@ -173,6 +255,52 @@ export function PhotoUploader({
 
       {photos.length > 0 && (
         <>
+          {/* Tagging progress + filter — admin can see at a glance how many
+              photos still need a tag, and focus on just those with one click. */}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/60 bg-card px-3 py-2">
+            <div className="inline-flex items-center gap-2 text-xs">
+              <Tag className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="font-medium text-foreground">
+                {taggedCount} of {photos.length} tagged
+              </span>
+              {allTagged ? (
+                <span className="inline-flex items-center gap-1 text-emerald-700">
+                  <Check className="h-3.5 w-3.5" />
+                  All done
+                </span>
+              ) : (
+                <span className="text-muted-foreground">
+                  · {photos.length - taggedCount} need a tag
+                </span>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              {taggedCount > 0 && (
+                <button
+                  type="button"
+                  onClick={autoArrange}
+                  title="Reorder by room: Pool & Exterior first, then Living, Kitchen, Bedrooms, Bathrooms. Untagged photos move to the end."
+                  className="inline-flex items-center gap-1.5 rounded-md border border-terracotta/40 bg-terracotta/5 px-2.5 py-1 text-xs font-medium text-terracotta hover:bg-terracotta/10"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Auto-arrange
+                </button>
+              )}
+              {photos.length - taggedCount > 0 && (
+                <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-foreground">
+                  <input
+                    type="checkbox"
+                    checked={showOnlyUntagged}
+                    onChange={(e) => setShowOnlyUntagged(e.target.checked)}
+                    className="h-3.5 w-3.5"
+                  />
+                  <Filter className="h-3.5 w-3.5 text-muted-foreground" />
+                  Show untagged only
+                </label>
+              )}
+            </div>
+          </div>
+
           <p className="text-xs text-muted-foreground">
             {photos.length} photo{photos.length === 1 ? "" : "s"} — the first
             one (star ★) is used as the cover. Click any other photo&apos;s
@@ -182,13 +310,21 @@ export function PhotoUploader({
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {photos.map((p, i) => {
               const isPrimary = i === 0;
+              const isTagged = !!(p.tag && p.tag.trim());
+              // Hide tagged photos when the "Show untagged only" filter is on
+              // (kept in the DOM so original indices stay correct for
+              // reorder/cover actions that reference position).
+              const hidden = showOnlyUntagged && isTagged;
+              if (hidden) return null;
               return (
                 <li
                   key={p.src + i}
                   className={`group relative overflow-hidden rounded-lg border bg-card ${
                     isPrimary
                       ? "border-terracotta ring-2 ring-terracotta/30"
-                      : "border-border/60"
+                      : isTagged
+                        ? "border-border/60"
+                        : "border-amber-400/60 ring-1 ring-amber-300/40"
                   }`}
                 >
                   {/* Thumbnail */}
@@ -240,10 +376,15 @@ export function PhotoUploader({
                       </button>
                     </div>
 
-                    {/* Tag chip (bottom-left) */}
-                    {p.tag && (
+                    {/* Tag chip (bottom-left) — shows tag, or amber
+                        "Untagged" badge so the gap is impossible to miss. */}
+                    {p.tag ? (
                       <span className="absolute bottom-2 left-2 inline-flex items-center rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white backdrop-blur">
                         {p.tag}
+                      </span>
+                    ) : (
+                      <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded bg-amber-500/95 px-1.5 py-0.5 text-[10px] font-medium text-white backdrop-blur">
+                        Untagged
                       </span>
                     )}
 
@@ -272,10 +413,20 @@ export function PhotoUploader({
                     </div>
                   </div>
 
-                  {/* Edit panel — only shown when admin clicks the pencil */}
-                  {editing === i && (
-                    <div className="grid gap-2 border-t border-border/60 bg-muted/30 p-3">
-                      <label className="grid gap-1">
+                  {/* Always-visible tag input — admin can tag in one step.
+                      Pencil now only reveals the alt-text field (less commonly
+                      changed) so the default layout stays compact. */}
+                  <div className="grid gap-1 border-t border-border/60 bg-muted/30 px-2.5 py-2">
+                    <Input
+                      value={p.tag ?? ""}
+                      onChange={(e) => patch(i, "tag", e.target.value)}
+                      list={DATALIST_ID}
+                      placeholder="Add tag (Bedroom 1, Kitchen…)"
+                      aria-label="Tag this photo"
+                      className="h-8 text-xs"
+                    />
+                    {editing === i && (
+                      <label className="grid gap-1 pt-1">
                         <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
                           Alt text
                         </span>
@@ -286,20 +437,8 @@ export function PhotoUploader({
                           className="h-8 text-xs"
                         />
                       </label>
-                      <label className="grid gap-1">
-                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                          Tag (room or area)
-                        </span>
-                        <Input
-                          value={p.tag ?? ""}
-                          onChange={(e) => patch(i, "tag", e.target.value)}
-                          list={DATALIST_ID}
-                          placeholder="Bedroom 1, Kitchen…"
-                          className="h-8 text-xs"
-                        />
-                      </label>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </li>
               );
             })}

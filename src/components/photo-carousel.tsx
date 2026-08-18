@@ -5,6 +5,32 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Image as VillaImage } from "@/lib/types";
 
+/** Progressive load: image fades + sharpens in instead of flashing. */
+function CarouselImage({
+  img,
+  sizes,
+  priority,
+}: {
+  img: VillaImage;
+  sizes?: string;
+  priority: boolean;
+}) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <Image
+      src={img.src}
+      alt={img.alt}
+      fill
+      sizes={sizes}
+      priority={priority}
+      onLoad={() => setLoaded(true)}
+      className={`object-cover transition-[opacity,filter] duration-500 ease-out motion-reduce:transition-none ${
+        loaded ? "opacity-100 blur-0" : "opacity-0 blur-sm"
+      }`}
+    />
+  );
+}
+
 /**
  * Card photo carousel with native swipe support.
  * Uses CSS scroll-snap so phone users can swipe naturally — no JS needed
@@ -77,14 +103,7 @@ export function PhotoCarousel({
             key={img.src + idx}
             className="relative h-full w-full shrink-0 snap-center"
           >
-            <Image
-              src={img.src}
-              alt={img.alt}
-              fill
-              sizes={sizes}
-              priority={idx === 0 && priority}
-              className="object-cover"
-            />
+            <CarouselImage img={img} sizes={sizes} priority={idx === 0 && priority} />
           </div>
         ))}
       </div>
@@ -100,7 +119,7 @@ export function PhotoCarousel({
               e.stopPropagation();
               goTo(i - 1);
             }}
-            className="absolute left-2 top-1/2 z-10 hidden h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-foreground opacity-0 shadow-sm transition-all hover:bg-white group-hover/carousel:opacity-100 sm:inline-flex"
+            className="absolute left-2 top-1/2 z-10 hidden h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-foreground opacity-0 shadow-sm transition-[opacity,background-color] duration-200 hover:bg-white group-hover/carousel:opacity-100 sm:inline-flex"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -112,7 +131,7 @@ export function PhotoCarousel({
               e.stopPropagation();
               goTo(i + 1);
             }}
-            className="absolute right-2 top-1/2 z-10 hidden h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-foreground opacity-0 shadow-sm transition-all hover:bg-white group-hover/carousel:opacity-100 sm:inline-flex"
+            className="absolute right-2 top-1/2 z-10 hidden h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-foreground opacity-0 shadow-sm transition-[opacity,background-color] duration-200 hover:bg-white group-hover/carousel:opacity-100 sm:inline-flex"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
@@ -136,7 +155,7 @@ export function PhotoCarousel({
               ))}
             </div>
           ) : (
-            <div className="pointer-events-none absolute bottom-3 left-3 z-10 rounded-md bg-black/65 px-2 py-1 text-[11px] font-medium text-white backdrop-blur-sm">
+            <div className="pointer-events-none absolute bottom-3 left-3 z-10 rounded-md bg-black/65 px-2 py-1 text-[11px] font-medium text-white backdrop-blur-sm transition-[transform,background-color] duration-[180ms] group-hover/carousel:scale-[1.03] group-hover/carousel:bg-black/75 motion-reduce:transition-none">
               {i + 1} / {shown.length}
             </div>
           )}

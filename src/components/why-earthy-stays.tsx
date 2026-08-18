@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { TrackedWhatsAppLink } from "@/components/tracked-whatsapp-link";
 import {
   Sparkles,
   Headset,
@@ -219,33 +220,6 @@ export function WhyEarthyStays({ reviews }: { reviews: StoredReview[] }) {
           </div>
         )}
 
-        {/* FOUNDER STORY */}
-        <div className="mt-20 grid items-center gap-8 lg:grid-cols-[5fr_6fr] lg:gap-14">
-          <div className="relative aspect-[16/10] overflow-hidden rounded-2xl bg-muted sm:aspect-[4/3] lg:aspect-[5/4] lg:max-h-[420px]">
-            <Image
-              src="/brand/why-earthy-stays.jpg"
-              alt="Earthy Stays villa at golden hour"
-              fill
-              sizes="(min-width: 1024px) 45vw, 100vw"
-              className="object-cover"
-            />
-          </div>
-          <div>
-            <p className="text-xs uppercase tracking-[0.22em] text-terracotta">
-              Our Story
-            </p>
-            <h3 className="mt-3 font-display text-3xl sm:text-4xl">
-              Why we started Earthy Stays
-            </h3>
-            <p className="mt-5 text-base leading-relaxed text-muted-foreground sm:text-lg">
-              Earthy Stays was created with a simple belief: exceptional stays
-              should feel personal. We handpick every property, work closely
-              with owners, and support guests throughout their journey to
-              create memorable travel experiences rather than just bookings.
-            </p>
-          </div>
-        </div>
-
         {/* FINAL CTA */}
         <div className="mt-20 rounded-3xl bg-foreground px-6 py-14 text-center text-background sm:px-12 sm:py-16">
           <p className="text-xs uppercase tracking-[0.22em] text-terracotta/90">
@@ -265,15 +239,14 @@ export function WhyEarthyStays({ reviews }: { reviews: StoredReview[] }) {
             >
               Explore villas
             </Link>
-            <a
+            <TrackedWhatsAppLink
               href={WHATSAPP_URL}
-              target="_blank"
-              rel="noopener noreferrer"
+              source="why-section"
               className="inline-flex items-center justify-center gap-2 rounded-full border border-background/40 px-6 py-3 text-sm font-medium text-background transition-colors hover:bg-background/10"
             >
               <MessageCircle className="h-4 w-4" />
               Talk to our team
-            </a>
+            </TrackedWhatsAppLink>
           </div>
         </div>
       </div>

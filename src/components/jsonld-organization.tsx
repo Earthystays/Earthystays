@@ -15,7 +15,10 @@
 export function OrganizationJsonLd() {
   const data = {
     "@context": "https://schema.org",
-    "@type": "LodgingBusiness",
+    // Both types on one node: LodgingBusiness for local-business rich
+    // results, Organization so Google can treat it as the site's brand
+    // entity (logo, knowledge panel candidacy).
+    "@type": ["Organization", "LodgingBusiness"],
     name: "Earthy Stays",
     legalName: "Earthy Stays",
     url: "https://earthystays.com",
@@ -39,6 +42,24 @@ export function OrganizationJsonLd() {
       // "https://www.instagram.com/earthystays",
       // "https://www.facebook.com/earthystays",
     ].filter(Boolean),
+  };
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+    />
+  );
+}
+
+/** WebSite JSON-LD for the homepage — the site as a distinct entity from
+ *  the Organization/LodgingBusiness node above. */
+export function WebSiteJsonLd() {
+  const data = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "Earthy Stays",
+    url: "https://earthystays.com",
   };
 
   return (

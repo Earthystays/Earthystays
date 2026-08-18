@@ -1,46 +1,22 @@
-import { readJsonSync } from "@/lib/storage";
+import { randomBytes } from "crypto";
+import { readJsonSync, writeJson } from "@/lib/storage";
+import type {
+  CategoryRatings,
+  ReviewStatus,
+  StoredReview,
+} from "@/lib/reviews-shared";
 
-export type GuestType =
-  | "Family"
-  | "Couple"
-  | "Friends"
-  | "Corporate"
-  | "Solo";
+// Types + pure helpers live in the client-safe module — re-export so the
+// many existing server-side imports keep working. Client components must
+// import from "@/lib/reviews-shared" directly (this module pulls in fs).
+export * from "@/lib/reviews-shared";
 
-export type ReviewSource = "direct" | "google" | "airbnb" | "booking";
-
-export type StoredReview = {
-  id: string;
-  guestName: string;
-  /** URL of the guest photo (typically /uploads/...). Empty/missing
-   *  falls back to initials avatar. */
-  guestPhoto?: string;
-  /** Guest hometown, e.g. "Mumbai, Maharashtra". Optional. */
-  guestLocation?: string;
-  /** Linked villa slug — when set, villaName + location are derived from
-   *  the property record. Free-text villaName/location below remain as
-   *  legacy fields for reviews predating the link. */
-  villaSlug?: string;
-  villaName?: string;
-  location?: string;
-  /** "YYYY-MM" — rendered as "May 2026" via formatStayMonth. */
-  stayMonth?: string;
-  /** Optional short headline shown above the quote. */
-  title?: string;
-  quote: string;
-  rating: number; // 1–5
-  guestType?: GuestType;
-  /** Featured reviews appear on the home page. */
-  featured?: boolean;
-  /** Some guests opt out of showing their photo even if uploaded. */
-  showPhoto?: boolean;
-  /** Defaults to true. False hides the review from public surfaces but
-   *  keeps it in admin so the team can re-enable later. */
-  active?: boolean;
-  /** Where the review originated. "direct" by default. */
-  source?: ReviewSource;
-  createdAt: string;
-};
+/**
+ * Phase 1: any signed-in user may review, no booking required.
+ * Phase 2: flip this to true — submitReview will then demand a bookingId
+ * and the UI should gate the Write-a-Review button the same way.
+ */
+export const REQUIRE_COMPLETED_BOOKING = false;
 
 const FILE = "reviews.json";
 
@@ -87,10 +63,16 @@ export function getStoredReviews(): StoredReview[] {
   return readJsonSync<StoredReview[]>(FILE, []);
 }
 
+/** True when a review may appear on public surfaces: not hidden by the
+ *  team, and either legacy (no status) or moderation-approved. */
+export function isPublicReview(r: StoredReview): boolean {
+  return r.active !== false && (!r.status || r.status === "approved");
+}
+
 /** Reviews that should appear on public surfaces. Treats unset `active`
  *  as true for backward compatibility. */
 export function getActiveReviews(): StoredReview[] {
-  return getReviews().filter((r) => r.active !== false);
+  return getReviews().filter(isPublicReview);
 }
 
 /** Reviews to show on the home page. If any are explicitly featured,
@@ -113,28 +95,93 @@ export function getReviewsByVilla(slug: string): StoredReview[] {
   return getActiveReviews().filter((r) => r.villaSlug === slug);
 }
 
-export function getAverageRating(reviews: StoredReview[]): number {
-  if (reviews.length === 0) return 0;
-  const sum = reviews.reduce((acc, r) => acc + r.rating, 0);
-  return Math.round((sum / reviews.length) * 10) / 10;
+export function getReviewsByExperience(slug: string): StoredReview[] {
+  return getActiveReviews().filter((r) => r.experienceSlug === slug);
 }
 
-export function formatStayMonth(input?: string): string {
-  if (!input) return "";
-  const [y, m] = input.split("-");
-  const year = Number(y);
-  const month = Number(m);
-  if (!year || !month || month < 1 || month > 12) return "";
-  const monthName = new Date(year, month - 1, 1).toLocaleString(undefined, {
-    month: "long",
+/* ------------------------------------------------------------------ */
+/* Guest-submitted reviews — mutations & queue accessors               */
+/* ------------------------------------------------------------------ */
+
+async function mutateReviews(
+  fn: (list: StoredReview[]) => StoredReview[] | void,
+): Promise<StoredReview[]> {
+  // Persisted list only — the SEED fallback must never be written back.
+  const list = readJsonSync<StoredReview[]>(FILE, []);
+  const next = fn(list) ?? list;
+  await writeJson(FILE, next);
+  return next;
+}
+
+export type SubmitReviewInput = {
+  /** Either villaSlug or experienceSlug is set, depending on the target. */
+  villaSlug?: string;
+  experienceSlug?: string;
+  userId: string;
+  guestName: string;
+  email: string;
+  country?: string;
+  stayMonth?: string;
+  rating: number;
+  title?: string;
+  quote: string;
+  categoryRatings?: CategoryRatings;
+  photos?: string[];
+  bookingId?: string;
+};
+
+/** Guest submission — always lands in the moderation queue. */
+export async function submitReview(input: SubmitReviewInput): Promise<StoredReview> {
+  const review: StoredReview = {
+    id: `rev_${Date.now()}_${randomBytes(4).toString("hex")}`,
+    guestName: input.guestName,
+    villaSlug: input.villaSlug,
+    experienceSlug: input.experienceSlug,
+    stayMonth: input.stayMonth || undefined,
+    title: input.title?.trim() || undefined,
+    quote: input.quote.trim(),
+    rating: input.rating,
+    source: "direct",
+    createdAt: new Date().toISOString(),
+    status: "pending",
+    userId: input.userId,
+    email: input.email,
+    country: input.country?.trim() || undefined,
+    categoryRatings: input.categoryRatings,
+    photos: input.photos && input.photos.length > 0 ? input.photos : undefined,
+    helpfulCount: 0,
+    bookingId: input.bookingId,
+  };
+  await mutateReviews((list) => {
+    list.push(review);
   });
-  return `${monthName} ${year}`;
+  return review;
 }
 
-export const GUEST_TYPES: readonly GuestType[] = [
-  "Family",
-  "Couple",
-  "Friends",
-  "Corporate",
-  "Solo",
-] as const;
+export async function incrementHelpful(id: string): Promise<number> {
+  let count = 0;
+  await mutateReviews((list) => {
+    const r = list.find((x) => x.id === id);
+    if (!r) throw new Error("Review not found");
+    r.helpfulCount = (r.helpfulCount ?? 0) + 1;
+    count = r.helpfulCount;
+  });
+  return count;
+}
+
+export async function reportReview(id: string): Promise<void> {
+  await mutateReviews((list) => {
+    const r = list.find((x) => x.id === id);
+    if (!r) throw new Error("Review not found");
+    r.reportCount = (r.reportCount ?? 0) + 1;
+  });
+}
+
+/** Admin queue accessor — guest submissions grouped by moderation state. */
+export function getReviewsByStatus(status: ReviewStatus): StoredReview[] {
+  const stored = getStoredReviews();
+  if (status === "approved") {
+    return stored.filter((r) => !r.status || r.status === "approved");
+  }
+  return stored.filter((r) => r.status === status);
+}

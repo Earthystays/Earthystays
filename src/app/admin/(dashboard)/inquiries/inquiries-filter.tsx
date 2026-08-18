@@ -12,6 +12,7 @@ type Counts = {
   guest: number;
   partner: number;
   callback: number;
+  experience: number;
 };
 
 export function InquiriesFilter({
@@ -73,7 +74,10 @@ export function InquiriesFilter({
         );
       })}
 
-      {(counts.partner > 0 || counts.callback > 0 || currentKind) && (
+      {(counts.partner > 0 ||
+        counts.callback > 0 ||
+        counts.experience > 0 ||
+        currentKind) && (
         <>
           <span className="self-center text-border">|</span>
           <Link
@@ -105,6 +109,16 @@ export function InquiriesFilter({
             }`}
           >
             Callback ({counts.callback})
+          </Link>
+          <Link
+            href={href({ kind: "experience" })}
+            className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs transition-colors ${
+              currentKind === "experience"
+                ? "bg-foreground text-background"
+                : "border border-border bg-card text-foreground hover:bg-muted"
+            }`}
+          >
+            Concierge ({counts.experience})
           </Link>
           <Link
             href={href({ kind: "partner" })}

@@ -288,10 +288,10 @@ export default async function AdminOverviewPage({
     <div className="space-y-8">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl text-[#2A2A2A] sm:text-4xl">
+          <h1 className="admin-page-title">
             Good morning, Admin <span className="inline-block">👋</span>
           </h1>
-          <p className="mt-2 text-sm text-[#8A8072]">
+          <p className="admin-subtitle mt-3">
             Here&apos;s what&apos;s happening with your business today.
           </p>
         </div>

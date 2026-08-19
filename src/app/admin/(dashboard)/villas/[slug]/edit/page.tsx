@@ -35,13 +35,16 @@ export default async function EditVillaPage({ params }: PageProps) {
   const initialValues = villaToFormValues(villa, customA, customF);
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-[1180px]">
       <header>
-        <Link href="/admin/villas" className="text-xs text-muted-foreground hover:text-foreground">
-          ← Back to villas
+        <Link
+          href="/admin/villas"
+          className="admin-eyebrow inline-flex items-center gap-1 text-[#857B6C] transition-colors hover:text-[#23211C]"
+        >
+          ← Back to properties
         </Link>
-        <h1 className="mt-3 font-display text-4xl">Edit {villa.name}</h1>
-        <p className="mt-2 text-muted-foreground">
+        <h1 className="admin-page-title mt-4">Edit {villa.name}</h1>
+        <p className="admin-subtitle mt-3 max-w-xl">
           Save to publish your changes. To rename the URL, change the slug — the old slug will redirect through the seed if present.
         </p>
       </header>

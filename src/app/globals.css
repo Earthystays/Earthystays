@@ -534,3 +534,227 @@
     animation: none;
   }
 }
+
+/* ============================================================================
+   EARTHY STAYS ADMIN — TYPOGRAPHY SYSTEM
+   Premium luxury-hospitality OS. DM Serif Display as an editorial accent
+   (~15-20%), Manrope for all UI / body / numbers. Scoped to .admin-shell so
+   none of it leaks into the public site. Purely a visual/typography layer —
+   no routes, APIs, fields or logic change.
+   ========================================================================== */
+.admin-shell {
+  /* Fonts */
+  --font-admin-display: var(--font-dm-serif), ui-serif, Georgia, serif;
+  --font-admin-ui: var(--font-manrope-next), ui-sans-serif, system-ui, sans-serif;
+  /* Palette — warm, quietly luxurious. Avoid pure black / excessive green. */
+  --admin-bg: hsl(38 38% 96%);
+  --admin-surface: hsl(40 44% 98%);
+  --admin-border: hsl(38 20% 88%);
+  --admin-border-strong: hsl(38 16% 82%);
+  --admin-text: #23211C;          /* deep charcoal, not pure black */
+  --admin-text-muted: #857B6C;    /* muted warm gray */
+  --admin-forest: #3E4A3A;        /* deep forest green — accent only */
+  --admin-forest-ink: #2C3529;
+  --admin-forest-soft: color-mix(in srgb, var(--admin-forest) 8%, transparent);
+  --admin-forest-ring: color-mix(in srgb, var(--admin-forest) 22%, transparent);
+
+  font-family: var(--font-admin-ui);
+  color: var(--admin-text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Base UI font everywhere in admin; reset the site's global serif h1-h6 so
+   serif is only applied intentionally via the .admin-display* classes. */
+.admin-shell,
+.admin-shell button,
+.admin-shell input,
+.admin-shell select,
+.admin-shell textarea {
+  font-family: var(--font-admin-ui);
+}
+.admin-shell h1,
+.admin-shell h2,
+.admin-shell h3,
+.admin-shell h4,
+.admin-shell h5,
+.admin-shell h6 {
+  font-family: var(--font-admin-ui);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+
+/* ---- Display / editorial headings (DM Serif Display, 400 only) ---- */
+.admin-display,
+.admin-page-title,
+.admin-section-title,
+.admin-card-title {
+  font-family: var(--font-admin-display);
+  font-weight: 400;
+  color: var(--admin-text);
+}
+.admin-page-title {
+  font-size: clamp(30px, 3.4vw, 46px);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+}
+.admin-section-title {
+  font-size: clamp(23px, 2.4vw, 29px);
+  line-height: 1.14;
+  letter-spacing: -0.015em;
+}
+.admin-card-title {
+  font-size: clamp(20px, 1.9vw, 24px);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+/* ---- Supporting text ---- */
+.admin-subtitle {
+  font-family: var(--font-admin-ui);
+  font-weight: 400;
+  font-size: clamp(14px, 1.1vw, 15.5px);
+  line-height: 1.55;
+  color: var(--admin-text-muted);
+}
+.admin-label {
+  font-family: var(--font-admin-ui);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--admin-text-muted);
+}
+.admin-helper {
+  font-family: var(--font-admin-ui);
+  font-weight: 400;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--admin-text-muted);
+}
+.admin-eyebrow {
+  font-family: var(--font-admin-ui);
+  font-weight: 600;
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--admin-text-muted);
+}
+
+/* ---- Numbers / financial data — Manrope, tabular ---- */
+.admin-numeric,
+.admin-metric,
+.admin-stat-value,
+.admin-step-num,
+.admin-shell [data-numeric="true"] {
+  font-family: var(--font-admin-ui);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+.admin-metric,
+.admin-stat-value {
+  font-weight: 700;
+  font-size: clamp(28px, 3vw, 34px);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  color: var(--admin-text);
+}
+.admin-step-num {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* ---- Sidebar ---- */
+.admin-nav-group {
+  font-family: var(--font-admin-ui);
+  font-weight: 600;
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--admin-text-muted);
+}
+.admin-nav-item {
+  font-family: var(--font-admin-ui);
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: 0.005em;
+}
+
+/* ---- Premium inputs ---- */
+.admin-input {
+  font-family: var(--font-admin-ui);
+  font-weight: 400;
+  font-size: 15px;
+  min-height: 48px;
+  width: 100%;
+  border: 1px solid var(--admin-border-strong);
+  border-radius: 10px;
+  background: #fff;
+  padding: 0 14px;
+  color: var(--admin-text);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.admin-input::placeholder { color: color-mix(in srgb, var(--admin-text-muted) 75%, transparent); }
+textarea.admin-input { min-height: 96px; padding: 12px 14px; line-height: 1.5; }
+.admin-input:focus,
+.admin-input:focus-visible {
+  outline: none;
+  border-color: var(--admin-forest);
+  box-shadow: 0 0 0 3px var(--admin-forest-ring);
+}
+
+/* ---- Buttons ---- */
+.admin-btn-primary {
+  font-family: var(--font-admin-ui);
+  font-weight: 600;
+  font-size: 14px;
+  color: #fff;
+  background: var(--admin-forest);
+  border-radius: 10px;
+  padding: 11px 18px;
+  border: 1px solid var(--admin-forest);
+  transition: background-color 0.15s;
+}
+.admin-btn-primary:hover { background: var(--admin-forest-ink); }
+.admin-btn-secondary {
+  font-family: var(--font-admin-ui);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--admin-text);
+  background: var(--admin-surface);
+  border-radius: 10px;
+  padding: 11px 18px;
+  border: 1px solid var(--admin-border-strong);
+  transition: background-color 0.15s, border-color 0.15s;
+}
+.admin-btn-secondary:hover { border-color: var(--admin-text-muted); }
+
+/* Premium inputs across the whole admin — applies to shadcn <Input>,
+   <Textarea>, <select>. Excludes checkboxes/radios/toggles. Element+class
+   specificity (0,1,1) cleanly overrides single Tailwind utility classes. */
+.admin-shell input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+.admin-shell textarea,
+.admin-shell select {
+  font-family: var(--font-admin-ui);
+  font-size: 15px;
+  min-height: 48px;
+  border-radius: 10px;
+  border: 1px solid var(--admin-border-strong);
+  background-color: #fff;
+  color: var(--admin-text);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.admin-shell textarea { min-height: 104px; line-height: 1.5; }
+/* Numbers inside inputs stay tabular & aligned. */
+.admin-shell input[type="number"] { font-variant-numeric: tabular-nums; }
+/* Soft forest focus — never harsh browser blue. */
+.admin-shell input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):focus,
+.admin-shell input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):focus-visible,
+.admin-shell textarea:focus,
+.admin-shell textarea:focus-visible,
+.admin-shell select:focus,
+.admin-shell select:focus-visible {
+  outline: none;
+  border-color: var(--admin-forest);
+  box-shadow: 0 0 0 3px var(--admin-forest-ring);
+}

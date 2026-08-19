@@ -92,7 +92,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   ];
 
   return (
-    <div className="min-h-screen bg-[hsl(38_38%_96%)]">
+    <div className="admin-shell min-h-screen bg-[hsl(38_38%_96%)]">
       <div className="flex min-h-screen">
         {/* SIDEBAR — sand-beige, grouped nav, sage active state */}
         <aside className="hidden w-64 shrink-0 border-r border-[hsl(38_18%_88%)] bg-[hsl(38_30%_93%)] md:block">
@@ -113,26 +113,24 @@ export default async function AdminLayout({ children }: { children: ReactNode })
               />
             </Link>
 
-            <nav className="mt-10 flex-1 space-y-6 overflow-y-auto">
+            <nav className="mt-10 flex-1 space-y-7 overflow-y-auto">
               {groups.map((group) => (
                 <div key={group.title}>
-                  <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.14em] text-[#8A8072]">
-                    {group.title}
-                  </p>
+                  <p className="admin-nav-group mb-2.5 px-3">{group.title}</p>
                   <ul className="space-y-0.5">
                     {group.items.map((item) => (
                       <li key={item.href}>
                         <Link
                           href={item.href}
-                          className="group flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-[#4A4235] transition-colors hover:bg-white/60"
+                          className="admin-nav-item group flex items-center gap-3 rounded-lg px-3 py-2 text-[#4A4235] transition-colors hover:bg-white/60"
                         >
                           <item.icon
-                            className="h-4 w-4 text-[#8A8072] group-hover:text-[#4A4235]"
+                            className="h-[18px] w-[18px] text-[#8A8072] group-hover:text-[#4A4235]"
                             strokeWidth={1.7}
                           />
                           <span className="flex-1">{item.label}</span>
                           {item.badge !== undefined && item.badge > 0 && (
-                            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#5D7050] px-1.5 text-[10px] font-semibold text-white">
+                            <span className="admin-numeric inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#5D7050] px-1.5 text-[10px] font-semibold text-white">
                               {item.badge}
                             </span>
                           )}

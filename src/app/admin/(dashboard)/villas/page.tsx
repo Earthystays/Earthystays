@@ -32,9 +32,10 @@ export default async function AdminVillasPage({
     <div>
       <header className="flex items-end justify-between">
         <div>
-          <h1 className="font-display text-4xl">Villas</h1>
-          <p className="mt-2 text-muted-foreground">
-            {villas.length} {villas.length === 1 ? "property" : "properties"} in your collection.
+          <h1 className="admin-page-title">Villas</h1>
+          <p className="admin-subtitle mt-3">
+            <span className="admin-numeric font-semibold text-[#23211C]">{villas.length}</span>{" "}
+            {villas.length === 1 ? "property" : "properties"} in your collection.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">

@@ -24,8 +24,8 @@ export default function AdminReviewsPage() {
   return (
     <div>
       <header>
-        <h1 className="font-display text-4xl">Guest Reviews</h1>
-        <p className="mt-2 text-muted-foreground">
+        <h1 className="admin-page-title">Guest Reviews</h1>
+        <p className="admin-subtitle mt-3 max-w-2xl">
           Guest submissions land in the moderation queue below — nothing shows
           on the site until you approve it. The editor underneath manages
           team-curated reviews and the home-page Featured picks.
@@ -35,7 +35,7 @@ export default function AdminReviewsPage() {
       <ModerationQueue reviews={guestSubmitted} villaNames={villaNames} />
 
       <div className="mt-12 border-t border-border/60 pt-8">
-        <h2 className="font-display text-2xl">Curated reviews</h2>
+        <h2 className="admin-section-title">Curated reviews</h2>
         <ReviewsEditor initial={curated} villas={villas} />
       </div>
     </div>

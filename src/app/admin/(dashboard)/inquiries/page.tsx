@@ -409,11 +409,12 @@ export default async function AdminInquiriesPage({
       {/* HEADER */}
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl text-[#2A2A2A] sm:text-4xl">
+          <h1 className="admin-page-title">
             {isConciergeView ? "Concierge Requests" : "Inquiries"}
           </h1>
-          <p className="mt-2 text-sm text-[#8A8072]">
-            {enriched.length} {enriched.length === 1 ? "inquiry" : "inquiries"} received.
+          <p className="admin-subtitle mt-3">
+            <span className="admin-numeric font-semibold text-[#23211C]">{enriched.length}</span>{" "}
+            {enriched.length === 1 ? "inquiry" : "inquiries"} received.
             {enriched.length > 0 && " Newest first."}
           </p>
         </div>
@@ -578,19 +579,19 @@ export default async function AdminInquiriesPage({
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[1080px] text-sm">
                 <thead>
-                  <tr className="text-left text-[10px] uppercase tracking-wider text-[#8A8072]">
-                    <th className="px-4 py-3 font-medium">Guest</th>
-                    <th className="px-4 py-3 font-medium">Property</th>
-                    <th className="px-4 py-3 font-medium">Dates</th>
-                    <th className="px-4 py-3 font-medium">Guests</th>
-                    <th className="px-4 py-3 font-medium">Status</th>
-                    <th className="px-4 py-3 font-medium">Priority</th>
-                    <th className="px-4 py-3 font-medium">Source</th>
-                    <th className="px-4 py-3 font-medium">Assigned</th>
-                    <th className="px-4 py-3 font-medium">Follow-up</th>
-                    <th className="px-4 py-3 font-medium" />
+                  <tr className="whitespace-nowrap text-left text-[10.5px] font-semibold uppercase tracking-[0.06em] text-[#857B6C]">
+                    <th className="px-4 py-3">Guest</th>
+                    <th className="px-4 py-3">Property</th>
+                    <th className="px-4 py-3">Dates</th>
+                    <th className="px-4 py-3">Guests</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Priority</th>
+                    <th className="px-4 py-3">Source</th>
+                    <th className="px-4 py-3">Assigned</th>
+                    <th className="px-4 py-3">Follow-up</th>
+                    <th className="px-4 py-3" />
                   </tr>
                 </thead>
                 <tbody>
@@ -658,7 +659,7 @@ export default async function AdminInquiriesPage({
                             </div>
                           </Link>
                         </td>
-                        <td className="px-4 py-3 text-[13px] text-[#4A4235]">
+                        <td className="admin-numeric px-4 py-3 text-[13px] text-[#4A4235]">
                           <Link href={rowHref} className="block">
                             <p>{formatDates(e.q)}</p>
                             {nights > 0 && (
@@ -668,7 +669,7 @@ export default async function AdminInquiriesPage({
                             )}
                           </Link>
                         </td>
-                        <td className="px-4 py-3 text-[13px] text-[#4A4235]">
+                        <td className="admin-numeric px-4 py-3 text-[13px] text-[#4A4235]">
                           <Link href={rowHref} className="block">
                             <p>
                               {(e.q.adults ?? e.q.guests ?? 0)} Adult
@@ -685,7 +686,7 @@ export default async function AdminInquiriesPage({
                         </td>
                         <td className="px-4 py-3">
                           <span
-                            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${STATUS_PILL[e.normalized]}`}
+                            className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-medium ${STATUS_PILL[e.normalized]}`}
                           >
                             <span
                               className={`inline-block h-1.5 w-1.5 rounded-full ${STATUS_ICON[e.normalized].dot}`}
@@ -695,7 +696,7 @@ export default async function AdminInquiriesPage({
                         </td>
                         <td className="px-4 py-3">
                           <span
-                            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${prio.pill} ${prio.tone}`}
+                            className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-medium ${prio.pill} ${prio.tone}`}
                             title={`Priority: ${prio.label}`}
                           >
                             <prio.Icon className="h-3 w-3" />
@@ -873,7 +874,7 @@ function DetailPanel({
             {initials(q.name)}
           </div>
           <div className="min-w-0">
-            <p className="truncate font-display text-lg text-[#2A2A2A]">{q.name}</p>
+            <p className="truncate text-[15px] font-semibold text-[#2A2A2A]">{q.name}</p>
             <p className="mt-0.5 text-[11px] text-[#8A8072]">
               <span
                 className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUS_PILL[normalized]}`}

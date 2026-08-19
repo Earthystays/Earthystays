@@ -71,10 +71,31 @@ const LEGEND: { key: string; label: string; className: string }[] = [
   { key: "available", label: "Available", className: "border-primary/40 bg-primary/5" },
   { key: "selected", label: "Selected", className: "border-primary bg-primary text-primary-foreground" },
   { key: "booked", label: "Booked", className: "border-border bg-muted text-muted-foreground" },
+  {
+    key: "unavailable",
+    label: "Unavailable",
+    className: "border-amber-300/70 bg-amber-50 text-amber-700",
+  },
 ];
 
 function bedIsOpen(bed: BedInventory): boolean {
   return !bed.status || bed.status === "available";
+}
+
+/** Guest-facing label + styling for a non-selectable bed. "Booked"/"held" read
+ *  as taken; maintenance/out-of-service/blocked read as "Unavailable" so guests
+ *  can tell the two apart (Finding #4). */
+function unavailableBedMeta(bed: BedInventory): { label: string; className: string } {
+  if (bed.status === "booked" || bed.status === "held") {
+    return {
+      label: "Booked",
+      className: "cursor-not-allowed border-border bg-muted text-muted-foreground",
+    };
+  }
+  return {
+    label: "Unavailable",
+    className: "cursor-not-allowed border-amber-300/70 bg-amber-50 text-amber-700",
+  };
 }
 
 function BedSelection({
@@ -150,6 +171,7 @@ function BedSelection({
           {beds.map((bed) => {
             const open = bedIsOpen(bed);
             const isSel = selected.includes(bed.id);
+            const unavailable = open ? null : unavailableBedMeta(bed);
             return (
               <button
                 key={bed.id}
@@ -162,7 +184,7 @@ function BedSelection({
                     ? "border-primary bg-primary text-primary-foreground"
                     : open
                       ? "border-primary/40 bg-primary/5 hover:border-primary"
-                      : "cursor-not-allowed border-border bg-muted text-muted-foreground"
+                      : unavailable!.className
                 }`}
               >
                 <span className="flex w-full items-center justify-between font-medium">
@@ -174,7 +196,7 @@ function BedSelection({
                     ? "Selected"
                     : open
                       ? `₹${dorm.basePrice.toLocaleString("en-IN")} / night`
-                      : "Booked"}
+                      : unavailable!.label}
                 </span>
               </button>
             );

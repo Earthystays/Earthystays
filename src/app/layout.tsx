@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Karla, Manrope, Playfair_Display } from "next/font/google";
+import { Cormorant_Garamond, DM_Serif_Display, Karla, Manrope, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { SiteChrome } from "@/components/site-chrome";
 import { Toaster } from "@/components/ui/sonner";
@@ -33,6 +33,15 @@ const cormorant = Cormorant_Garamond({
 const manrope = Manrope({
   variable: "--font-manrope-next",
   subsets: ["latin"],
+  display: "swap",
+});
+
+// Admin panel display face (owner's spec): DM Serif Display — editorial
+// accent for page/section/card headings only. Regular 400.
+const dmSerif = DM_Serif_Display({
+  variable: "--font-dm-serif",
+  subsets: ["latin"],
+  weight: ["400"],
   display: "swap",
 });
 
@@ -78,7 +87,7 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      className={`${karla.variable} ${playfair.variable} ${cormorant.variable} ${manrope.variable} h-full antialiased`}
+      className={`${karla.variable} ${playfair.variable} ${cormorant.variable} ${manrope.variable} ${dmSerif.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <SiteChrome

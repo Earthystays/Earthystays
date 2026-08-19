@@ -109,7 +109,7 @@ export function VillasTable({
             onClick={() => setTypeFilter(t)}
             className={`rounded-full border px-3 py-1 capitalize transition-colors ${
               typeFilter === t
-                ? "border-foreground bg-foreground text-background"
+                ? "border-[#3E4A3A] bg-[#3E4A3A] text-white"
                 : "border-border text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
           >
@@ -127,7 +127,7 @@ export function VillasTable({
             onClick={() => setCityFilter("all")}
             className={`rounded-full border px-3 py-1 transition-colors ${
               cityFilter === "all"
-                ? "border-foreground bg-foreground text-background"
+                ? "border-[#3E4A3A] bg-[#3E4A3A] text-white"
                 : "border-border text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
           >
@@ -140,7 +140,7 @@ export function VillasTable({
               onClick={() => setCityFilter(c.name)}
               className={`rounded-full border px-3 py-1 transition-colors ${
                 cityFilter === c.name
-                  ? "border-foreground bg-foreground text-background"
+                  ? "border-[#3E4A3A] bg-[#3E4A3A] text-white"
                   : "border-border text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
@@ -160,20 +160,20 @@ export function VillasTable({
             <col className="w-[12%]" />
             <col className="w-[22%]" />
           </colgroup>
-          <thead className="border-b border-border/60 bg-muted/40 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
+          <thead className="border-b border-border/60 bg-[hsl(38_30%_93%)]/60 text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-[#857B6C]">
             <tr>
-              <th className="px-5 py-3 font-medium">Property</th>
-              <th className="px-5 py-3 font-medium">Location</th>
-              <th className="px-5 py-3 font-medium">Details</th>
-              <th className="px-5 py-3 text-right font-medium">Price / night</th>
-              <th className="px-5 py-3 text-right font-medium">Actions</th>
+              <th className="px-5 py-3">Property</th>
+              <th className="px-5 py-3">Location</th>
+              <th className="px-5 py-3">Details</th>
+              <th className="px-5 py-3 text-right">Price / night</th>
+              <th className="px-5 py-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border/60">
             {filtered.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-5 py-16 text-center">
-                  <p className="font-display text-2xl">No matches</p>
+                  <p className="admin-section-title">No matches</p>
                   <p className="mt-2 text-sm text-muted-foreground">
                     Try a different name, city, or clear the search.
                   </p>
@@ -216,10 +216,10 @@ export function VillasTable({
                     </p>
                     <p className="text-xs capitalize text-muted-foreground">{stateOrDest}</p>
                   </td>
-                  <td className="px-5 py-4 text-muted-foreground whitespace-nowrap">
+                  <td className="admin-numeric px-5 py-4 text-muted-foreground whitespace-nowrap">
                     {v.bedrooms} BR · {v.maxGuests} guests
                   </td>
-                  <td className="px-5 py-4 text-right text-foreground tabular-nums whitespace-nowrap">
+                  <td className="admin-numeric px-5 py-4 text-right font-medium text-foreground whitespace-nowrap">
                     {formatINR(v.pricePerNight)}
                   </td>
                   <td className="px-5 py-4">

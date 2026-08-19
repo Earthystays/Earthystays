@@ -59,7 +59,7 @@ export function InquiriesFilter({
             href={href({ status: p.value })}
             className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs transition-colors ${
               active
-                ? "bg-foreground text-background"
+                ? "bg-[#3E4A3A] text-white"
                 : "border border-border bg-card text-foreground hover:bg-muted"
             }`}
           >
@@ -84,7 +84,7 @@ export function InquiriesFilter({
             href={href({ kind: null })}
             className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs transition-colors ${
               !currentKind
-                ? "bg-foreground text-background"
+                ? "bg-[#3E4A3A] text-white"
                 : "border border-border bg-card text-foreground hover:bg-muted"
             }`}
           >
@@ -94,7 +94,7 @@ export function InquiriesFilter({
             href={href({ kind: "guest" })}
             className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs transition-colors ${
               currentKind === "guest"
-                ? "bg-foreground text-background"
+                ? "bg-[#3E4A3A] text-white"
                 : "border border-border bg-card text-foreground hover:bg-muted"
             }`}
           >
@@ -104,7 +104,7 @@ export function InquiriesFilter({
             href={href({ kind: "callback" })}
             className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs transition-colors ${
               currentKind === "callback"
-                ? "bg-foreground text-background"
+                ? "bg-[#3E4A3A] text-white"
                 : "border border-border bg-card text-foreground hover:bg-muted"
             }`}
           >
@@ -114,7 +114,7 @@ export function InquiriesFilter({
             href={href({ kind: "experience" })}
             className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs transition-colors ${
               currentKind === "experience"
-                ? "bg-foreground text-background"
+                ? "bg-[#3E4A3A] text-white"
                 : "border border-border bg-card text-foreground hover:bg-muted"
             }`}
           >
@@ -124,7 +124,7 @@ export function InquiriesFilter({
             href={href({ kind: "partner" })}
             className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs transition-colors ${
               currentKind === "partner"
-                ? "bg-foreground text-background"
+                ? "bg-[#3E4A3A] text-white"
                 : "border border-border bg-card text-foreground hover:bg-muted"
             }`}
           >

@@ -62,28 +62,34 @@ export function RoomRateStrip({
         <ChevronLeft className="h-4 w-4" />
       </button>
 
-      <div className="grid flex-1 grid-cols-7 gap-1.5 overflow-x-auto">
+      <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto sm:grid sm:grid-cols-7">
         {days.map((d) => (
           <div
             key={d.iso}
-            className={`rounded-lg border px-1 py-2 text-center ${
+            className={`flex min-w-[4.5rem] flex-1 flex-col items-center gap-1 rounded-xl border px-2 py-3 text-center ${
               d.units > 0 ? "border-border/60 bg-card" : "border-border/40 bg-muted/50"
             }`}
           >
-            <p className="text-[10px] text-muted-foreground">{d.weekday}</p>
-            <p className="text-[10px] font-medium text-foreground">{d.label}</p>
+            <p className="whitespace-nowrap text-xs leading-tight text-muted-foreground">
+              {d.weekday}
+            </p>
+            <p className="whitespace-nowrap text-xs font-medium leading-tight text-foreground">
+              {d.label}
+            </p>
             {d.units > 0 ? (
               <>
-                <p className="mt-1 text-xs font-semibold text-primary tabular-nums">
+                <p className="mt-1.5 whitespace-nowrap text-lg font-bold leading-tight text-primary tabular-nums">
                   ₹{d.price.toLocaleString("en-IN")}
                 </p>
-                <p className="text-[10px] text-muted-foreground">
+                <p className="whitespace-nowrap text-[11px] leading-tight text-muted-foreground">
                   {d.units} {noun.toLowerCase()}
                   {d.units === 1 ? "" : "s"}
                 </p>
               </>
             ) : (
-              <p className="mt-1 text-[10px] text-muted-foreground">Sold out</p>
+              <p className="mt-1.5 whitespace-nowrap text-[11px] font-medium leading-tight text-muted-foreground">
+                Sold out
+              </p>
             )}
           </div>
         ))}

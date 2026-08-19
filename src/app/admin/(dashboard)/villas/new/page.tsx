@@ -14,15 +14,18 @@ export default function NewVillaPage() {
   const customA = getCustomAmenityNames();
   const customF = getCustomFacilityNames();
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-[1180px]">
       <header>
-        <Link href="/admin/villas" className="text-xs text-muted-foreground hover:text-foreground">
-          ← Back to villas
+        <Link
+          href="/admin/villas"
+          className="admin-eyebrow inline-flex items-center gap-1 text-[#857B6C] transition-colors hover:text-[#23211C]"
+        >
+          ← Back to properties
         </Link>
-        <h1 className="mt-3 font-display text-4xl">Add a property</h1>
-        <p className="mt-2 text-muted-foreground">
-          New villas appear immediately on the public site. You can override an existing
-          seed villa by using the same slug.
+        <h1 className="admin-page-title mt-4">Add new property</h1>
+        <p className="admin-subtitle mt-3 max-w-xl">
+          Add the property details, photos, pricing and booking information. Your progress
+          auto-saves to Drafts as you go.
         </p>
       </header>
 

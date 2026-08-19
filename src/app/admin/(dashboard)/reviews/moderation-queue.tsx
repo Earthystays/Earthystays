@@ -117,22 +117,22 @@ export function ModerationQueue({
   return (
     <section className="mt-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-display text-2xl">Moderation queue</h2>
+        <h2 className="admin-section-title">Moderation queue</h2>
         <div className="flex gap-1.5">
           {TABS.map((t) => (
             <button
               key={t.key}
               type="button"
               onClick={() => setTab(t.key)}
-              className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors ${
+              className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-colors ${
                 tab === t.key
-                  ? "border-foreground bg-foreground text-background"
+                  ? "border-[#3E4A3A] bg-[#3E4A3A] text-white"
                   : "border-border text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
               {t.label}
               {counts[t.key] > 0 && (
-                <span className="ml-1.5 tabular-nums opacity-70">{counts[t.key]}</span>
+                <span className="admin-numeric ml-1.5 opacity-70">{counts[t.key]}</span>
               )}
             </button>
           ))}
@@ -201,7 +201,7 @@ export function ModerationQueue({
                         </span>
                       )}
                     </p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
+                    <p className="admin-numeric mt-0.5 text-xs text-muted-foreground">
                       {[
                         r.villaSlug && (villaNames[r.villaSlug] ?? r.villaSlug),
                         r.country,

@@ -30,5 +30,8 @@ export * from "./bank-account";
 export * from "./bookings";
 export * from "./inventory-holds";
 
+// Phase D — payment obligation + attempts + webhook idempotency.
+export * from "./payments";
+
 // Re-export the money/rate helpers so callers can `import { money } from "@/db/schema"`.
 export * from "./_shared";

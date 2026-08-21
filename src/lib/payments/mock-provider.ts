@@ -17,7 +17,17 @@ import type {
   PaymentVerification,
 } from "./types";
 
-type Recorded = { succeeded: boolean; gatewayPaymentId: string | null; failureReason?: string };
+type Recorded = {
+  succeeded: boolean;
+  gatewayPaymentId: string | null;
+  gatewayFeePaise: number;
+  failureReason?: string;
+};
+
+/** Nominal mock gateway fee: 2% of the amount, half-up. Illustrative only. */
+function mockFee(amountPaise: number): number {
+  return Math.round(amountPaise * 0.02);
+}
 
 export class MockPaymentProvider implements PaymentProvider {
   readonly name = "mock";
@@ -51,12 +61,15 @@ export class MockPaymentProvider implements PaymentProvider {
         bookingId: "",
         succeeded: false,
         gatewayPaymentId: null,
+        eventId: `evt_${input.intentId}`,
+        gatewayFeePaise: 0,
         duplicate: false,
         failureReason: "unknown_intent",
       };
     }
 
-    // Idempotency: replay the first recorded outcome for this intent.
+    // Idempotency: replay the first recorded outcome for this intent, with the
+    // SAME stable event id so downstream webhook dedupe recognises the replay.
     const seen = this.verifications.get(input.intentId);
     if (seen) {
       return {
@@ -64,6 +77,8 @@ export class MockPaymentProvider implements PaymentProvider {
         bookingId: intent.bookingId,
         succeeded: seen.succeeded,
         gatewayPaymentId: seen.gatewayPaymentId,
+        eventId: `evt_${input.intentId}`,
+        gatewayFeePaise: seen.gatewayFeePaise,
         duplicate: true,
         failureReason: seen.failureReason,
       };
@@ -76,8 +91,8 @@ export class MockPaymentProvider implements PaymentProvider {
 
     const succeeded = input.token === "success" || input.token.startsWith("delayed:");
     const recorded: Recorded = succeeded
-      ? { succeeded: true, gatewayPaymentId: `mock_pay_${intent.intentId}` }
-      : { succeeded: false, gatewayPaymentId: null, failureReason: "declined" };
+      ? { succeeded: true, gatewayPaymentId: `mock_pay_${intent.intentId}`, gatewayFeePaise: mockFee(intent.amountPaise) }
+      : { succeeded: false, gatewayPaymentId: null, gatewayFeePaise: 0, failureReason: "declined" };
     this.verifications.set(input.intentId, recorded);
     intent.status = succeeded ? "succeeded" : "failed";
 
@@ -86,6 +101,8 @@ export class MockPaymentProvider implements PaymentProvider {
       bookingId: intent.bookingId,
       succeeded: recorded.succeeded,
       gatewayPaymentId: recorded.gatewayPaymentId,
+      eventId: `evt_${input.intentId}`,
+      gatewayFeePaise: recorded.gatewayFeePaise,
       duplicate: false,
       failureReason: recorded.failureReason,
     };

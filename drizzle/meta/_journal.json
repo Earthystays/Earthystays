@@ -22,6 +22,13 @@
       "when": 1787320729518,
       "tag": "0002_phase_c_booking_holds",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1787321386625,
+      "tag": "0003_phase_d_payments",
+      "breakpoints": true
     }
   ]
 }

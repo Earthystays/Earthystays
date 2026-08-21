@@ -25,6 +25,10 @@ export type PaymentVerification = {
   bookingId: string;
   succeeded: boolean;
   gatewayPaymentId: string | null;
+  /** Gateway event id — the webhook dedupe key (stable across re-deliveries). */
+  eventId: string;
+  /** Gateway fee Earthy absorbs, in paise. Never reduces host payable. */
+  gatewayFeePaise: number;
   /** True when this verification is a repeat of an already-seen callback. */
   duplicate: boolean;
   failureReason?: string;

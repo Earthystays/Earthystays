@@ -112,6 +112,22 @@ export const paymentAttemptStatus = pgEnum("payment_attempt_status", [
   "cancelled",
 ]);
 
+/** The single payment obligation's settlement state (the Payment record). */
+export const paymentRecordStatus = pgEnum("payment_record_status", [
+  "pending",
+  "processing",
+  "succeeded",
+  "failed",
+  "refunded",
+  "partially_refunded",
+]);
+
+/**
+ * Kind of payment obligation. V1 collects 100% up front, so only `full` is
+ * used; advance/balance are reserved so the enum need not be altered later.
+ */
+export const paymentKind = pgEnum("payment_kind", ["full", "advance", "balance"]);
+
 /* ── Inventory hold (15-minute checkout hold) ─────────────────────────── */
 
 export const inventoryHoldStatus = pgEnum("inventory_hold_status", [

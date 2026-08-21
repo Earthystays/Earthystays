@@ -18,6 +18,7 @@ import {
   type CancellationPolicyType,
 } from "../finance/cancellation-policies";
 import { buildCommissionSnapshot, resolveCommissionBps } from "../finance/commission";
+import { FINANCE_DEFAULTS } from "../finance/config";
 import {
   computeAccommodationTax,
   computeExperienceTax,
@@ -26,9 +27,15 @@ import {
 import { BookingError } from "./errors";
 import { nightsBetween } from "./overlap";
 
-/** Default policy when a legacy listing carries none. */
-export const DEFAULT_PROPERTY_POLICY: CancellationPolicyType = "moderate";
-export const DEFAULT_EXPERIENCE_POLICY: CancellationPolicyType = "flexible";
+/**
+ * Default cancellation policy when a legacy listing carries none. Sourced from
+ * the configurable FINANCE_DEFAULTS (CONFIRMED: property → MODERATE). Exposed as
+ * named constants for readability; the single source of truth is the config.
+ */
+export const DEFAULT_PROPERTY_POLICY: CancellationPolicyType =
+  FINANCE_DEFAULTS.propertyCancellationPolicy;
+export const DEFAULT_EXPERIENCE_POLICY: CancellationPolicyType =
+  FINANCE_DEFAULTS.experienceCancellationPolicy;
 
 export type ResolvedGuest = { id: string };
 

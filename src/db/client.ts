@@ -65,3 +65,5 @@ export async function closeDb() {
 
 export { schema };
 export type Database = ReturnType<typeof getDb>;
+/** The transaction handle passed to `db.transaction(async (tx) => …)`. */
+export type Tx = Parameters<Parameters<Database["transaction"]>[0]>[0];

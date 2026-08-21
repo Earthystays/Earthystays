@@ -20,6 +20,7 @@ import type { Database } from "../../db/client";
 import * as schema from "../../db/schema";
 import { HOLD_DURATION_MS } from "../../db/schema/inventory-holds";
 import type { PaymentProvider } from "../payments/types";
+import { initPayment, recordVerification } from "../payments/service";
 import { type AuditSink, consoleAuditSink } from "./audit";
 import { formatBookingNumber } from "./booking-number";
 import { BookingError } from "./errors";
@@ -158,6 +159,14 @@ export async function createBooking(
         currency: "INR",
       });
 
+      // Persist the payment obligation + its first attempt (still unpaid).
+      await initPayment(tx, {
+        bookingId: booking.id,
+        amountPaise: draft.expectedGuestTotalPaise,
+        gateway: deps.provider.name,
+        gatewayOrderId: intent.gatewayOrderId,
+      });
+
       await audit.emit({ action: "booking.created", entity: "booking", entityId: booking.id, actorKind: "guest", actorId: draft.guestId, at: now.toISOString(), metadata: { bookingNumber } });
       await audit.emit({ action: "hold.created", entity: "inventory_hold", entityId: hold.id, actorKind: "system", at: now.toISOString(), metadata: { expiresAt: holdExpiresAt.toISOString() } });
 
@@ -196,6 +205,14 @@ export async function confirmBooking(
   const verification = await deps.provider.verifyPayment({ intentId: input.intentId, token: input.token });
 
   return db.transaction(async (tx) => {
+    // Idempotently settle payment/attempt records + dedupe the webhook event.
+    const rec = await recordVerification(tx, {
+      bookingId: input.bookingId,
+      gateway: deps.provider.name,
+      verification,
+      now,
+    });
+
     const booking = await tx.query.bookings.findFirst({ where: eq(schema.bookings.id, input.bookingId) });
     if (!booking) throw new BookingError("BOOKING_NOT_PENDING", input.bookingId);
 
@@ -209,7 +226,7 @@ export async function confirmBooking(
 
     if (!verification.succeeded) {
       await tx.update(schema.bookings).set({ paymentStatus: "FAILED", updatedAt: now }).where(eq(schema.bookings.id, booking.id));
-      return { bookingId: booking.id, confirmed: false, duplicate: verification.duplicate, reason: verification.failureReason ?? "payment_failed" };
+      return { bookingId: booking.id, confirmed: false, duplicate: verification.duplicate || rec.alreadyProcessed, reason: verification.failureReason ?? "payment_failed" };
     }
 
     // Payment verified → confirm booking + convert its active hold.
@@ -224,7 +241,7 @@ export async function confirmBooking(
     await audit.emit({ action: "booking.confirmed", entity: "booking", entityId: booking.id, actorKind: "system", at: now.toISOString(), metadata: { gatewayPaymentId: verification.gatewayPaymentId } });
     if (hold) await audit.emit({ action: "hold.converted", entity: "inventory_hold", entityId: hold.id, actorKind: "system", at: now.toISOString() });
 
-    return { bookingId: booking.id, confirmed: true, duplicate: verification.duplicate };
+    return { bookingId: booking.id, confirmed: true, duplicate: verification.duplicate || rec.alreadyProcessed };
   });
 }
 

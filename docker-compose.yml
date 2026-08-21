@@ -1,0 +1,38 @@
+# Local development PostgreSQL for Earthy Stays (Phase 1B.5).
+#
+# LOCAL DEV ONLY — never production credentials, never production infrastructure.
+# The port is bound to 127.0.0.1 so the database is reachable only from this
+# machine. Data persists in the named volume `earthy_pg_data`.
+#
+# Usage:
+#   cp .env.docker.example .env.docker      # optional: override the defaults
+#   docker compose --env-file .env.docker up -d
+#   # then, with DATABASE_URL set (see docs/database-setup.md):
+#   npm run db:migrate
+#   npm test
+#
+# Credentials come from environment variables with safe LOCAL defaults so the
+# stack runs out of the box without storing any secret in git.
+services:
+  postgres:
+    image: postgres:16
+    container_name: earthy_dev_pg
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: "${POSTGRES_USER:-earthy}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-earthy_local_dev}"
+      POSTGRES_DB: "${POSTGRES_DB:-earthy_dev}"
+    ports:
+      # Local-only exposure: bind to loopback, never 0.0.0.0.
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - earthy_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-earthy} -d ${POSTGRES_DB:-earthy_dev}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  earthy_pg_data:
+    name: earthy_pg_data

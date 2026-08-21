@@ -4,7 +4,46 @@ The financial foundation uses **PostgreSQL + Drizzle ORM**. The app is still
 JSON-backed; the database connection is opened **lazily** and only needed once a
 DB code path runs. **Never use production credentials for local development.**
 
-## 1. Install PostgreSQL locally
+## 0. Recommended: Docker Compose (Phase 1B.5 standard)
+
+A `docker-compose.yml` is provided at the repo root. It runs `postgres:16` with a
+persistent named volume, `earthy_dev` database, env-var credentials, and the port
+bound to `127.0.0.1` only (never exposed off-machine). **Local dev only — never
+production credentials.**
+
+```bash
+# 1) (optional) override the local defaults
+cp .env.docker.example .env.docker
+
+# 2) start postgres
+docker compose --env-file .env.docker up -d      # or: docker compose up -d
+
+# 3) point the app at it — put this in .env.local:
+#    DATABASE_URL=postgres://earthy:earthy_local_dev@localhost:5432/earthy_dev
+
+# 4) apply migrations 0000–0003
+DATABASE_URL=postgres://earthy:earthy_local_dev@localhost:5432/earthy_dev npm run db:migrate
+
+# 5) run the full suite (DB integration tests now execute instead of skipping)
+DATABASE_URL=postgres://earthy:earthy_local_dev@localhost:5432/earthy_dev npm test
+
+# stop (data persists in the earthy_pg_data volume):
+docker compose down
+# wipe the volume too (destroys local dev data only):
+docker compose down -v
+```
+
+The default local `DATABASE_URL` is:
+
+```
+postgres://earthy:earthy_local_dev@localhost:5432/earthy_dev
+```
+
+If you changed the credentials in `.env.docker`, update the URL to match.
+
+---
+
+## 1. Alternative: install PostgreSQL locally
 
 Pick one. macOS options:
 

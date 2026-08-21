@@ -32,6 +32,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# …but DO track the non-secret example templates.
+!.env.example
+!.env.docker.example
 
 # Local data store — JSON files written by the admin (villas, banners,
 # inquiries, reviews, amenities, location covers). These hold customer

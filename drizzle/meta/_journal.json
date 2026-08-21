@@ -8,6 +8,13 @@
       "when": 1787314450153,
       "tag": "0000_financial_foundation_phase_a",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1787320043360,
+      "tag": "0001_phase_b_core_model",
+      "breakpoints": true
     }
   ]
 }

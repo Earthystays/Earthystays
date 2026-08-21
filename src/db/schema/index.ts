@@ -18,5 +18,13 @@
 export * from "./enums";
 export * from "./users";
 
+// Phase B — core model + host financial onboarding.
+export * from "./properties";
+export * from "./experiences";
+export * from "./stored-inquiries";
+export * from "./payment-account";
+export * from "./kyc";
+export * from "./bank-account";
+
 // Re-export the money/rate helpers so callers can `import { money } from "@/db/schema"`.
 export * from "./_shared";

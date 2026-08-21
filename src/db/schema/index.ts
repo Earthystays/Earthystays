@@ -26,5 +26,9 @@ export * from "./payment-account";
 export * from "./kyc";
 export * from "./bank-account";
 
+// Phase C — real booking + inventory hold.
+export * from "./bookings";
+export * from "./inventory-holds";
+
 // Re-export the money/rate helpers so callers can `import { money } from "@/db/schema"`.
 export * from "./_shared";

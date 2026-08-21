@@ -13,8 +13,14 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";
 
+/** Build the Drizzle instance; the return type captures the schema generic so
+ *  `db.query.<table>` is fully typed. */
+function makeDb(sql: ReturnType<typeof postgres>) {
+  return drizzle(sql, { schema });
+}
+
 let _sql: ReturnType<typeof postgres> | null = null;
-let _db: ReturnType<typeof drizzle> | null = null;
+let _db: ReturnType<typeof makeDb> | null = null;
 
 function connectionString(): string {
   const url = process.env.DATABASE_URL;
@@ -43,7 +49,7 @@ export function getSql() {
 /** The Drizzle instance bound to the full schema. */
 export function getDb() {
   if (!_db) {
-    _db = drizzle(getSql(), { schema });
+    _db = makeDb(getSql());
   }
   return _db;
 }

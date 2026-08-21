@@ -116,9 +116,22 @@ export const paymentAttemptStatus = pgEnum("payment_attempt_status", [
 
 export const inventoryHoldStatus = pgEnum("inventory_hold_status", [
   "active",
-  "consumed", // converted into a confirmed booking
   "expired",
   "released",
+  "converted", // hold turned into a confirmed booking
+]);
+
+/** What kind of inventory a hold/booking targets. */
+export const inventoryType = pgEnum("inventory_type", ["property", "experience"]);
+
+/** Financial lifecycle of a booking — distinct from booking/payment/payout. */
+export const financialStatus = pgEnum("financial_status", [
+  "OPEN",
+  "SETTLED",
+  "REFUNDING",
+  "REFUNDED",
+  "DISPUTED",
+  "ADJUSTED",
 ]);
 
 /* ── Host financial onboarding ────────────────────────────────────────── */

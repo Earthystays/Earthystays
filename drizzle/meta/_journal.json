@@ -15,6 +15,13 @@
       "when": 1787320043360,
       "tag": "0001_phase_b_core_model",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1787320729518,
+      "tag": "0002_phase_c_booking_holds",
+      "breakpoints": true
     }
   ]
 }

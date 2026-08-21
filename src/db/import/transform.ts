@@ -17,10 +17,10 @@ import type { NewPaymentAccountRow } from "../schema/payment-account";
 import type { NewPropertyRow } from "../schema/properties";
 import type { NewStoredInquiryRow } from "../schema/stored-inquiries";
 import type { NewUserRow } from "../schema/users";
+import { INTERNAL_EARTHY_USER_ID } from "../internal-entity";
 import { emptyReport, type MigrationReport } from "./report";
 
-/** Fixed, deterministic id for the internal Earthy entity (owned inventory). */
-export const INTERNAL_EARTHY_USER_ID = "usr_earthy_internal";
+export { INTERNAL_EARTHY_USER_ID };
 
 const VALID_PROPERTY_TYPES = new Set(["villa", "apartment", "hotel", "hostel"]);
 const VALID_POLICY_PRESETS = new Set(["flexible", "moderate", "strict"]);

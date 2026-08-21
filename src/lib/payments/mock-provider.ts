@@ -21,6 +21,8 @@ type Recorded = {
   succeeded: boolean;
   gatewayPaymentId: string | null;
   gatewayFeePaise: number;
+  amountPaise: number;
+  currency: string;
   failureReason?: string;
 };
 
@@ -61,6 +63,8 @@ export class MockPaymentProvider implements PaymentProvider {
         bookingId: "",
         succeeded: false,
         gatewayPaymentId: null,
+        amountPaise: 0,
+        currency: "INR",
         eventId: `evt_${input.intentId}`,
         gatewayFeePaise: 0,
         duplicate: false,
@@ -72,39 +76,50 @@ export class MockPaymentProvider implements PaymentProvider {
     // SAME stable event id so downstream webhook dedupe recognises the replay.
     const seen = this.verifications.get(input.intentId);
     if (seen) {
-      return {
-        intentId: input.intentId,
-        bookingId: intent.bookingId,
-        succeeded: seen.succeeded,
-        gatewayPaymentId: seen.gatewayPaymentId,
-        eventId: `evt_${input.intentId}`,
-        gatewayFeePaise: seen.gatewayFeePaise,
-        duplicate: true,
-        failureReason: seen.failureReason,
-      };
+      return this.toVerification(input.intentId, intent.bookingId, seen, true);
     }
 
-    if (input.token.startsWith("delayed:")) {
-      const ms = Number(input.token.split(":")[1] ?? "0");
+    // Token grammar (test-only):
+    //   "success"            → pays the intent amount in INR
+    //   "failure"            → declined
+    //   "delayed:<ms>"       → success after a delay
+    //   "amount:<paise>"     → success but reports a WRONG amount (over/under)
+    //   "currency:<CUR>"     → success but reports a wrong currency
+    const token = input.token;
+    if (token.startsWith("delayed:")) {
+      const ms = Number(token.split(":")[1] ?? "0");
       await new Promise((r) => setTimeout(r, Number.isFinite(ms) ? ms : 0));
     }
 
-    const succeeded = input.token === "success" || input.token.startsWith("delayed:");
-    const recorded: Recorded = succeeded
-      ? { succeeded: true, gatewayPaymentId: `mock_pay_${intent.intentId}`, gatewayFeePaise: mockFee(intent.amountPaise) }
-      : { succeeded: false, gatewayPaymentId: null, gatewayFeePaise: 0, failureReason: "declined" };
+    let recorded: Recorded;
+    if (token === "failure") {
+      recorded = { succeeded: false, gatewayPaymentId: null, gatewayFeePaise: 0, amountPaise: 0, currency: "INR", failureReason: "declined" };
+    } else if (token.startsWith("amount:")) {
+      const amt = Number(token.split(":")[1]);
+      recorded = { succeeded: true, gatewayPaymentId: `mock_pay_${intent.intentId}`, gatewayFeePaise: mockFee(amt), amountPaise: amt, currency: "INR" };
+    } else if (token.startsWith("currency:")) {
+      recorded = { succeeded: true, gatewayPaymentId: `mock_pay_${intent.intentId}`, gatewayFeePaise: mockFee(intent.amountPaise), amountPaise: intent.amountPaise, currency: token.split(":")[1] ?? "USD" };
+    } else {
+      // "success" or "delayed:*"
+      recorded = { succeeded: true, gatewayPaymentId: `mock_pay_${intent.intentId}`, gatewayFeePaise: mockFee(intent.amountPaise), amountPaise: intent.amountPaise, currency: "INR" };
+    }
     this.verifications.set(input.intentId, recorded);
-    intent.status = succeeded ? "succeeded" : "failed";
+    intent.status = recorded.succeeded ? "succeeded" : "failed";
+    return this.toVerification(input.intentId, intent.bookingId, recorded, false);
+  }
 
+  private toVerification(intentId: string, bookingId: string, r: Recorded, duplicate: boolean): PaymentVerification {
     return {
-      intentId: input.intentId,
-      bookingId: intent.bookingId,
-      succeeded: recorded.succeeded,
-      gatewayPaymentId: recorded.gatewayPaymentId,
-      eventId: `evt_${input.intentId}`,
-      gatewayFeePaise: recorded.gatewayFeePaise,
-      duplicate: false,
-      failureReason: recorded.failureReason,
+      intentId,
+      bookingId,
+      succeeded: r.succeeded,
+      gatewayPaymentId: r.gatewayPaymentId,
+      amountPaise: r.amountPaise,
+      currency: r.currency,
+      eventId: `evt_${intentId}`,
+      gatewayFeePaise: r.gatewayFeePaise,
+      duplicate,
+      failureReason: r.failureReason,
     };
   }
 }

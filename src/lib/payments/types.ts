@@ -25,6 +25,10 @@ export type PaymentVerification = {
   bookingId: string;
   succeeded: boolean;
   gatewayPaymentId: string | null;
+  /** Amount the provider reports as paid, in paise — validated server-side. */
+  amountPaise: number;
+  /** Currency the provider reports — validated to equal INR server-side. */
+  currency: string;
   /** Gateway event id — the webhook dedupe key (stable across re-deliveries). */
   eventId: string;
   /** Gateway fee Earthy absorbs, in paise. Never reduces host payable. */

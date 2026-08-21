@@ -101,25 +101,13 @@ export const payoutStatus = pgEnum("payout_status", [
 
 /* ── Payment attempts ─────────────────────────────────────────────────── */
 
-/** Gateway-agnostic attempt state. */
+/** Gateway-agnostic attempt state (spec §3). */
 export const paymentAttemptStatus = pgEnum("payment_attempt_status", [
-  "created",
-  "pending",
-  "authorized",
-  "captured",
-  "succeeded",
-  "failed",
-  "cancelled",
-]);
-
-/** The single payment obligation's settlement state (the Payment record). */
-export const paymentRecordStatus = pgEnum("payment_record_status", [
-  "pending",
-  "processing",
-  "succeeded",
-  "failed",
-  "refunded",
-  "partially_refunded",
+  "CREATED",
+  "PROCESSING",
+  "SUCCEEDED",
+  "FAILED",
+  "CANCELLED",
 ]);
 
 /**
@@ -127,6 +115,14 @@ export const paymentRecordStatus = pgEnum("payment_record_status", [
  * used; advance/balance are reserved so the enum need not be altered later.
  */
 export const paymentKind = pgEnum("payment_kind", ["full", "advance", "balance"]);
+
+/** Payment discrepancy classification (spec §14/§15). */
+export const discrepancyType = pgEnum("discrepancy_type", [
+  "WRONG_AMOUNT",
+  "OVERPAYMENT",
+  "UNDERPAYMENT",
+  "CURRENCY_MISMATCH",
+]);
 
 /* ── Inventory hold (15-minute checkout hold) ─────────────────────────── */
 

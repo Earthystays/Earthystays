@@ -1,25 +1,25 @@
 /**
- * payments + payment_attempts + gateway_webhook_events. Phase 1B.5 Phase D.
+ * payments + payment_attempts + gateway_webhook_events + payment_discrepancies.
+ * Phase 1B.5 Phase D.
  *
  * Model:
  *   • payments — the ONE payment OBLIGATION per booking (V1: 100% up front,
- *     kind = full). It is the logical financial record; its status reflects
- *     settlement. Exactly one per booking (unique).
- *   • payment_attempts — each gateway try. Many per payment. Carries all
- *     gateway-specific data so the core model stays provider-agnostic.
- *   • gateway_webhook_events — an idempotency ledger: every processed webhook
- *     is recorded by (gateway, event_id) so replays are provable no-ops.
+ *     kind=full), created UNPAID with the Booking. Retry attempts do NOT live
+ *     here. Status uses the shared payment_status vocabulary (UNPAID/PROCESSING/
+ *     PAID/FAILED/REFUND_PENDING/PARTIALLY_REFUNDED/REFUNDED).
+ *   • payment_attempts — each gateway try (CREATED/PROCESSING/SUCCEEDED/FAILED/
+ *     CANCELLED). Many per payment. Holds all gateway-specific data.
+ *   • gateway_webhook_events — idempotency ledger: a processed webhook is a
+ *     provable no-op on replay, keyed unique on (gateway, event_id).
+ *   • payment_discrepancies — wrong-amount / under / over / currency mismatches
+ *     recorded for ADMIN review; such events never confirm a booking.
  *
- * Idempotency (spec §9) is enforced by UNIQUE constraints:
- *   • payment_attempts.idempotency_key       (one attempt per client key)
- *   • payment_attempts.gateway_payment_id     (a capture id can appear once)
- *   • gateway_webhook_events (gateway,event_id)  (a webhook processed once)
- *
- * NO real money and NO ledger posting here (Phase G+). Gateway fees are captured
- * for accounting but never reduce host payable.
+ * Idempotency (spec §8) is DB-enforced via the UNIQUE constraints below.
+ * NO real money, NO ledger posting, NO refunds/payouts here.
  */
 import {
   bigint,
+  boolean,
   char,
   index,
   jsonb,
@@ -33,9 +33,10 @@ import {
 import { createdAt, updatedAt, uuidDefault } from "./_shared";
 import { bookings } from "./bookings";
 import {
+  discrepancyType,
   paymentAttemptStatus,
   paymentKind,
-  paymentRecordStatus,
+  paymentStatus,
 } from "./enums";
 
 /* ── payments — the obligation ─────────────────────────────────────────── */
@@ -51,20 +52,29 @@ export const payments = pgTable(
     amountPaise: bigint("amount_paise", { mode: "number" }).notNull(),
     currency: char("currency", { length: 3 }).notNull().default("INR"),
 
-    status: paymentRecordStatus("status").notNull().default("pending"),
+    status: paymentStatus("status").notNull().default("UNPAID"),
 
-    /** The attempt that settled this payment (set on success). */
-    succeededAttemptId: uuid("succeeded_attempt_id"),
-    /** Total gateway fee Earthy absorbed for the successful capture, in paise. */
+    provider: text("provider"), // set when a gateway attempt begins
+    /** Successful capture reference (gateway payment id). */
+    gatewayPaymentId: text("gateway_payment_id"),
+    /** Gateway fee Earthy absorbed on capture, in paise. Never reduces payout. */
     gatewayFeePaise: bigint("gateway_fee_paise", { mode: "number" }).notNull().default(0),
+    /** The attempt that settled this payment. */
+    succeededAttemptId: uuid("succeeded_attempt_id"),
 
-    capturedAt: timestamp("captured_at", { withTimezone: true }),
+    /** Payment-level idempotency key (obligation identity). */
+    idempotencyKey: text("idempotency_key").notNull(),
+
+    failureCode: text("failure_code"),
+    failureMessage: text("failure_message"),
+
+    paidAt: timestamp("paid_at", { withTimezone: true }),
     createdAt,
     updatedAt,
   },
   (t) => [
-    // V1: one payment obligation per booking.
-    uniqueIndex("payments_booking_uq").on(t.bookingId),
+    uniqueIndex("payments_booking_uq").on(t.bookingId), // one obligation per booking
+    uniqueIndex("payments_idem_uq").on(t.idempotencyKey),
     index("payments_status_idx").on(t.status),
   ],
 );
@@ -83,7 +93,7 @@ export const paymentAttempts = pgTable(
 
     attemptNo: smallint("attempt_no").notNull(),
 
-    gateway: text("gateway").notNull(), // "mock" in Phase D
+    provider: text("provider").notNull(), // "mock" in Phase D
     gatewayOrderId: text("gateway_order_id"),
     gatewayPaymentId: text("gateway_payment_id"),
 
@@ -91,14 +101,16 @@ export const paymentAttempts = pgTable(
     currency: char("currency", { length: 3 }).notNull().default("INR"),
     gatewayFeePaise: bigint("gateway_fee_paise", { mode: "number" }).notNull().default(0),
 
-    status: paymentAttemptStatus("status").notNull().default("created"),
-    failureReason: text("failure_reason"),
+    status: paymentAttemptStatus("status").notNull().default("CREATED"),
+    failureCode: text("failure_code"),
+    failureMessage: text("failure_message"),
 
     /** Client-generated per attempt — unique, blocks duplicate charge starts. */
     idempotencyKey: text("idempotency_key").notNull(),
+    /** Correlation / request reference id. */
+    requestId: text("request_id"),
 
-    capturedAt: timestamp("captured_at", { withTimezone: true }),
-    failedAt: timestamp("failed_at", { withTimezone: true }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
     createdAt,
     updatedAt,
   },
@@ -119,7 +131,7 @@ export const gatewayWebhookEvents = pgTable(
   {
     id: uuid("id").primaryKey().default(uuidDefault),
     gateway: text("gateway").notNull(),
-    /** Provider event id (or a deterministic hash) — the dedupe key. */
+    /** Provider event id (or deterministic hash) — the dedupe key. */
     eventId: text("event_id").notNull(),
     eventType: text("event_type"),
     bookingId: uuid("booking_id").references(() => bookings.id),
@@ -133,8 +145,37 @@ export const gatewayWebhookEvents = pgTable(
   ],
 );
 
+/* ── payment_discrepancies — admin-visible mismatches ──────────────────── */
+export const paymentDiscrepancies = pgTable(
+  "payment_discrepancies",
+  {
+    id: uuid("id").primaryKey().default(uuidDefault),
+    bookingId: uuid("booking_id")
+      .notNull()
+      .references(() => bookings.id),
+    paymentId: uuid("payment_id").references(() => payments.id),
+    paymentAttemptId: uuid("payment_attempt_id").references(() => paymentAttempts.id),
+
+    type: discrepancyType("type").notNull(),
+    expectedAmountPaise: bigint("expected_amount_paise", { mode: "number" }).notNull(),
+    providerAmountPaise: bigint("provider_amount_paise", { mode: "number" }).notNull(),
+    expectedCurrency: char("expected_currency", { length: 3 }).notNull(),
+    providerCurrency: char("provider_currency", { length: 3 }).notNull(),
+
+    gatewayPaymentId: text("gateway_payment_id"),
+    note: text("note"),
+    resolved: boolean("resolved").notNull().default(false),
+    createdAt,
+  },
+  (t) => [
+    index("payment_discrepancies_booking_idx").on(t.bookingId),
+    index("payment_discrepancies_resolved_idx").on(t.resolved),
+  ],
+);
+
 export type PaymentRow = typeof payments.$inferSelect;
 export type NewPaymentRow = typeof payments.$inferInsert;
 export type PaymentAttemptRow = typeof paymentAttempts.$inferSelect;
 export type NewPaymentAttemptRow = typeof paymentAttempts.$inferInsert;
 export type GatewayWebhookEventRow = typeof gatewayWebhookEvents.$inferSelect;
+export type PaymentDiscrepancyRow = typeof paymentDiscrepancies.$inferSelect;

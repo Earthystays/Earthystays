@@ -15,11 +15,18 @@ export type BookingAuditAction =
   | "hold.created"
   | "hold.expired"
   | "hold.released"
-  | "hold.converted";
+  | "hold.converted"
+  // Phase D — payment lifecycle
+  | "payment.created"
+  | "payment.attempt.created"
+  | "payment.attempt.failed"
+  | "payment.attempt.succeeded"
+  | "payment.verified"
+  | "payment.discrepancy";
 
 export type AuditEvent = {
   action: BookingAuditAction;
-  entity: "booking" | "inventory_hold";
+  entity: "booking" | "inventory_hold" | "payment" | "payment_attempt";
   entityId: string;
   actorKind: "guest" | "host" | "admin" | "system";
   actorId?: string | null;

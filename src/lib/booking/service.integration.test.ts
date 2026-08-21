@@ -20,7 +20,7 @@ import * as schema from "../../db/schema";
 import { MemoryAuditSink } from "./audit";
 import { MockPaymentProvider } from "../payments/mock-provider";
 import { BookingError } from "./errors";
-import { createBooking, confirmBooking, expireHolds, type BookingDeps } from "./service";
+import { createBooking, startPayment, verifyPayment, expireHolds, type BookingDeps } from "./service";
 
 const HAS_DB = !!process.env.DATABASE_URL;
 
@@ -92,7 +92,8 @@ describe.skipIf(!HAS_DB)("booking service (integration)", () => {
 
   it("confirms through the mock provider and converts the hold", async () => {
     const r = await bookProp("2027-03-01", "2027-03-03");
-    const c = await confirmBooking(deps, { bookingId: r.bookingId, intentId: r.intentId, token: "success" });
+    const s = await startPayment(deps, { bookingId: r.bookingId });
+    const c = await verifyPayment(deps, { bookingId: r.bookingId, intentId: s.intentId, token: "success" });
     expect(c.confirmed).toBe(true);
     const row = await db.query.bookings.findFirst({ where: eq(schema.bookings.id, r.bookingId) });
     expect(row?.bookingStatus).toBe("CONFIRMED");
@@ -103,7 +104,8 @@ describe.skipIf(!HAS_DB)("booking service (integration)", () => {
 
   it("does not confirm on payment failure", async () => {
     const r = await bookProp("2027-04-01", "2027-04-03");
-    const c = await confirmBooking(deps, { bookingId: r.bookingId, intentId: r.intentId, token: "failure" });
+    const s = await startPayment(deps, { bookingId: r.bookingId });
+    const c = await verifyPayment(deps, { bookingId: r.bookingId, intentId: s.intentId, token: "failure" });
     expect(c.confirmed).toBe(false);
     const row = await db.query.bookings.findFirst({ where: eq(schema.bookings.id, r.bookingId) });
     expect(row?.bookingStatus).toBe("PENDING_PAYMENT");
@@ -112,8 +114,9 @@ describe.skipIf(!HAS_DB)("booking service (integration)", () => {
 
   it("is idempotent on duplicate confirmation callbacks", async () => {
     const r = await bookProp("2027-05-01", "2027-05-03");
-    await confirmBooking(deps, { bookingId: r.bookingId, intentId: r.intentId, token: "success" });
-    const dup = await confirmBooking(deps, { bookingId: r.bookingId, intentId: r.intentId, token: "success" });
+    const s = await startPayment(deps, { bookingId: r.bookingId });
+    await verifyPayment(deps, { bookingId: r.bookingId, intentId: s.intentId, token: "success" });
+    const dup = await verifyPayment(deps, { bookingId: r.bookingId, intentId: s.intentId, token: "success" });
     expect(dup.confirmed).toBe(true);
     expect(dup.duplicate).toBe(true);
     const holds = await db.select().from(schema.inventoryHolds).where(eq(schema.inventoryHolds.bookingId, r.bookingId));

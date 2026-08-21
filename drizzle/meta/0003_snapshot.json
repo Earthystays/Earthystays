@@ -1,5 +1,5 @@
 {
-  "id": "304ba2fa-5922-4771-b7f3-dd1ae2022a4d",
+  "id": "4afcdadd-1658-4732-b34f-0dcde78857b1",
   "prevId": "c7b63169-6768-48a4-9257-8d8482ad5b2f",
   "version": "7",
   "dialect": "postgresql",
@@ -2006,8 +2006,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "gateway": {
-          "name": "gateway",
+        "provider": {
+          "name": "provider",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -2050,10 +2050,16 @@
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "default": "'created'"
+          "default": "'CREATED'"
         },
-        "failure_reason": {
-          "name": "failure_reason",
+        "failure_code": {
+          "name": "failure_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "failure_message": {
+          "name": "failure_message",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -2064,14 +2070,14 @@
           "primaryKey": false,
           "notNull": true
         },
-        "captured_at": {
-          "name": "captured_at",
-          "type": "timestamp with time zone",
+        "request_id": {
+          "name": "request_id",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "failed_at": {
-          "name": "failed_at",
+        "completed_at": {
+          "name": "completed_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
@@ -2223,6 +2229,172 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.payment_discrepancies": {
+      "name": "payment_discrepancies",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "booking_id": {
+          "name": "booking_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payment_id": {
+          "name": "payment_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "payment_attempt_id": {
+          "name": "payment_attempt_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "type": {
+          "name": "type",
+          "type": "discrepancy_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expected_amount_paise": {
+          "name": "expected_amount_paise",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_amount_paise": {
+          "name": "provider_amount_paise",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expected_currency": {
+          "name": "expected_currency",
+          "type": "char(3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_currency": {
+          "name": "provider_currency",
+          "type": "char(3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gateway_payment_id": {
+          "name": "gateway_payment_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "resolved": {
+          "name": "resolved",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "payment_discrepancies_booking_idx": {
+          "name": "payment_discrepancies_booking_idx",
+          "columns": [
+            {
+              "expression": "booking_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "payment_discrepancies_resolved_idx": {
+          "name": "payment_discrepancies_resolved_idx",
+          "columns": [
+            {
+              "expression": "resolved",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "payment_discrepancies_booking_id_bookings_id_fk": {
+          "name": "payment_discrepancies_booking_id_bookings_id_fk",
+          "tableFrom": "payment_discrepancies",
+          "tableTo": "bookings",
+          "columnsFrom": [
+            "booking_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "payment_discrepancies_payment_id_payments_id_fk": {
+          "name": "payment_discrepancies_payment_id_payments_id_fk",
+          "tableFrom": "payment_discrepancies",
+          "tableTo": "payments",
+          "columnsFrom": [
+            "payment_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "payment_discrepancies_payment_attempt_id_payment_attempts_id_fk": {
+          "name": "payment_discrepancies_payment_attempt_id_payment_attempts_id_fk",
+          "tableFrom": "payment_discrepancies",
+          "tableTo": "payment_attempts",
+          "columnsFrom": [
+            "payment_attempt_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.payments": {
       "name": "payments",
       "schema": "",
@@ -2263,15 +2435,21 @@
         },
         "status": {
           "name": "status",
-          "type": "payment_record_status",
+          "type": "payment_status",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "default": "'pending'"
+          "default": "'UNPAID'"
         },
-        "succeeded_attempt_id": {
-          "name": "succeeded_attempt_id",
-          "type": "uuid",
+        "provider": {
+          "name": "provider",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gateway_payment_id": {
+          "name": "gateway_payment_id",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -2282,8 +2460,32 @@
           "notNull": true,
           "default": 0
         },
-        "captured_at": {
-          "name": "captured_at",
+        "succeeded_attempt_id": {
+          "name": "succeeded_attempt_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "idempotency_key": {
+          "name": "idempotency_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "failure_code": {
+          "name": "failure_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "failure_message": {
+          "name": "failure_message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "paid_at": {
+          "name": "paid_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
@@ -2309,6 +2511,21 @@
           "columns": [
             {
               "expression": "booking_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "payments_idem_uq": {
+          "name": "payments_idem_uq",
+          "columns": [
+            {
+              "expression": "idempotency_key",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -2450,6 +2667,16 @@
         "experience",
         "promotional",
         "booking_override"
+      ]
+    },
+    "public.discrepancy_type": {
+      "name": "discrepancy_type",
+      "schema": "public",
+      "values": [
+        "WRONG_AMOUNT",
+        "OVERPAYMENT",
+        "UNDERPAYMENT",
+        "CURRENCY_MISMATCH"
       ]
     },
     "public.dispute_resolution": {
@@ -2606,13 +2833,11 @@
       "name": "payment_attempt_status",
       "schema": "public",
       "values": [
-        "created",
-        "pending",
-        "authorized",
-        "captured",
-        "succeeded",
-        "failed",
-        "cancelled"
+        "CREATED",
+        "PROCESSING",
+        "SUCCEEDED",
+        "FAILED",
+        "CANCELLED"
       ]
     },
     "public.payment_kind": {
@@ -2622,18 +2847,6 @@
         "full",
         "advance",
         "balance"
-      ]
-    },
-    "public.payment_record_status": {
-      "name": "payment_record_status",
-      "schema": "public",
-      "values": [
-        "pending",
-        "processing",
-        "succeeded",
-        "failed",
-        "refunded",
-        "partially_refunded"
       ]
     },
     "public.payment_status": {

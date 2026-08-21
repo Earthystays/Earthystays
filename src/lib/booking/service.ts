@@ -1,10 +1,12 @@
 /**
  * Booking service — DB-transactional lifecycle. Phase 1B.5 Phase C.
  *
- *   createBooking()   → inserts booking + 15-minute hold + mock payment intent
- *                       (one transaction). Booking is PENDING_PAYMENT.
- *   confirmBooking()  → verifies payment via the provider, then (one txn)
- *                       CONFIRMS booking + CONVERTS hold. Idempotent.
+ *   createBooking()   → inserts booking + 15-minute hold + UNPAID Payment
+ *                       obligation (one transaction). Booking is PENDING_PAYMENT.
+ *   startPayment()    → begins/retries a charge: PaymentAttempt + provider intent.
+ *   verifyPayment()   → server-side verification: validate amount/currency/
+ *                       relationship, settle payment, then (one txn) CONFIRM
+ *                       booking + CONVERT hold. Idempotent; rejects discrepancies.
  *   expireHolds()     → EXPIREs due holds + their still-pending bookings.
  *                       Safe to run repeatedly.
  *
@@ -20,7 +22,12 @@ import type { Database } from "../../db/client";
 import * as schema from "../../db/schema";
 import { HOLD_DURATION_MS } from "../../db/schema/inventory-holds";
 import type { PaymentProvider } from "../payments/types";
-import { initPayment, recordVerification } from "../payments/service";
+import {
+  initPayment,
+  recordVerification,
+  startPayment as startPaymentSvc,
+  type StartPaymentResult,
+} from "../payments/service";
 import { type AuditSink, consoleAuditSink } from "./audit";
 import { formatBookingNumber } from "./booking-number";
 import { BookingError } from "./errors";
@@ -49,7 +56,7 @@ export type CreateBookingResult = {
   bookingId: string;
   bookingNumber: string;
   holdId: string;
-  intentId: string;
+  paymentId: string;
   expectedGuestTotalPaise: number;
   holdExpiresAt: Date;
 };
@@ -153,28 +160,22 @@ export async function createBooking(
         })
         .returning({ id: schema.inventoryHolds.id });
 
-      const intent = await deps.provider.createPaymentIntent({
+      // Persist the payment obligation (UNPAID). No attempt yet — that begins
+      // in startPayment(). No provider intent is created here.
+      const { paymentId } = await initPayment(tx, {
         bookingId: booking.id,
         amountPaise: draft.expectedGuestTotalPaise,
-        currency: "INR",
-      });
-
-      // Persist the payment obligation + its first attempt (still unpaid).
-      await initPayment(tx, {
-        bookingId: booking.id,
-        amountPaise: draft.expectedGuestTotalPaise,
-        gateway: deps.provider.name,
-        gatewayOrderId: intent.gatewayOrderId,
       });
 
       await audit.emit({ action: "booking.created", entity: "booking", entityId: booking.id, actorKind: "guest", actorId: draft.guestId, at: now.toISOString(), metadata: { bookingNumber } });
+      await audit.emit({ action: "payment.created", entity: "payment", entityId: paymentId, actorKind: "system", at: now.toISOString(), metadata: { amountPaise: draft.expectedGuestTotalPaise } });
       await audit.emit({ action: "hold.created", entity: "inventory_hold", entityId: hold.id, actorKind: "system", at: now.toISOString(), metadata: { expiresAt: holdExpiresAt.toISOString() } });
 
       return {
         bookingId: booking.id,
         bookingNumber,
         holdId: hold.id,
-        intentId: intent.intentId,
+        paymentId,
         expectedGuestTotalPaise: draft.expectedGuestTotalPaise,
         holdExpiresAt,
       };
@@ -187,17 +188,34 @@ export async function createBooking(
   }
 }
 
-export type ConfirmBookingResult = {
+/** Begin (or retry) a charge for a booking: PaymentAttempt + provider intent. */
+export async function startPayment(
+  deps: BookingDeps,
+  input: { bookingId: string },
+): Promise<StartPaymentResult> {
+  return startPaymentSvc({ db: deps.db, provider: deps.provider, audit: deps.audit, now: deps.now }, input);
+}
+
+export type VerifyPaymentResult = {
   bookingId: string;
   confirmed: boolean;
   duplicate: boolean;
+  /** Provider event rejected on amount/currency/relationship. */
+  discrepancy?: boolean;
   reason?: string;
 };
 
-export async function confirmBooking(
+/**
+ * Server-side payment verification → booking confirmation (spec §7). Frontend
+ * success alone never reaches here. Validates the provider event, settles the
+ * payment idempotently, and only on a clean success CONFIRMS the booking and
+ * CONVERTS its hold — all in one transaction (§10). Discrepancies and failures
+ * leave the booking PENDING_PAYMENT.
+ */
+export async function verifyPayment(
   deps: BookingDeps,
   input: { bookingId: string; intentId: string; token: string },
-): Promise<ConfirmBookingResult> {
+): Promise<VerifyPaymentResult> {
   const now = deps.now?.() ?? new Date();
   const audit = deps.audit ?? consoleAuditSink;
   const { db } = deps;
@@ -205,13 +223,19 @@ export async function confirmBooking(
   const verification = await deps.provider.verifyPayment({ intentId: input.intentId, token: input.token });
 
   return db.transaction(async (tx) => {
-    // Idempotently settle payment/attempt records + dedupe the webhook event.
+    // Verify + settle payment/attempt idempotently (amount/currency/relationship).
     const rec = await recordVerification(tx, {
       bookingId: input.bookingId,
       gateway: deps.provider.name,
       verification,
       now,
+      audit,
     });
+
+    // Rejected provider event (wrong amount / currency / booking) → never confirm.
+    if (rec.discrepancy) {
+      return { bookingId: input.bookingId, confirmed: false, duplicate: false, discrepancy: true, reason: rec.discrepancyType };
+    }
 
     const booking = await tx.query.bookings.findFirst({ where: eq(schema.bookings.id, input.bookingId) });
     if (!booking) throw new BookingError("BOOKING_NOT_PENDING", input.bookingId);
@@ -220,16 +244,17 @@ export async function confirmBooking(
     if (booking.bookingStatus === "CONFIRMED") {
       return { bookingId: booking.id, confirmed: true, duplicate: true };
     }
+    // Cannot confirm a cancelled/expired/other booking — leave records settled.
     if (booking.bookingStatus !== "PENDING_PAYMENT") {
-      throw new BookingError("BOOKING_NOT_PENDING", booking.bookingStatus);
+      return { bookingId: booking.id, confirmed: false, duplicate: false, reason: `booking_${booking.bookingStatus}` };
     }
 
-    if (!verification.succeeded) {
+    if (!rec.succeeded) {
       await tx.update(schema.bookings).set({ paymentStatus: "FAILED", updatedAt: now }).where(eq(schema.bookings.id, booking.id));
       return { bookingId: booking.id, confirmed: false, duplicate: verification.duplicate || rec.alreadyProcessed, reason: verification.failureReason ?? "payment_failed" };
     }
 
-    // Payment verified → confirm booking + convert its active hold.
+    // Verified success → confirm booking + convert its active hold (one txn).
     await tx.update(schema.bookings).set({ bookingStatus: "CONFIRMED", paymentStatus: "PAID", confirmedAt: now, updatedAt: now }).where(eq(schema.bookings.id, booking.id));
 
     const [hold] = await tx

@@ -50,3 +50,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# JSON snapshots taken before the PostgreSQL migration (customer data)
+/data-backups/

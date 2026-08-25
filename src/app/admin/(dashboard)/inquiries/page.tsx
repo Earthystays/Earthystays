@@ -20,7 +20,6 @@ import {
   Handshake,
   BellRing,
   Search,
-  SlidersHorizontal,
   Download,
   X,
   Phone,
@@ -30,6 +29,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { StatusControl } from "./status-control";
+import { InquirySearch } from "./inquiry-search";
 import { getVillaBySlug } from "@/lib/data/villas";
 import { getExperienceBySlug } from "@/lib/data/experiences";
 
@@ -418,24 +418,11 @@ export default async function AdminInquiriesPage({
             {enriched.length > 0 && " Newest first."}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <span
-            className="inline-flex cursor-not-allowed items-center gap-2 rounded-full border border-[hsl(38_18%_88%)] bg-white px-3 py-2 text-xs text-[#8A8072]"
-            title="Search coming soon"
-          >
-            <Search className="h-3.5 w-3.5" />
-            Search by guest, property, phone…
-          </span>
-          <span
-            className="inline-flex cursor-not-allowed items-center gap-2 rounded-full border border-[hsl(38_18%_88%)] bg-white px-3 py-2 text-xs text-[#4A4235]"
-            title="Filter presets coming soon"
-          >
-            <SlidersHorizontal className="h-3.5 w-3.5" />
-            Filters
-          </span>
+        <div className="flex flex-1 items-center gap-2 sm:max-w-md sm:justify-end">
+          <InquirySearch />
           <Link
             href="/api/admin/inquiries/export"
-            className="inline-flex items-center gap-2 rounded-full border border-[hsl(38_18%_88%)] bg-white px-3 py-2 text-xs font-medium text-[#4A4235] hover:bg-[hsl(38_30%_93%)]"
+            className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[hsl(38_18%_88%)] bg-white px-3 py-2 text-xs font-medium text-[#4A4235] hover:bg-[hsl(38_30%_93%)]"
           >
             <Download className="h-3.5 w-3.5" />
             Export
@@ -579,7 +566,7 @@ export default async function AdminInquiriesPage({
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1080px] text-sm">
+              <table className="w-full min-w-[920px] text-sm">
                 <thead>
                   <tr className="whitespace-nowrap text-left text-[10.5px] font-semibold uppercase tracking-[0.06em] text-[#857B6C]">
                     <th className="px-4 py-3">Guest</th>
@@ -589,7 +576,6 @@ export default async function AdminInquiriesPage({
                     <th className="px-4 py-3">Status</th>
                     <th className="px-4 py-3">Priority</th>
                     <th className="px-4 py-3">Source</th>
-                    <th className="px-4 py-3">Assigned</th>
                     <th className="px-4 py-3">Follow-up</th>
                     <th className="px-4 py-3" />
                   </tr>
@@ -608,9 +594,24 @@ export default async function AdminInquiriesPage({
                       ...(sourceFilter ? { source: sourceFilter } : {}),
                       id: e.q.id,
                     }).toString()}`;
+                    const haystack = [
+                      e.q.name,
+                      e.q.phone,
+                      e.q.email,
+                      villa?.name,
+                      experience?.name,
+                      e.q.villa,
+                      e.q.experience,
+                      villa?.city,
+                      villa?.state,
+                    ]
+                      .filter(Boolean)
+                      .join(" ")
+                      .toLowerCase();
                     return (
                       <tr
                         key={e.q.id}
+                        data-search={haystack}
                         className={`border-t border-[hsl(38_18%_92%)] transition-colors ${
                           isSelected
                             ? "bg-[hsl(85_25%_95%)]"
@@ -706,14 +707,6 @@ export default async function AdminInquiriesPage({
                         <td className="px-4 py-3">
                           <SourceIcon source={e.source} />
                         </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <div className="grid h-7 w-7 place-items-center rounded-full bg-[#E4EAD9] text-[10px] font-semibold text-[#5D7050]">
-                              AU
-                            </div>
-                            <span className="text-[12px] text-[#4A4235]">Admin</span>
-                          </div>
-                        </td>
                         <td className="px-4 py-3 text-[11px] text-[#8A8072]">
                           {relativeTime(e.lastFollowUp)}
                         </td>
@@ -731,6 +724,16 @@ export default async function AdminInquiriesPage({
                   })}
                 </tbody>
               </table>
+              <div
+                id="inquiry-search-empty"
+                hidden
+                className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center"
+              >
+                <Search className="h-8 w-8 text-[#8A8072]" strokeWidth={1.5} />
+                <p className="text-sm text-[#8A8072]">
+                  No inquiries match your search.
+                </p>
+              </div>
             </div>
           )}
         </section>

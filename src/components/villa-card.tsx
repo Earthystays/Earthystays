@@ -56,33 +56,34 @@ export function VillaCard({
 
       <div className="p-5">
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <MapPin className="h-3 w-3" />
-          {location}
+          <MapPin className="h-3 w-3 shrink-0" />
+          <span className="truncate">{location}</span>
         </div>
-        <h3 className="mt-1 font-title font-semibold text-xl text-foreground">{villa.name}</h3>
+        <h3 className="mt-1.5 font-title font-semibold text-xl leading-snug text-foreground">{villa.name}</h3>
         <p className="mt-1 line-clamp-1 text-sm text-muted-foreground">{villa.tagline}</p>
 
-        <div className="mt-4 flex items-center gap-4 text-xs text-muted-foreground">
-          <span className="inline-flex items-center gap-1">
-            <BedDouble className="h-3.5 w-3.5" /> {villa.bedrooms} BR
+        <div className="mt-4 flex items-center gap-2 text-xs font-medium text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5">
+            <BedDouble className="h-3.5 w-3.5 text-foreground/70" /> {villa.bedrooms} BR
           </span>
-          <span className="inline-flex items-center gap-1">
-            <Users className="h-3.5 w-3.5" /> Sleeps {villa.maxGuests}
+          <span className="text-border">·</span>
+          <span className="inline-flex items-center gap-1.5">
+            <Users className="h-3.5 w-3.5 text-foreground/70" /> Sleeps {villa.maxGuests}
           </span>
         </div>
 
-        <div className="mt-4 flex items-baseline justify-between">
-          <div>
-            <p className="text-sm text-foreground">
-              <span className="font-medium">{formatNight(villa.pricePerNight)}</span>
+        <div className="mt-4 flex items-end justify-between gap-3 border-t border-border/60 pt-4">
+          <div className="min-w-0">
+            <p className="text-base font-semibold text-foreground">
+              {formatNight(villa.pricePerNight)}
             </p>
             <span className="mt-1.5 inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground">
               <BedDouble className="h-3 w-3" />
               For {villa.bedrooms} {villa.bedrooms === 1 ? "Room" : "Rooms"}
             </span>
           </div>
-          <span className="text-xs uppercase tracking-wider text-terracotta group-hover:translate-x-0.5 transition-transform">
-            View →
+          <span className="shrink-0 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-terracotta group-hover:translate-x-0.5 transition-transform">
+            View <ArrowUpRight className="h-3 w-3" />
           </span>
         </div>
       </div>

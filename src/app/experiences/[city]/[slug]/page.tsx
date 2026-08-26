@@ -1,6 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { WhereToStay } from "@/components/connect/where-to-stay";
+import { staysForExperience } from "@/lib/connect/relevance";
 import { DetailTabs, type DetailTab } from "@/components/detail-tabs";
 import { GuestReviews } from "@/components/reviews/guest-reviews";
 import { computeReviewSummary, getReviewsByExperience } from "@/lib/data/reviews";
@@ -94,6 +96,8 @@ export default async function ExperienceDetailPage({
   const category = getCategoryBySlug(e.category ?? "");
   const host = getHostById(e.hostId);
   const related = getRelated(e);
+  // Experience → property cross-sell, matched on destination.
+  const nearbyStays = staysForExperience(e, 3);
   const catName = (s?: string) => getCategoryBySlug(s ?? "")?.name;
 
   const reviews = getReviewsByExperience(e.slug);
@@ -222,6 +226,8 @@ export default async function ExperienceDetailPage({
           />
         </aside>
       </div>
+
+      <WhereToStay villas={nearbyStays} placeName={e.city ?? e.state} />
 
       {related.length > 0 && (
         <section className="container-page mb-28 mt-24 lg:mb-16">

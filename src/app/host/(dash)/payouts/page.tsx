@@ -1,6 +1,11 @@
 import { Wallet } from "lucide-react";
 import { requireHost } from "@/lib/host-auth";
 import { addDays, formatINR, getHostData } from "@/lib/host-metrics";
+import { computeEconomics, monthlyRevenue } from "@/lib/host/economics";
+import {
+  PropertyEconomicsTable,
+  RevenueHistory,
+} from "@/components/host/property-economics";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Payouts · Hosting" };
@@ -33,6 +38,13 @@ export default async function HostPayoutsPage() {
     .reduce((n, b) => n + b.amount, 0);
 
   const rows = [...upcoming, ...completed];
+
+  // Commission split + history, both driven by the finance module's rate.
+  const { rows: economicsRows, totals: economicsTotals } = computeEconomics(
+    data,
+    data.bookings,
+  );
+  const history = monthlyRevenue(data.bookings, 6, now);
 
   return (
     <div className="mx-auto max-w-[1000px] px-5 py-8 lg:px-8">
@@ -110,6 +122,9 @@ export default async function HostPayoutsPage() {
           </table>
         </div>
       )}
+
+      <RevenueHistory months={history} />
+      <PropertyEconomicsTable rows={economicsRows} totals={economicsTotals} />
     </div>
   );
 }

@@ -3,8 +3,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import crypto from "crypto";
 import sharp from "sharp";
-import { cookies } from "next/headers";
-import { ADMIN_COOKIE, adminToken } from "@/lib/admin-auth";
+import { requireAdminApi } from "@/lib/admin-auth";
 
 /** Max edge of a saved image. Anything bigger gets resized down. */
 const MAX_IMAGE_EDGE_PX = 1800;
@@ -31,11 +30,12 @@ function safeName(name: string): string {
   );
 }
 
+/**
+ * Full admin check — signature, expiry AND revocation. Identical to what every
+ * other admin surface enforces, so this route is not a weaker side door.
+ */
 async function isAuthed(): Promise<boolean> {
-  const c = await cookies();
-  const token = c.get(ADMIN_COOKIE)?.value;
-  if (!token) return false;
-  return token === (await adminToken());
+  return (await requireAdminApi()) !== null;
 }
 
 export async function POST(req: Request) {

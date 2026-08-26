@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getHostels } from "@/lib/data/villas";
 import { PropertyBrowseIndex } from "@/components/property-browse-index";
 
@@ -19,6 +19,9 @@ export default async function HostelsIndexPage({
   // Keep the section invisible until the first hostel is live.
   if (getHostels().length === 0) notFound();
   const sp = await searchParams;
+  // The destination filter now has a real URL. Send the legacy ?state= form
+  // there so old links and bookmarks land on the canonical page.
   const stateFilter = typeof sp.state === "string" ? sp.state : undefined;
-  return <PropertyBrowseIndex kind="hostel" stateFilter={stateFilter} />;
+  if (stateFilter) redirect(`/hostels/${encodeURIComponent(stateFilter)}`);
+  return <PropertyBrowseIndex kind="hostel" />;
 }

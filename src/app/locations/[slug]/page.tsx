@@ -14,6 +14,7 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 import { BreadcrumbJsonLd } from "@/components/jsonld-breadcrumb";
 import { SortDropdown } from "@/components/sort-dropdown";
 import { getCurrentUser } from "@/lib/session";
+import { DestinationHub } from "@/components/destination-hub";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -79,7 +80,18 @@ export default async function StatePage({ params, searchParams }: PageProps) {
       <BreadcrumbJsonLd items={crumbs} />
       <Breadcrumbs items={crumbs} />
 
-      <div className="mt-4 flex items-center justify-end gap-2">
+      <header className="mt-6 max-w-2xl">
+        <h1 className="font-display text-4xl sm:text-5xl">{state.name}</h1>
+        {state.blurb && (
+          <p className="mt-3 text-muted-foreground">{state.blurb}</p>
+        )}
+      </header>
+
+      <div className="mt-8">
+        <DestinationHub stateSlug={state.slug} stateName={state.name} />
+      </div>
+
+      <div className="mt-8 flex items-center justify-end gap-2">
         <MobileFiltersDrawer
           amenities={amenities}
           destinations={destinations}

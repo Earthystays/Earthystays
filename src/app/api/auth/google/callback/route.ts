@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyState } from "@/lib/oauth-state";
 import { findUserByEmail, createUser } from "@/lib/data/users";
-import { signSession } from "@/lib/user-auth";
+import { signSession, GUEST_SESSION_MAX_AGE_SECONDS } from "@/lib/user-auth";
 import { USER_COOKIE } from "@/lib/session";
 
 export async function GET(req: Request) {
@@ -95,7 +95,7 @@ export async function GET(req: Request) {
     httpOnly: true,
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60 * 24 * 90,
+    maxAge: GUEST_SESSION_MAX_AGE_SECONDS,
     secure: process.env.NODE_ENV === "production",
   });
 

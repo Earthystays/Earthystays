@@ -1,5 +1,6 @@
 "use server";
 
+import { requireAdmin } from "@/lib/admin-auth";
 import { revalidatePath } from "next/cache";
 import type { ExperienceCategory } from "@/lib/types";
 import { saveCategories } from "@/lib/data/experience-categories";
@@ -8,6 +9,7 @@ import { slugify } from "@/lib/slug";
 export async function saveCategoryList(
   list: ExperienceCategory[],
 ): Promise<{ ok: boolean; error?: string }> {
+  await requireAdmin();
   const cleaned: ExperienceCategory[] = [];
   const seen = new Set<string>();
   for (const c of list) {

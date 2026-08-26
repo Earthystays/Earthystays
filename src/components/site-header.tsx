@@ -175,8 +175,13 @@ export function SiteHeader({
           <Image
             src="/brand/logo.png"
             alt="Earthy Stays"
-            width={1200}
-            height={937}
+            /* Rendered at most h-32 (~164px wide). The intrinsic size only
+               drives srcset selection here — className controls layout — so
+               declaring 1200px made every page download a ~2400w candidate
+               for a 164px slot. 420×328 keeps the 1200:937 ratio and still
+               covers 2× on the largest breakpoint. */
+            width={420}
+            height={328}
             priority
             className={`h-24 w-auto sm:h-28 md:h-32 transition-[filter] duration-300 ${
               isOverlay ? "brightness-0 invert" : ""
@@ -195,6 +200,16 @@ export function SiteHeader({
             }`}
           >
             Experiences
+          </Link>
+          <Link
+            href="/journal"
+            className={`text-base lg:text-lg transition-colors ${
+              isOverlay
+                ? "text-white/95 hover:text-white"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Journal
           </Link>
           <DiscoverMenu isOverlay={isOverlay} />
           {SECONDARY_NAV.map((item) => (
@@ -362,6 +377,13 @@ export function SiteHeader({
               >
                 Experiences
               </Link>
+              <Link
+                href="/journal"
+                onClick={() => setOpen(false)}
+                className="rounded-md px-3 py-3 text-base hover:bg-muted"
+              >
+                Journal
+              </Link>
               <div className="px-3 pb-1 pt-4 text-[10px] uppercase tracking-[0.18em] text-muted-foreground/80">
                 Discover
               </div>
@@ -389,6 +411,13 @@ export function SiteHeader({
               <div className="mt-6 border-t border-border/60 pt-4 grid gap-1 text-sm">
                 {user && (
                   <>
+                    <Link
+                      href="/trips"
+                      onClick={() => setOpen(false)}
+                      className="rounded-md px-3 py-3 hover:bg-muted"
+                    >
+                      My Trips
+                    </Link>
                     <Link
                       href="/wishlist"
                       onClick={() => setOpen(false)}

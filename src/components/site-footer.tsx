@@ -12,8 +12,11 @@ export function SiteFooter() {
           <Image
             src="/brand/logo.png"
             alt="Earthy Stays"
-            width={1200}
-            height={937}
+            /* Renders at most h-36 (~184px wide); 1200 forced an oversized
+               srcset candidate. Ratio preserved. */
+            width={480}
+            height={375}
+            loading="lazy"
             className="h-28 w-auto md:h-36"
           />
           <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground">
@@ -43,7 +46,7 @@ export function SiteFooter() {
         <div>
           <h4 className="font-display text-base">Plan</h4>
           <ul className="mt-4 space-y-2.5 text-sm text-muted-foreground">
-            <li><Link href="/partner" className="hover:text-foreground">Concierge</Link></li>
+            <li><Link href="/partner" className="hover:text-foreground">Partner with us</Link></li>
             <li>
               <CallbackModal
                 triggerLabel="Corporate retreats"
@@ -52,9 +55,16 @@ export function SiteFooter() {
               />
             </li>
             <li>
-              <Link href="https://instagram.com" className="inline-flex items-center gap-2 hover:text-foreground">
-                <AtSign className="h-4 w-4 shrink-0" /> @earthystays
-              </Link>
+              <a
+                href="https://www.instagram.com/earthystays_official/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 hover:text-foreground"
+              >
+                <AtSign className="h-4 w-4 shrink-0" aria-hidden="true" />
+                @earthystays_official
+                <span className="sr-only">(opens in a new tab)</span>
+              </a>
             </li>
           </ul>
         </div>

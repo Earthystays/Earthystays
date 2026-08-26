@@ -1,5 +1,6 @@
 "use server";
 
+import { requireAdmin } from "@/lib/admin-auth";
 import { revalidatePath } from "next/cache";
 import { readJson, writeJson } from "@/lib/storage";
 import type { Destination, City } from "@/lib/types";
@@ -40,6 +41,7 @@ export async function setLocationCover(
   key: string,
   url: string,
 ): Promise<{ ok: boolean; error?: string }> {
+  await requireAdmin();
   if (!key || !url) return { ok: false, error: "Missing key or URL" };
   const covers = await readJson<Covers>(FILE, {});
   covers[key] = url;
@@ -54,6 +56,7 @@ export async function setLocationCover(
 export async function clearLocationCover(
   key: string,
 ): Promise<{ ok: boolean; error?: string }> {
+  await requireAdmin();
   const covers = await readJson<Covers>(FILE, {});
   delete covers[key];
   await writeJson(FILE, covers);
@@ -70,6 +73,7 @@ export async function addState(formData: FormData): Promise<{
   ok: boolean;
   error?: string;
 }> {
+  await requireAdmin();
   const name = String(formData.get("name") ?? "").trim();
   const region = String(formData.get("region") ?? "").trim();
   const blurb = String(formData.get("blurb") ?? "").trim();
@@ -118,6 +122,7 @@ export async function addState(formData: FormData): Promise<{
 }
 
 export async function deleteState(slug: string): Promise<{ ok: boolean }> {
+  await requireAdmin();
   const admin = await readJson<AdminLocations>(ADMIN_FILE, {});
 
   // Admin-added states get removed from the states array
@@ -140,6 +145,7 @@ export async function addCity(formData: FormData): Promise<{
   ok: boolean;
   error?: string;
 }> {
+  await requireAdmin();
   const stateSlug = String(formData.get("stateSlug") ?? "").trim();
   const name = String(formData.get("name") ?? "").trim();
   const blurb = String(formData.get("blurb") ?? "").trim();
@@ -189,6 +195,7 @@ export async function deleteCity(
   stateSlug: string,
   citySlug: string,
 ): Promise<{ ok: boolean }> {
+  await requireAdmin();
   const admin = await readJson<AdminLocations>(ADMIN_FILE, {});
 
   // Admin-added cities: remove from list
@@ -220,6 +227,7 @@ export async function addLocation(formData: FormData): Promise<{
   ok: boolean;
   error?: string;
 }> {
+  await requireAdmin();
   const stateSlug = String(formData.get("stateSlug") ?? "").trim();
   const citySlug = String(formData.get("citySlug") ?? "").trim();
   const name = String(formData.get("name") ?? "").trim();
@@ -263,6 +271,7 @@ export async function deleteLocation(
   citySlug: string,
   locationSlug: string,
 ): Promise<{ ok: boolean }> {
+  await requireAdmin();
   const admin = await readJson<AdminLocations>(ADMIN_FILE, {});
 
   // Admin-added: just remove

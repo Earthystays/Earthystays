@@ -1,5 +1,7 @@
 "use server";
 
+import { requireAdmin } from "@/lib/admin-auth";
+import { logAdminAction } from "@/lib/admin-audit";
 import { revalidatePath } from "next/cache";
 import { readJson, writeJson } from "@/lib/storage";
 import type { Collection } from "@/lib/types";
@@ -35,6 +37,7 @@ export async function addCollection(formData: FormData): Promise<{
   ok: boolean;
   error?: string;
 }> {
+  await requireAdmin();
   const name = String(formData.get("name") ?? "").trim();
   const blurb = String(formData.get("blurb") ?? "").trim();
   const imageSrc = String(formData.get("imageSrc") ?? "").trim();
@@ -63,6 +66,12 @@ export async function addCollection(formData: FormData): Promise<{
   });
 
   await writeJson(FILE, admin);
+  await logAdminAction({
+    action: "collection.created",
+    entity: "collection",
+    entityId: slug,
+    summary: `Collection created: ${name}`,
+  });
   revalidateAll();
   return { ok: true };
 }
@@ -71,6 +80,7 @@ export async function updateCollection(
   slug: string,
   formData: FormData,
 ): Promise<{ ok: boolean; error?: string }> {
+  await requireAdmin();
   const name = String(formData.get("name") ?? "").trim();
   const blurb = String(formData.get("blurb") ?? "").trim();
   const imageSrc = String(formData.get("imageSrc") ?? "").trim();
@@ -99,17 +109,30 @@ export async function updateCollection(
   }
 
   await writeJson(FILE, admin);
+  await logAdminAction({
+    action: "collection.edited",
+    entity: "collection",
+    entityId: slug,
+    summary: `Collection edited: ${name}`,
+  });
   revalidateAll();
   return { ok: true };
 }
 
 export async function deleteCollection(slug: string): Promise<{ ok: boolean }> {
+  await requireAdmin();
   const admin = await readJson<AdminCollections>(FILE, {});
   admin.added = (admin.added ?? []).filter((c) => c.slug !== slug);
   if (isSeedCollection(slug)) {
     admin.deleted = Array.from(new Set([...(admin.deleted ?? []), slug]));
   }
   await writeJson(FILE, admin);
+  await logAdminAction({
+    action: "collection.deleted",
+    entity: "collection",
+    entityId: slug,
+    summary: `Collection deleted: ${slug}`,
+  });
   revalidateAll();
   return { ok: true };
 }

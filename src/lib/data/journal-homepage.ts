@@ -50,8 +50,8 @@ export const DEFAULT_HOMEPAGE: JournalHomepage = {
   },
   instagram: {
     enabled: true,
-    handle: "@earthystays",
-    url: "https://instagram.com/earthystays",
+    handle: "@earthystays_official",
+    url: "https://www.instagram.com/earthystays_official/",
     images: [],
   },
   newsletter: {

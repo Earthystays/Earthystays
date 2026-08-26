@@ -1,5 +1,7 @@
 "use server";
 
+import { requireAdmin } from "@/lib/admin-auth";
+import { logAdminAction } from "@/lib/admin-audit";
 import { revalidatePath } from "next/cache";
 import type { Experience, ExperienceStatus } from "@/lib/types";
 import { readExperiences, saveExperiences, experienceHref } from "@/lib/data/experiences";
@@ -21,6 +23,7 @@ export async function saveExperience(
   input: Experience,
   originalSlug?: string,
 ): Promise<Result> {
+  await requireAdmin();
   const name = (input.name ?? "").trim();
   if (name.length < 2) return { ok: false, error: "Name is required." };
   if (!input.image?.src) return { ok: false, error: "A cover image is required." };
@@ -40,6 +43,12 @@ export async function saveExperience(
     };
     list[idx] = merged;
     await saveExperiences(list);
+    await logAdminAction({
+      action: "experience.edited",
+      entity: "experience",
+      entityId: merged.slug,
+      summary: `Experience edited: ${merged.name ?? merged.slug}`,
+    });
     revalidate(merged);
     return { ok: true, slug: merged.slug };
   }
@@ -60,6 +69,12 @@ export async function saveExperience(
   };
   list.unshift(created);
   await saveExperiences(list);
+  await logAdminAction({
+    action: "experience.created",
+    entity: "experience",
+    entityId: created.slug,
+    summary: `Experience created: ${created.name ?? created.slug}`,
+  });
   revalidate(created);
   return { ok: true, slug };
 }
@@ -68,16 +83,24 @@ export async function setExperienceStatus(
   slug: string,
   status: ExperienceStatus,
 ): Promise<Result> {
+  await requireAdmin();
   const list = await readExperiences();
   const idx = list.findIndex((e) => e.slug === slug);
   if (idx === -1) return { ok: false, error: "Not found." };
   list[idx] = { ...list[idx], status, updatedAt: new Date().toISOString() };
   await saveExperiences(list);
+  await logAdminAction({
+    action: "experience.status_changed",
+    entity: "experience",
+    entityId: slug,
+    summary: `Experience status set to ${status}`,
+  });
   revalidate(list[idx]);
   return { ok: true };
 }
 
 export async function duplicateExperience(slug: string): Promise<Result> {
+  await requireAdmin();
   const list = await readExperiences();
   const src = list.find((e) => e.slug === slug);
   if (!src) return { ok: false, error: "Not found." };
@@ -99,9 +122,16 @@ export async function duplicateExperience(slug: string): Promise<Result> {
 }
 
 export async function deleteExperience(slug: string): Promise<Result> {
+  await requireAdmin();
   const list = await readExperiences();
   const next = list.filter((e) => e.slug !== slug);
   await saveExperiences(next);
+  await logAdminAction({
+    action: "experience.deleted",
+    entity: "experience",
+    entityId: slug,
+    summary: `Experience deleted: ${slug}`,
+  });
   revalidate();
   return { ok: true };
 }

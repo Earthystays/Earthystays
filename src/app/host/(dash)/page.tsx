@@ -6,7 +6,6 @@ import {
   ChevronRight,
   Clock3,
   MessageSquare,
-  Sparkles,
   Users,
   Wallet,
 } from "lucide-react";
@@ -26,6 +25,10 @@ import { unreadCount } from "@/lib/data/messages";
 import { findUserById } from "@/lib/data/users";
 import { EarningsChart, OccupancyDonut } from "@/components/host/earnings-chart";
 import { TasksChecklist } from "@/components/host/tasks-checklist";
+import { OpportunitiesPanel } from "@/components/host/opportunities-panel";
+import { getRecentViewCountsSync } from "@/lib/data/villa-views";
+import { getPropertyPerformance } from "@/lib/host/property-performance";
+import { buildOpportunities } from "@/lib/host/opportunities";
 
 export const dynamic = "force-dynamic";
 
@@ -104,11 +107,12 @@ export default async function HostOverviewPage() {
   /* ---- upcoming ---- */
   const upcoming = bookings.filter((b) => b.checkIn >= today).slice(0, 3);
 
-  /* ---- smart suggestion (simple heuristic) ---- */
-  const avgPrice = Math.round(
-    listings.reduce((n, l) => n + l.pricePerNight, 0) / Math.max(listings.length, 1),
-  );
-  const suggestionExtra = Math.round((avgPrice * 0.12 * 8) / 100) * 100; // 12% on ~8 weekend nights
+  /* ---- opportunities (measured signals only) ----
+     Replaces an earlier "smart suggestion" that asserted weekend demand and
+     projected an uplift figure; neither was computed from real data. */
+  const views = getRecentViewCountsSync();
+  const performance = getPropertyPerformance(data, views, year, month);
+  const opportunities = buildOpportunities(data, performance);
 
   /* ---- today's tasks ---- */
   const unreadThreads = threads.filter((t) => unreadCount(t, "host") > 0);
@@ -239,25 +243,7 @@ export default async function HostOverviewPage() {
             </div>
           </div>
 
-          {/* smart suggestion */}
-          <div className="flex flex-col gap-4 rounded-2xl border border-border/60 bg-background p-5 sm:flex-row sm:items-center">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
-              <Sparkles className="h-4 w-4 text-primary" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-[15px] font-semibold">Smart suggestion</p>
-              <p className="mt-0.5 text-sm text-muted-foreground">
-                Weekend demand is high. Increase your Friday &amp; Saturday price by 12% to earn an
-                estimated extra <span className="font-semibold text-foreground">{formatINR(suggestionExtra)}</span>.
-              </p>
-            </div>
-            <Link
-              href="/host/listings"
-              className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-            >
-              Review suggestion
-            </Link>
-          </div>
+          <OpportunitiesPanel opportunities={opportunities} limit={3} />
 
           {/* week calendar strip */}
           <div className="rounded-2xl border border-border/60 bg-background p-5">

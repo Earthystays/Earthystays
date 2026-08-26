@@ -4,7 +4,11 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { z } from "zod";
 import { findUserByEmail } from "@/lib/data/users";
-import { verifyPassword, signSession } from "@/lib/user-auth";
+import {
+  verifyPassword,
+  signSession,
+  GUEST_SESSION_MAX_AGE_SECONDS,
+} from "@/lib/user-auth";
 import { USER_COOKIE } from "@/lib/session";
 
 const Schema = z.object({
@@ -49,7 +53,7 @@ export async function login(
     httpOnly: true,
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60 * 24 * 90, // 90 days
+    maxAge: GUEST_SESSION_MAX_AGE_SECONDS,
     secure: process.env.NODE_ENV === "production",
   });
 

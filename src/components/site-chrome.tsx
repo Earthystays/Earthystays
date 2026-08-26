@@ -43,6 +43,15 @@ export function SiteChrome({
 
   return (
     <>
+      {/* Skip link — WCAG 2.4.1. The header carries three nav landmarks, so a
+          keyboard user would otherwise tab through all of them on every page.
+          Visually hidden until focused. */}
+      <a
+        href="#main-content"
+        className="skip-link"
+      >
+        Skip to content
+      </a>
       <SiteHeader
         user={user}
         transparent={isHome}
@@ -51,7 +60,9 @@ export function SiteChrome({
         showHotels={showHotels}
         showHostels={showHostels}
       />
-      <main className={`flex-1 ${isHome ? "-mt-20" : ""}`}>{children}</main>
+      <main id="main-content" tabIndex={-1} className={`flex-1 ${isHome ? "-mt-20" : ""}`}>
+        {children}
+      </main>
       <SiteFooter />
       <WhatsAppFloat />
     </>

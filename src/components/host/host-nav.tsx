@@ -4,11 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const TABS = [
-  { href: "/host", label: "Today" },
+  { href: "/host", label: "Overview" },
+  { href: "/host/listings", label: "Properties" },
   { href: "/host/calendar", label: "Calendar" },
-  { href: "/host/listings", label: "Listings" },
-  { href: "/host/bookings", label: "Bookings" },
-  { href: "/host/messages", label: "Messages" },
+  { href: "/host/bookings", label: "Reservations" },
+  { href: "/host/inbox", label: "Messages" },
 ];
 
 export function HostNav() {

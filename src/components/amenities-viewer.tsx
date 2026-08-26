@@ -14,26 +14,45 @@ const PREVIEW = 8;
 type Item = { name: string; icon: ReactNode };
 
 export function AmenitiesViewer({ items }: { items: Item[] }) {
-  const preview = items.slice(0, PREVIEW);
   const hasMore = items.length > PREVIEW;
   const grouped = groupAmenitiesByCategory(items);
 
+  /* Inline preview, grouped rather than flat: take whole categories in
+     priority order until we have roughly PREVIEW amenities, so the preview
+     reads as "Pool & wellness: a, b · Outdoor: c, d" instead of an
+     unexplained top-8. Always shows at least the first category. */
+  const previewGroups: typeof grouped = [];
+  let shown = 0;
+  for (const group of grouped) {
+    if (previewGroups.length > 0 && shown >= PREVIEW) break;
+    previewGroups.push(group);
+    shown += group.items.length;
+  }
+
   return (
     <div>
-      {/* Inline preview — flat top-8 grid, unchanged behaviour. */}
-      <ul className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-3 lg:grid-cols-4">
-        {preview.map((it) => (
-          <li
-            key={it.name}
-            className="flex items-center gap-3 text-sm text-foreground"
-          >
-            <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-card">
-              {it.icon}
-            </span>
-            <span className="leading-snug">{it.name}</span>
-          </li>
+      <div className="grid gap-6 sm:grid-cols-2">
+        {previewGroups.map(({ category, items: catItems }) => (
+          <section key={category}>
+            <h3 className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+              {category}
+            </h3>
+            <ul className="mt-3 grid gap-x-6 gap-y-4 sm:grid-cols-2">
+              {catItems.map((it) => (
+                <li
+                  key={it.name}
+                  className="flex items-center gap-3 text-sm text-foreground"
+                >
+                  <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-card">
+                    {it.icon}
+                  </span>
+                  <span className="leading-snug">{it.name}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
         ))}
-      </ul>
+      </div>
 
       {hasMore && (
         <Dialog>

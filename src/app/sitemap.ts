@@ -10,6 +10,9 @@ import {
   getExperienceCities,
   experienceHref,
 } from "@/lib/data/experiences";
+import { getPublishedArticles } from "@/lib/data/journal";
+import { getEnabledCategories } from "@/lib/data/journal-categories";
+import { getEnabledJournalDestinations } from "@/lib/data/journal-destinations";
 
 const SITE = "https://earthystays.com";
 
@@ -44,6 +47,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE}/about`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
     { url: `${SITE}/partner`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
   ];
+
+  // Destination tiers (/hotels/goa, /hostels/goa) — only for destinations that
+  // actually hold inventory, so we never advertise a page that 404s.
+  const destinationTierPages: MetadataRoute.Sitemap = [
+    ...new Set(getHotels().map((h) => `${SITE}/hotels/${h.destinationSlug}`)),
+    ...new Set(getHostels().map((h) => `${SITE}/hostels/${h.destinationSlug}`)),
+  ].map((url) => ({
+    url,
+    lastModified: now,
+    changeFrequency: "daily" as const,
+    priority: 0.8,
+  }));
 
   const villaPages: MetadataRoute.Sitemap = getVillas().map((v) => ({
     // Hotels & hostels use their own canonical /hotels|/hostels URLs.
@@ -90,13 +105,43 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.7,
   }));
 
+  const journalStatic: MetadataRoute.Sitemap = [
+    { url: `${SITE}/journal`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
+  ];
+
+  const journalCategoryPages: MetadataRoute.Sitemap = getEnabledCategories().map((c) => ({
+    url: `${SITE}/journal/category/${c.slug}`,
+    lastModified: now,
+    changeFrequency: "weekly",
+    priority: 0.6,
+  }));
+
+  const journalDestPages: MetadataRoute.Sitemap = getEnabledJournalDestinations().map((d) => ({
+    url: `${SITE}/journal/destination/${d.slug}`,
+    lastModified: now,
+    changeFrequency: "weekly",
+    priority: 0.6,
+  }));
+
+  const journalArticlePages: MetadataRoute.Sitemap = getPublishedArticles().map((a) => ({
+    url: `${SITE}/journal/${a.slug}`,
+    lastModified: a.updatedAt ? new Date(a.updatedAt) : now,
+    changeFrequency: "weekly",
+    priority: 0.7,
+  }));
+
   return [
     ...staticPages,
+    ...destinationTierPages,
     ...villaPages,
     ...statePages,
     ...cityPages,
     ...colPages,
     ...expCityPages,
     ...expPages,
+    ...journalStatic,
+    ...journalCategoryPages,
+    ...journalDestPages,
+    ...journalArticlePages,
   ];
 }

@@ -37,11 +37,9 @@ export function OrganizationJsonLd() {
       "@type": "Country",
       name: "India",
     },
-    sameAs: [
-      // Add your social URLs once they're live:
-      // "https://www.instagram.com/earthystays",
-      // "https://www.facebook.com/earthystays",
-    ].filter(Boolean),
+    // Verified Earthy Stays profiles. The handle is `earthystays_official` —
+    // the previously commented-out `earthystays` is not our account.
+    sameAs: ["https://www.instagram.com/earthystays_official/"].filter(Boolean),
   };
 
   return (

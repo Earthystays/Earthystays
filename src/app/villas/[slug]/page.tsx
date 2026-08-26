@@ -1,6 +1,6 @@
 import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
-import { Star, Users, BedDouble, Bath, MapPin, Check, ChefHat, Utensils, ChevronDown, FileText } from "lucide-react";
+import { ChefHat, Utensils, ChevronDown, FileText } from "lucide-react";
 import { LocationMap } from "@/components/location-map";
 import { VillaGallery } from "@/components/villa-gallery";
 import { VillaCard } from "@/components/villa-card";
@@ -40,6 +40,10 @@ import { formatNight } from "@/lib/format";
 import { getAmenityIcon } from "@/lib/amenity-icons";
 import { slugify } from "@/lib/slug";
 import { getCurrentUser } from "@/lib/session";
+import { PropertyHero } from "@/components/property/property-hero";
+import { PropertyQuickFacts } from "@/components/property/property-quick-facts";
+import { PropertyHighlights } from "@/components/property/property-highlights";
+import { PropertySleeping } from "@/components/property/property-sleeping";
 
 type PageProps = { params: Promise<{ slug: string }> };
 
@@ -118,8 +122,20 @@ export async function PropertyDetail({ slug }: { slug: string }) {
   const inWishlist = user?.wishlist.includes(villa.slug) ?? false;
   const wishlistSet = new Set(user?.wishlist ?? []);
 
+  // Hotels & hostels follow their own hierarchy so the trail matches the URL:
+  //   Home → Hotels → Goa → Property
+  // Villas & apartments keep the destination trail they have always used:
+  //   Home → North Goa → Property
   const crumbs = [{ label: "Home", href: "/" }];
-  if (state && cityInState) {
+  if (villa.type === "hotel" || villa.type === "hostel") {
+    const section = villa.type === "hotel" ? "Hotels" : "Hostels";
+    const base = villa.type === "hotel" ? "/hotels" : "/hostels";
+    crumbs.push({ label: section, href: base });
+    crumbs.push({
+      label: state?.name ?? villa.destinationSlug,
+      href: `${base}/${villa.destinationSlug}`,
+    });
+  } else if (state && cityInState) {
     crumbs.push({
       label: cityInState.name,
       href: `/locations/${state.slug}/${cityInState.slug}`,
@@ -159,8 +175,11 @@ export async function PropertyDetail({ slug }: { slug: string }) {
   // Build the tabs based on what content actually exists for this villa
   const tabs: DetailTab[] = [{ id: "overview", label: "Overview" }];
   if (villa.video) tabs.push({ id: "video", label: "Video tour" });
-  if (villa.highlights.length > 0) tabs.push({ id: "highlights", label: "Highlights" });
+  if (villa.highlights.length > 0) tabs.push({ id: "highlights", label: "Why you'll love it" });
   tabs.push({ id: "spaces", label: spacesLabel });
+  if (!showUnits && villa.bedrooms > 0) {
+    tabs.push({ id: "sleeping", label: "Sleeping" });
+  }
   tabs.push({ id: "amenities", label: "Amenities" });
   tabs.push({ id: "meals", label: "Meals" });
   if (assignedExperiences.length > 0) {
@@ -189,7 +208,17 @@ export async function PropertyDetail({ slug }: { slug: string }) {
         <Breadcrumbs items={crumbs} />
       </div>
 
+      {/* HERO — name, type, place, rating and CTA read before the photos */}
       <div className="container-page !max-w-[88rem] mt-4">
+        <PropertyHero
+          villa={villa}
+          stateName={state?.name}
+          rating={reviewSummary.count > 0 ? reviewSummary.average : villa.rating}
+          reviewCount={reviewSummary.count > 0 ? reviewSummary.count : villa.reviewCount}
+        />
+      </div>
+
+      <div className="container-page !max-w-[88rem] mt-6">
         <VillaGallery
           images={villa.images}
           slug={villa.slug}
@@ -214,58 +243,25 @@ export async function PropertyDetail({ slug }: { slug: string }) {
 
       <div className="container-page !max-w-[88rem] mt-8 grid gap-12 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="min-w-0 space-y-10">
-          {/* Title block — inside the grid so the booking sidebar can
-              start at the same vertical position instead of leaving a
-              tall empty band on the right. */}
-          <header>
-            <h1 className="font-title text-2xl font-semibold tracking-tight text-foreground sm:text-3xl lg:text-4xl">
-              {villa.name}
-            </h1>
-            <p className="mt-1 inline-flex items-center gap-1 text-sm text-muted-foreground sm:text-base">
-              <MapPin className="h-3.5 w-3.5 text-terracotta" />
-              {villa.city ? `${villa.city}, ` : ""}{state?.name}
-            </p>
-            {villa.reviewCount > 0 && (
-              <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
-                <span className="inline-flex items-center gap-1.5">
-                  <Star className="h-4 w-4 fill-terracotta text-terracotta" />
-                  <span className="font-numeric font-semibold tabular-nums">
-                    {villa.rating.toFixed(2)}
-                  </span>
-                  <span className="text-muted-foreground">/5</span>
-                </span>
-                <span className="text-border">|</span>
-                <a
-                  href="#reviews"
-                  className="text-terracotta underline underline-offset-2 hover:text-terracotta/80"
-                >
-                  {villa.reviewCount} reviews
-                </a>
-              </div>
-            )}
-            {villa.tagline && (
-              <p className="mt-3 max-w-2xl text-muted-foreground">{villa.tagline}</p>
-            )}
-          </header>
-
           <div className="space-y-14">
-          {/* Quick facts */}
-          <div className="flex flex-wrap items-center gap-2 md:gap-3">
-            <Fact icon={<Users className="h-4 w-4 md:h-5 md:w-5" />} label={`Up to ${villa.maxGuests} Guests`} />
-            <Fact icon={<BedDouble className="h-4 w-4 md:h-5 md:w-5" />} label={`${villa.bedrooms} ${villa.bedrooms === 1 ? "Room" : "Rooms"}`} />
-            <Fact icon={<Bath className="h-4 w-4 md:h-5 md:w-5" />} label={`${villa.bathrooms} ${villa.bathrooms === 1 ? "Bath" : "Baths"}`} />
-            {villa.brochure && (
-              <a
-                href={villa.brochure.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3.5 py-2 text-sm font-medium text-foreground shadow-sm transition-colors hover:border-primary/40 hover:bg-primary/5 md:gap-2.5 md:px-5 md:py-3 md:text-base"
-              >
-                <FileText className="h-4 w-4 text-terracotta md:h-5 md:w-5" />
-                View Brochure
-              </a>
-            )}
-          </div>
+          {/* QUICK FACTS — only facts backed by real data are rendered */}
+          <PropertyQuickFacts
+            villa={villa}
+            stateName={state?.name}
+            roomsLabel={showUnits ? spacesLabel : undefined}
+          />
+
+          {villa.brochure && (
+            <a
+              href={villa.brochure.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2.5 text-sm font-medium text-foreground shadow-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
+            >
+              <FileText className="h-4 w-4 text-terracotta" aria-hidden="true" />
+              View Brochure
+            </a>
+          )}
 
           {/* OVERVIEW */}
           <Section id="overview" title="Overview">
@@ -279,17 +275,14 @@ export async function PropertyDetail({ slug }: { slug: string }) {
             </Section>
           )}
 
-          {/* HIGHLIGHTS */}
+          {/* WHY YOU'LL LOVE IT — driven purely by villa.highlights */}
           {villa.highlights.length > 0 && (
-            <Section id="highlights" title="Highlights">
-              <ul className="grid gap-3 sm:grid-cols-2">
-                {villa.highlights.map((h) => (
-                  <li key={h} className="flex items-start gap-2 text-sm">
-                    <Check className="mt-0.5 h-4 w-4 text-primary" />
-                    <span>{h}</span>
-                  </li>
-                ))}
-              </ul>
+            <Section
+              id="highlights"
+              title="Why you&apos;ll love it"
+              sub="What makes this stay stand out"
+            >
+              <PropertyHighlights highlights={villa.highlights} />
             </Section>
           )}
 
@@ -324,6 +317,18 @@ export async function PropertyDetail({ slug }: { slug: string }) {
               </div>
             )}
           </Section>
+
+          {/* SLEEPING ARRANGEMENT — villas/apartments only. Hotels & hostels
+              already show real bed configurations via their unit cards. */}
+          {!showUnits && villa.bedrooms > 0 && (
+            <Section id="sleeping" title="Sleeping arrangement">
+              <PropertySleeping
+                bedrooms={villa.bedrooms}
+                bathrooms={villa.bathrooms}
+                images={villa.images}
+              />
+            </Section>
+          )}
 
           {/* AMENITIES (merged: amenities + facilities, deduplicated) */}
           <Section id="amenities" title="Amenities">
@@ -634,15 +639,6 @@ function Section({
       {sub && <p className="mt-1 text-sm text-muted-foreground">{sub}</p>}
       <div className="mt-4">{children}</div>
     </section>
-  );
-}
-
-function Fact({ icon, label }: { icon: React.ReactNode; label: string }) {
-  return (
-    <span className="inline-flex items-center gap-2 rounded-lg bg-accent/60 px-3.5 py-2 text-sm font-medium text-foreground md:gap-2.5 md:px-5 md:py-3 md:text-base">
-      <span className="text-primary">{icon}</span>
-      {label}
-    </span>
   );
 }
 

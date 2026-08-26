@@ -69,6 +69,17 @@ export type ExperienceEmbedBlock = BlockBase & {
   slug: string;
 };
 
+/** Merchandising embeds — like property/experience, these store a slug only
+ *  and resolve live, so a renamed collection never leaves a stale card. */
+export type CollectionEmbedBlock = BlockBase & {
+  type: "collection";
+  slug: string;
+};
+export type DestinationEmbedBlock = BlockBase & {
+  type: "destination";
+  slug: string;
+};
+
 export type RelatedPropertiesBlock = BlockBase & {
   type: "relatedProperties";
   slugs: string[];
@@ -115,6 +126,8 @@ export type ContentBlock =
   | VideoBlock
   | PropertyEmbedBlock
   | ExperienceEmbedBlock
+  | CollectionEmbedBlock
+  | DestinationEmbedBlock
   | RelatedPropertiesBlock
   | RelatedExperiencesBlock
   | CtaBlock

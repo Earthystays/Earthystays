@@ -1,3 +1,4 @@
+import { DM_Serif_Display } from "next/font/google";
 import Link from "next/link";
 import Image from "next/image";
 import type { ReactNode } from "react";
@@ -19,11 +20,29 @@ import {
   LogOut,
   Bell,
   ClipboardCheck,
+  BookOpen,
+  FileText,
+  Mail,
+  LayoutTemplate,
+  BarChart3,
+  ScrollText,
 } from "lucide-react";
 import { readJson } from "@/lib/storage";
+import { requireAdmin } from "@/lib/admin-auth";
+import { getAllArticles } from "@/lib/data/journal";
 import { getReviewsByStatus } from "@/lib/data/reviews";
 import type { StoredInquiry } from "@/app/api/inquiries/route";
 import type { Villa } from "@/lib/types";
+
+/* Admin display face (owner's spec) — editorial accent for page/section/card
+   headings. Declared here rather than in the root layout so public visitors
+   never download a webfont only the admin panel uses. */
+const dmSerif = DM_Serif_Display({
+  variable: "--font-dm-serif",
+  subsets: ["latin"],
+  weight: ["400"],
+  display: "swap",
+});
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Admin · Earthy Stays", robots: { index: false, follow: false } };
@@ -32,6 +51,11 @@ type NavItem = { href: string; label: string; icon: typeof Home; badge?: number 
 type NavGroup = { title: string; items: NavItem[] };
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
+  // Every admin page renders through this layout, so this is the single
+  // place that enforces the *full* check (including revocation) for pages.
+  // The proxy has already done the cheap stateless half.
+  await requireAdmin();
+
   const inquiries = await readJson<StoredInquiry[]>("inquiries.json", []);
   const newInquiries = inquiries.filter((q) => (q.status ?? "new") === "new").length;
   const conciergeNew = inquiries.filter(
@@ -42,6 +66,9 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     (v) => v.status === "pending_review",
   ).length;
   const pendingReviews = getReviewsByStatus("pending").length;
+  const draftArticles = getAllArticles().filter(
+    (a) => a.status === "draft" || a.status === "in_review",
+  ).length;
 
   const groups: NavGroup[] = [
     {
@@ -86,13 +113,37 @@ export default async function AdminLayout({ children }: { children: ReactNode })
       items: [{ href: "/admin/banners", label: "Banners", icon: ImageIcon }],
     },
     {
+      title: "Journal",
+      items: [
+        { href: "/admin/journal", label: "Dashboard", icon: BookOpen },
+        {
+          href: "/admin/journal/articles",
+          label: "Articles",
+          icon: FileText,
+          badge: draftArticles,
+        },
+        { href: "/admin/journal/categories", label: "Categories", icon: Tags },
+        { href: "/admin/journal/destinations", label: "Destinations", icon: MapPin },
+        { href: "/admin/journal/authors", label: "Authors", icon: UserRound },
+        { href: "/admin/journal/media", label: "Media", icon: ImageIcon },
+        { href: "/admin/journal/campaigns", label: "Campaigns", icon: Sparkles },
+        { href: "/admin/journal/homepage", label: "Homepage", icon: LayoutTemplate },
+        { href: "/admin/journal/newsletter", label: "Newsletter", icon: Mail },
+        { href: "/admin/journal/analytics", label: "Analytics", icon: BarChart3 },
+      ],
+    },
+    {
       title: "CRM",
       items: [{ href: "/admin/users", label: "Guests", icon: UsersIcon }],
+    },
+    {
+      title: "System",
+      items: [{ href: "/admin/audit", label: "Audit log", icon: ScrollText }],
     },
   ];
 
   return (
-    <div className="admin-shell min-h-screen bg-[hsl(38_38%_96%)]">
+    <div className={`${dmSerif.variable} admin-shell min-h-screen bg-[hsl(38_38%_96%)]`}>
       <div className="flex min-h-screen">
         {/* SIDEBAR — sand-beige, grouped nav, sage active state */}
         <aside className="hidden w-64 shrink-0 border-r border-[hsl(38_18%_88%)] bg-[hsl(38_30%_93%)] md:block">

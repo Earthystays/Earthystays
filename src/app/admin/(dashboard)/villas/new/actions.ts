@@ -1,5 +1,7 @@
 "use server";
 
+import { requireAdmin } from "@/lib/admin-auth";
+import { logAdminAction } from "@/lib/admin-audit";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -248,6 +250,7 @@ export async function addVilla(
   _prev: AddVillaState,
   form: FormData,
 ): Promise<AddVillaState> {
+  await requireAdmin();
   // Combine preset amenities (checkboxes) with custom amenities (comma/newline separated)
   const presetAmenities = form.getAll("amenities").map((v) => String(v));
   const customAmenities = parseLines(form.get("customAmenities") as string);
@@ -427,7 +430,15 @@ export async function addVilla(
   } else {
     list.push(villa);
   }
+  const isEdit = idx >= 0;
   await writeJson("villas.json", list);
+
+  await logAdminAction({
+    action: isEdit ? "property.edited" : "property.created",
+    entity: "villa",
+    entityId: villa.slug,
+    summary: `${isEdit ? "Edited" : "Created"} property: ${villa.name ?? villa.slug}`,
+  });
 
   if (oldBrochureUrl && oldBrochureUrl.startsWith("/uploads/")) {
     const { promises: fsp } = await import("fs");
@@ -464,6 +475,7 @@ export async function autoSaveDraft(
   draftId: string,
   values: Partial<AddVillaValues>,
 ): Promise<{ ok: true; savedAt: string }> {
+  await requireAdmin();
   await saveDraft(draftId, values);
   return { ok: true, savedAt: new Date().toISOString() };
 }
@@ -471,6 +483,7 @@ export async function autoSaveDraft(
 export async function discardDraft(
   draftId: string,
 ): Promise<{ ok: true }> {
+  await requireAdmin();
   await deleteDraft(draftId);
   revalidatePath("/admin/villas/drafts");
   revalidatePath("/admin/villas");

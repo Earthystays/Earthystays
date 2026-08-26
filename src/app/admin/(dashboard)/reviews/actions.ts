@@ -1,5 +1,7 @@
 "use server";
 
+import { requireAdmin } from "@/lib/admin-auth";
+import { logAdminAction } from "@/lib/admin-audit";
 import { revalidatePath } from "next/cache";
 import { readJson, writeJson } from "@/lib/storage";
 import type { GuestType, ReviewSource, StoredReview } from "@/lib/data/reviews";
@@ -40,6 +42,7 @@ export async function saveReview(
   _prev: { ok: boolean; error?: string } | undefined,
   formData: FormData,
 ): Promise<{ ok: boolean; error?: string }> {
+  await requireAdmin();
   const id = String(formData.get("id") ?? "").trim();
   const guestName = String(formData.get("guestName") ?? "").trim();
   const guestPhoto = String(formData.get("guestPhoto") ?? "").trim();
@@ -119,11 +122,18 @@ export async function saveReview(
 }
 
 export async function deleteReview(id: string): Promise<{ ok: boolean }> {
+  await requireAdmin();
   const list = await readJson<StoredReview[]>(FILE, []);
   await writeJson(
     FILE,
     list.filter((r) => r.id !== id),
   );
+  await logAdminAction({
+    action: "review.deleted",
+    entity: "review",
+    entityId: id,
+    summary: "Review deleted",
+  });
   revalidatePath("/admin/reviews");
   revalidatePath("/");
   revalidatePath("/villas");
@@ -142,12 +152,19 @@ export async function moderateReview(
   id: string,
   status: "pending" | "approved" | "rejected" | "spam",
 ): Promise<{ ok: boolean; error?: string }> {
+  await requireAdmin();
   const list = await readJson<StoredReview[]>(FILE, []);
   const r = list.find((x) => x.id === id);
   if (!r) return { ok: false, error: "Review not found" };
   r.status = status;
   r.updatedAt = new Date().toISOString();
   await writeJson(FILE, list);
+  await logAdminAction({
+    action: "review.moderated",
+    entity: "review",
+    entityId: id,
+    summary: `Review ${status} (${r.villaSlug})`,
+  });
   revalidateReviewSurfaces(r.villaSlug);
   return { ok: true };
 }
@@ -156,6 +173,7 @@ export async function toggleReviewFlag(
   id: string,
   flag: "featured" | "active",
 ): Promise<{ ok: boolean; error?: string }> {
+  await requireAdmin();
   const list = await readJson<StoredReview[]>(FILE, []);
   const r = list.find((x) => x.id === id);
   if (!r) return { ok: false, error: "Review not found" };
@@ -170,6 +188,7 @@ export async function replyToReview(
   id: string,
   text: string,
 ): Promise<{ ok: boolean; error?: string }> {
+  await requireAdmin();
   const list = await readJson<StoredReview[]>(FILE, []);
   const r = list.find((x) => x.id === id);
   if (!r) return { ok: false, error: "Review not found" };
@@ -178,6 +197,12 @@ export async function replyToReview(
     : undefined;
   r.updatedAt = new Date().toISOString();
   await writeJson(FILE, list);
+  await logAdminAction({
+    action: "review.replied",
+    entity: "review",
+    entityId: id,
+    summary: text.trim() ? "Replied to review" : "Removed review reply",
+  });
   revalidateReviewSurfaces(r.villaSlug);
   return { ok: true };
 }

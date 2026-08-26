@@ -23,14 +23,17 @@ const NAV: Array<{
   icon: typeof LayoutGrid;
   exact?: boolean;
 }> = [
+  // Owner-OS ordering. Labels follow the owner's language ("Properties",
+  // "Reservations"); the underlying routes are unchanged so every existing
+  // link, bookmark and in-app href keeps working.
   { href: "/host", label: "Overview", icon: LayoutGrid, exact: true },
-  { href: "/host/inbox", label: "Inbox", icon: MessageSquare },
+  { href: "/host/listings", label: "Properties", icon: Home },
   { href: "/host/calendar", label: "Calendar", icon: CalendarDays },
-  { href: "/host/listings", label: "Listings", icon: Home },
-  { href: "/host/bookings", label: "Bookings", icon: BookOpenCheck },
+  { href: "/host/bookings", label: "Reservations", icon: BookOpenCheck },
   { href: "/host/performance", label: "Performance", icon: BarChart3 },
   { href: "/host/payouts", label: "Payouts", icon: Wallet },
   { href: "/host/reviews", label: "Reviews", icon: Star },
+  { href: "/host/inbox", label: "Messages", icon: MessageSquare },
   { href: "/host/settings", label: "Settings", icon: Settings },
 ] as const;
 

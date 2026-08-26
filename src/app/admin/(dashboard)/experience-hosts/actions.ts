@@ -1,5 +1,6 @@
 "use server";
 
+import { requireAdmin } from "@/lib/admin-auth";
 import { revalidatePath } from "next/cache";
 import type { ExperienceHost } from "@/lib/types";
 import { readHosts, saveHosts, newHostId } from "@/lib/data/experience-hosts";
@@ -13,6 +14,7 @@ function revalidate() {
 }
 
 export async function saveHost(input: ExperienceHost): Promise<Result> {
+  await requireAdmin();
   const name = (input.name ?? "").trim();
   if (name.length < 2) return { ok: false, error: "Host name is required." };
 
@@ -33,6 +35,7 @@ export async function saveHost(input: ExperienceHost): Promise<Result> {
 }
 
 export async function deleteHost(id: string): Promise<Result> {
+  await requireAdmin();
   const list = await readHosts();
   await saveHosts(list.filter((h) => h.id !== id));
   revalidate();

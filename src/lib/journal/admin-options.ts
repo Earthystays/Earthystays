@@ -2,6 +2,7 @@ import { getVillas } from "@/lib/data/villas";
 import { getPublishedExperiences } from "@/lib/data/experiences";
 import { getEnabledJournalDestinations } from "@/lib/data/journal-destinations";
 import { getAllArticles } from "@/lib/data/journal";
+import { getAllCollections } from "@/lib/data/collections";
 import type { EntityOption } from "@/components/journal/admin/entity-picker";
 import type { BlockEditorOptions } from "@/components/journal/admin/block-editor";
 
@@ -32,5 +33,10 @@ export function getBlockEditorOptions(): BlockEditorOptions {
     name: d.name,
     meta: d.location,
   }));
-  return { properties, experiences, destinations };
+  const collections: EntityOption[] = getAllCollections().map((c) => ({
+    slug: c.slug,
+    name: c.name,
+    meta: c.blurb?.slice(0, 40),
+  }));
+  return { properties, experiences, destinations, collections };
 }

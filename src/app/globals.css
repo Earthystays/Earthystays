@@ -758,3 +758,35 @@ textarea.admin-input { min-height: 96px; padding: 12px 14px; line-height: 1.5; }
   border-color: var(--admin-forest);
   box-shadow: 0 0 0 3px var(--admin-forest-ring);
 }
+
+/* ─────────────────────────── Skip link (WCAG 2.4.1) ───────────────────────
+   Hidden until focused, then pinned top-left above everything. Written as
+   explicit CSS rather than Tailwind's sr-only/not-sr-only variant pair, whose
+   ordering left the link at 1×1 even while focused. */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.skip-link:focus,
+.skip-link:focus-visible {
+  position: fixed;
+  left: 1rem;
+  top: 1rem;
+  z-index: 100;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  padding: 0.625rem 1.25rem;
+  border-radius: 9999px;
+  background-color: var(--foreground);
+  color: var(--background);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  outline: 2px solid var(--terracotta, #b4653f);
+  outline-offset: 2px;
+}

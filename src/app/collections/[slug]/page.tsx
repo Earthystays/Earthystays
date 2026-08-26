@@ -16,6 +16,13 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 import { BreadcrumbJsonLd } from "@/components/jsonld-breadcrumb";
 import { SortDropdown } from "@/components/sort-dropdown";
 import { getCurrentUser } from "@/lib/session";
+import { CollectionConnections } from "@/components/connect/collection-connections";
+import {
+  destinationsForCollection,
+  experiencesForCollection,
+  isCollectionIndexable,
+  journalForCollection,
+} from "@/lib/connect/relevance";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -34,6 +41,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title: seo.title,
     description: seo.description,
+    alternates: { canonical: `/collections/${slug}` },
+    // A collection with almost no inventory still works for a visitor, but
+    // indexing it would add a thin page competing with our real ones.
+    ...(isCollectionIndexable(slug)
+      ? {}
+      : { robots: { index: false, follow: true } }),
   };
 }
 
@@ -135,6 +148,12 @@ export default async function CollectionPage({ params, searchParams }: PageProps
         </div>
       </div>
 
+      <CollectionConnections
+        collectionName={col.name}
+        destinations={destinationsForCollection(col.slug)}
+        experiences={experiencesForCollection(col.slug, 4)}
+        articles={journalForCollection(col.slug, 3)}
+      />
     </div>
     </div>
   );

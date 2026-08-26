@@ -1,5 +1,6 @@
 "use server";
 
+import { requireAdmin } from "@/lib/admin-auth";
 import { revalidatePath } from "next/cache";
 import { readJson, writeJson } from "@/lib/storage";
 import type { AmenityKind, StoredAmenity } from "@/lib/data/amenities-store";
@@ -11,6 +12,7 @@ export async function addAmenity(
   icon: string,
   kind: AmenityKind,
 ): Promise<{ ok: boolean; error?: string }> {
+  await requireAdmin();
   const trimmed = name.trim();
   if (trimmed.length < 2) return { ok: false, error: "Name too short" };
   if (!icon) return { ok: false, error: "Pick an icon" };
@@ -34,6 +36,7 @@ export async function removeAmenity(
   name: string,
   kind: AmenityKind,
 ): Promise<{ ok: boolean; error?: string }> {
+  await requireAdmin();
   const list = await readJson<StoredAmenity[]>(FILE, []);
   const next = list.filter(
     (a) => !(a.name.toLowerCase() === name.toLowerCase() && a.kind === kind),

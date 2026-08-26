@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { getUsers } from "@/lib/data/users";
-import { ADMIN_COOKIE, adminToken } from "@/lib/admin-auth";
+import { requireAdminApi } from "@/lib/admin-auth";
 
+/**
+ * Full admin check — signature, expiry AND revocation. Identical to what every
+ * other admin surface enforces, so this route is not a weaker side door.
+ */
 async function isAuthed(): Promise<boolean> {
-  const c = await cookies();
-  const token = c.get(ADMIN_COOKIE)?.value;
-  if (!token) return false;
-  return token === (await adminToken());
+  return (await requireAdminApi()) !== null;
 }
 
 export async function GET() {

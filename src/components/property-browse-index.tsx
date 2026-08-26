@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { BreadcrumbJsonLd } from "@/components/jsonld-breadcrumb";
 import { PropertyBrowseCard } from "@/components/property-browse-card";
 import { getHotels, getHostels } from "@/lib/data/villas";
 import { getCurrentUser } from "@/lib/session";
@@ -12,9 +13,12 @@ import { getCurrentUser } from "@/lib/session";
 export async function PropertyBrowseIndex({
   kind,
   stateFilter,
+  /** Rendered as a real third breadcrumb tier when this is a /[city] page. */
+  destinationName,
 }: {
   kind: "hotel" | "hostel";
   stateFilter?: string;
+  destinationName?: string;
 }) {
   const isHostel = kind === "hostel";
   const all = isHostel ? getHostels() : getHotels();
@@ -43,18 +47,24 @@ export async function PropertyBrowseIndex({
     ? "Social, well-run hostels — dorm beds and private dorms, handpicked for budget travellers."
     : "Handpicked hotels — choose a room that suits your stay, from deluxe rooms to premium suites.";
 
+  // Home → Hotels → Goa
+  const crumbs = [
+    { label: "Home", href: "/" },
+    { label, href: basePath },
+    ...(destinationName && stateFilter
+      ? [{ label: destinationName, href: `${basePath}/${stateFilter}` }]
+      : []),
+  ];
+  const heading = destinationName ? `${label} in ${destinationName}` : label;
+
   return (
     <div className="bg-[#FAF8F5]">
       <div className="container-page !max-w-[1600px] py-8 lg:px-8 lg:py-12">
-        <Breadcrumbs
-          items={[
-            { label: "Home", href: "/" },
-            { label, href: basePath },
-          ]}
-        />
+        <BreadcrumbJsonLd items={crumbs} />
+        <Breadcrumbs items={crumbs} />
 
         <header className="mt-6 max-w-2xl">
-          <h1 className="font-display text-4xl sm:text-5xl">{label}</h1>
+          <h1 className="font-display text-4xl sm:text-5xl">{heading}</h1>
           <p className="mt-3 text-muted-foreground">{lead}</p>
         </header>
 
@@ -64,7 +74,7 @@ export async function PropertyBrowseIndex({
             {states.map((s) => (
               <FilterChip
                 key={s.slug}
-                href={`${basePath}?state=${s.slug}`}
+                href={`${basePath}/${s.slug}`}
                 active={stateFilter === s.slug}
                 label={s.name}
               />

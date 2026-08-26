@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { readJson } from "@/lib/storage";
-import { ADMIN_COOKIE, adminToken } from "@/lib/admin-auth";
+import { requireAdminApi } from "@/lib/admin-auth";
 import type { StoredInquiry } from "@/app/api/inquiries/route";
 
+/**
+ * Full admin check — signature, expiry AND revocation. Identical to what every
+ * other admin surface enforces, so this route is not a weaker side door.
+ */
 async function isAuthed(): Promise<boolean> {
-  const c = await cookies();
-  const token = c.get(ADMIN_COOKIE)?.value;
-  if (!token) return false;
-  return token === (await adminToken());
+  return (await requireAdminApi()) !== null;
 }
 
 function normalizeStatusLabel(s?: StoredInquiry["status"]): string {

@@ -1,5 +1,6 @@
 "use server";
 
+import { requireAdmin } from "@/lib/admin-auth";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { writeJson } from "@/lib/storage";
@@ -43,6 +44,7 @@ export async function saveBanners(
   _prev: SaveBannersState,
   form: FormData,
 ): Promise<SaveBannersState> {
+  await requireAdmin();
   const count = Number(form.get("count") ?? 0);
   if (!count || count < 1) return { ok: false, error: "At least one slide required" };
   if (count > 10) return { ok: false, error: "Maximum 10 slides" };
@@ -81,6 +83,7 @@ export async function saveBanners(
 }
 
 export async function resetBanners(): Promise<SaveBannersState> {
+  await requireAdmin();
   await writeJson("banners.json", getSeedBanners());
   revalidatePath("/");
   return { ok: true, message: "Reverted to seed banners." };

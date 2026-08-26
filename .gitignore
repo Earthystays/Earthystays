@@ -39,7 +39,11 @@ yarn-error.log*
 # Local data store — JSON files written by the admin (villas, banners,
 # inquiries, reviews, amenities, location covers). These hold customer
 # data on production (phone numbers, names) and should never be committed.
-/data/*.json
+# The rule covers backups and the atomic-write temp files too: `*.json`
+# alone left `villas.json.bak-…` and `*.tmp` tracked, which is the same
+# customer data under a different extension.
+/data/*
+!/data/.gitkeep
 
 # User-uploaded photos go straight to disk via /api/admin/upload.
 # They live alongside the running server; bundling them into git would

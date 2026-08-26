@@ -70,7 +70,7 @@ export const STAY_COLUMNS: StayColumn[] = [
     heading: "More",
     links: [
       { label: "Why Earthy Stays", href: "/about", icon: Leaf },
-      { label: "Owner Benefits", href: "/partner", icon: Handshake },
+      { label: "Partner with us", href: "/partner", icon: Handshake },
     ],
   },
 ];

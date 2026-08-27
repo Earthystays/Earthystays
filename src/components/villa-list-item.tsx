@@ -16,6 +16,7 @@ import type { Villa } from "@/lib/types";
 import { formatINR } from "@/lib/format";
 import { getAmenityIcon } from "@/lib/amenity-icons";
 import { PhotoCarousel } from "@/components/photo-carousel";
+import { CARD_IMAGE_COUNT } from "@/lib/image-constants";
 import { WishlistButton } from "@/components/wishlist-button";
 import { ShareIconButton } from "@/components/share-icon-button";
 
@@ -122,7 +123,10 @@ export function VillaListItem({
         >
           <div className="h-full w-full transition-transform duration-300 ease-out group-hover:scale-[1.02] motion-reduce:transition-none motion-reduce:group-hover:scale-100">
             <PhotoCarousel
-              images={villa.images}
+              // Only the first CARD_IMAGE_COUNT are ever shown; sending the rest
+              // just bloats the RSC payload (PhotoCarousel is a client component).
+              // villa.images.length is still used for the photo-count label.
+              images={villa.images.slice(0, CARD_IMAGE_COUNT)}
               sizes="(min-width: 1024px) 640px, 100vw"
               counterStyle="text"
             />

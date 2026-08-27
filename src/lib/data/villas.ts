@@ -1,6 +1,7 @@
 import type { Villa } from "@/lib/types";
 import { readJsonSync } from "@/lib/storage";
 import { getViewScoresSync } from "./villa-views";
+import { CARD_IMAGE_COUNT } from "@/lib/image-constants";
 
 const SEED: Villa[] = [
   {
@@ -605,12 +606,7 @@ export function searchVillas(filters: VillaFilters = {}) {
   return results;
 }
 
-/**
- * Number of images a property card can actually display. PhotoCarousel
- * slices to `maxImages` (default 5) and VillaCard doesn't override it, so
- * anything beyond this is never rendered.
- */
-export const CARD_IMAGE_COUNT = 5;
+export { CARD_IMAGE_COUNT };
 
 /**
  * Project a property down to what a card actually renders.
@@ -632,6 +628,8 @@ export const CARD_IMAGE_COUNT = 5;
  * property detail page), which needs the untrimmed record.
  */
 export function trimForCard(villa: Villa): Villa {
+  /* eslint-disable @typescript-eslint/no-unused-vars -- destructured purely
+     to omit these keys from the rest spread below. */
   const {
     // Optional heavy fields — omitted entirely.
     facilities: _facilities,
@@ -644,6 +642,7 @@ export function trimForCard(villa: Villa): Villa {
     brochure: _brochure,
     ...rest
   } = villa;
+  /* eslint-enable @typescript-eslint/no-unused-vars */
 
   return {
     ...rest,

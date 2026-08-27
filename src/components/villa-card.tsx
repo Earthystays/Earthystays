@@ -4,6 +4,7 @@ import type { Villa } from "@/lib/types";
 import { formatNight } from "@/lib/format";
 import { propertyPath } from "@/lib/property-url";
 import { PhotoCarousel } from "@/components/photo-carousel";
+import { CARD_IMAGE_COUNT } from "@/lib/image-constants";
 import { WishlistButton } from "@/components/wishlist-button";
 
 export function VillaCard({
@@ -32,7 +33,7 @@ export function VillaCard({
           Desktop keeps the wider 4:3 since the grid context doesn't need
           the extra height. */}
       <div className="relative aspect-square overflow-hidden bg-muted sm:aspect-[4/3]">
-        <PhotoCarousel images={villa.images} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" />
+        <PhotoCarousel images={villa.images.slice(0, CARD_IMAGE_COUNT)} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" />
         <div className="absolute right-3 top-3 z-10">
           <WishlistButton slug={villa.slug} loggedIn={loggedIn} initialActive={inWishlist} />
         </div>

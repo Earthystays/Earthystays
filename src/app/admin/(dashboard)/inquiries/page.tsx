@@ -579,6 +579,9 @@ export default async function AdminInquiriesPage({
               <div id="inquiry-search-empty" hidden>
                 <EmptyState message="No inquiries match your search." search />
               </div>
+              {/* InquirySearch portals its pager here — it owns both search
+                  and paging so a search covers every row, not just this page. */}
+              <div id="inquiry-pager" />
             </div>
           )}
         </section>

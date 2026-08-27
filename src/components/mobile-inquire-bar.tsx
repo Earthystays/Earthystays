@@ -8,7 +8,28 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { InquiryForm } from "@/components/inquiry-form";
+import dynamic from "next/dynamic";
+
+/**
+ * The form only ever renders after the user taps "Enquire", so its JS
+ * (react-hook-form + zod + the field components) has no business being in
+ * the initial bundle. Loading it lazily also stops Turbopack hoisting
+ * react-hook-form into a shared chunk that every route pays for — the
+ * listing pages were downloading ~84KB of form code they never use.
+ */
+const InquiryForm = dynamic(
+  () => import("@/components/inquiry-form").then((m) => m.InquiryForm),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="space-y-3 p-1" aria-busy="true" aria-label="Loading form">
+        <div className="h-10 animate-pulse rounded-md bg-muted" />
+        <div className="h-10 animate-pulse rounded-md bg-muted" />
+        <div className="h-24 animate-pulse rounded-md bg-muted" />
+      </div>
+    ),
+  },
+);
 import { ConnectWithHost } from "@/components/connect-with-host";
 import { useUnitSelection } from "@/lib/unit-selection";
 

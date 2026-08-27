@@ -13,6 +13,7 @@ import {
   getFeaturedVillas,
   getFeaturedApartments,
   getVillas,
+  trimImagesForCard,
 } from "@/lib/data/villas";
 import {
   RecentlyVisited,
@@ -100,8 +101,10 @@ export default async function HomePage() {
           ctaHref="/villas"
         />
         <LocationChipsFilter
-          properties={featured}
-          allProperties={allVillas.filter((v) => (v.type ?? "villa") === "villa")}
+          properties={featured.map(trimImagesForCard)}
+          allProperties={allVillas
+            .filter((v) => (v.type ?? "villa") === "villa")
+            .map(trimImagesForCard)}
           loggedIn={!!user}
           wishlist={wishlist}
           kind="villa"
@@ -118,8 +121,10 @@ export default async function HomePage() {
             ctaHref="/apartments"
           />
           <LocationChipsFilter
-            properties={featuredApartments}
-            allProperties={allVillas.filter((v) => v.type === "apartment")}
+            properties={featuredApartments.map(trimImagesForCard)}
+            allProperties={allVillas
+              .filter((v) => v.type === "apartment")
+              .map(trimImagesForCard)}
             loggedIn={!!user}
             wishlist={wishlist}
             kind="apartment"

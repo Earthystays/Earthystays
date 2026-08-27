@@ -604,3 +604,30 @@ export function searchVillas(filters: VillaFilters = {}) {
   }
   return results;
 }
+
+/**
+ * Number of images a property card can actually display. PhotoCarousel
+ * slices to `maxImages` (default 5) and VillaCard doesn't override it, so
+ * anything beyond this is never rendered.
+ */
+export const CARD_IMAGE_COUNT = 5;
+
+/**
+ * Trim a property's image list to what a card will render.
+ *
+ * Server Components serialize every prop they hand to a Client Component
+ * into the RSC payload embedded in the HTML. Passing whole Villa objects
+ * therefore ships each property's entire images array — 20+ entries for
+ * some listings — while the card shows at most five. On the homepage that
+ * was ~1,140 image paths in the HTML for ~100 rendered images.
+ *
+ * Slicing here is purely a payload optimisation: the carousel already
+ * capped what it displayed, so the rendered output is unchanged.
+ */
+export function trimImagesForCard<T extends { images: Villa["images"] }>(
+  property: T,
+): T {
+  return property.images.length <= CARD_IMAGE_COUNT
+    ? property
+    : { ...property, images: property.images.slice(0, CARD_IMAGE_COUNT) };
+}

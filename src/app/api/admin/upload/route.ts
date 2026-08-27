@@ -19,6 +19,29 @@ const VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
 const PDF_TYPES = ["application/pdf"];
 const ALLOWED = [...IMAGE_TYPES, ...VIDEO_TYPES, ...PDF_TYPES];
 
+/**
+ * Write a file atomically: stream to a temp name in the same directory, then
+ * rename into place. rename(2) is atomic on the same filesystem, so a reader
+ * either sees the previous file or the complete new one — never a partial.
+ *
+ * This matters because Next's image optimizer fetches /uploads/* over HTTP
+ * and the admin UI renders an image the moment upload responds. A plain
+ * fs.writeFile leaves a window where the file exists but is short or empty;
+ * the optimizer reads that and fails with "received null". Atomic rename
+ * closes the window, which is what let image optimization be re-enabled.
+ */
+async function writeFileAtomic(filepath: string, data: Buffer): Promise<void> {
+  const tmp = `${filepath}.tmp-${crypto.randomBytes(6).toString("hex")}`;
+  try {
+    await fs.writeFile(tmp, data);
+    await fs.rename(tmp, filepath);
+  } catch (err) {
+    await fs.rm(tmp, { force: true }).catch(() => {});
+    throw err;
+  }
+}
+
+
 function safeName(name: string): string {
   return (
     name
@@ -96,7 +119,7 @@ export async function POST(req: Request) {
       }
       const filename = `${Date.now()}-${id}-${safeName(base)}.pdf`;
       const filepath = path.join(UPLOAD_DIR, filename);
-      await fs.writeFile(filepath, inputBuffer);
+      await writeFileAtomic(filepath, inputBuffer);
       uploaded.push({
         url: `/uploads/${filename}`,
         name: file.name,
@@ -110,7 +133,7 @@ export async function POST(req: Request) {
       const ext = path.extname(file.name) || ".mp4";
       const filename = `${Date.now()}-${id}-${safeName(base)}${ext}`;
       const filepath = path.join(UPLOAD_DIR, filename);
-      await fs.writeFile(filepath, inputBuffer);
+      await writeFileAtomic(filepath, inputBuffer);
       uploaded.push({
         url: `/uploads/${filename}`,
         name: file.name,
@@ -150,7 +173,7 @@ export async function POST(req: Request) {
     // matches the actual format on disk).
     const filename = `${Date.now()}-${id}-${safeName(base)}.jpg`;
     const filepath = path.join(UPLOAD_DIR, filename);
-    await fs.writeFile(filepath, outputBuffer);
+    await writeFileAtomic(filepath, outputBuffer);
 
     uploaded.push({
       url: `/uploads/${filename}`,

@@ -39,6 +39,9 @@ type Source =
   | "referral"
   | "concierge";
 
+/** Statuses where the guest is still waiting on us. */
+const NEEDS_REPLY: CanonicalStatus[] = ["new", "open"];
+
 const STATUS_ORDER: CanonicalStatus[] = [
   "new",
   "open",
@@ -175,6 +178,13 @@ function formatParty(q: StoredInquiry): string {
   return parts.join(", ") || "—";
 }
 
+/** `tel:` links choke on spaces in some dialers — keep digits and a leading +. */
+function telHref(phone: string): string {
+  const trimmed = phone.trim();
+  const digits = trimmed.replace(/[^\d]/g, "");
+  return `tel:${trimmed.startsWith("+") ? "+" : ""}${digits}`;
+}
+
 function relativeTime(iso: string): string {
   const then = new Date(iso).getTime();
   const mins = Math.max(1, Math.round((Date.now() - then) / 60000));
@@ -236,11 +246,21 @@ export default async function AdminInquiriesPage({
     lastFollowUp: q.updatedAt ?? q.createdAt,
   }));
 
-  const visible = enriched.filter((e) => {
-    if (statusFilter && e.normalized !== statusFilter) return false;
-    if (sourceFilter && e.source !== sourceFilter) return false;
-    return true;
-  });
+  const visible = enriched
+    .filter((e) => {
+      if (statusFilter && e.normalized !== statusFilter) return false;
+      if (sourceFilter && e.source !== sourceFilter) return false;
+      return true;
+    })
+    // Unanswered leads first, longest-waiting at the top — those are the ones
+    // costing money. Everything settled (booked/lost) keeps newest-first.
+    .sort((a, b) => {
+      const aOpen = NEEDS_REPLY.includes(a.normalized);
+      const bOpen = NEEDS_REPLY.includes(b.normalized);
+      if (aOpen !== bOpen) return aOpen ? -1 : 1;
+      if (aOpen) return a.lastFollowUp < b.lastFollowUp ? -1 : 1;
+      return a.lastFollowUp < b.lastFollowUp ? 1 : -1;
+    });
 
   const isConciergeView = sourceFilter === "concierge";
 
@@ -309,7 +329,11 @@ export default async function AdminInquiriesPage({
           href={filterHref({ status: undefined })}
           active={!statusFilter}
         />
-        {STATUS_ORDER.map((s) => (
+        {/* A filter that would show nothing is noise — hide empty statuses
+            unless one is the current filter (so it can be switched off). */}
+        {STATUS_ORDER.filter(
+          (s) => countFor(s) > 0 || statusFilter === s,
+        ).map((s) => (
           <FilterTab
             key={s}
             label={STATUS_LABEL[s]}
@@ -356,14 +380,15 @@ export default async function AdminInquiriesPage({
             />
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[680px] text-sm">
+              <table className="w-full min-w-[760px] text-sm">
                 <thead>
                   <tr className="whitespace-nowrap border-b border-[hsl(38_18%_92%)] text-left text-[10.5px] font-semibold uppercase tracking-[0.06em] text-[#857B6C]">
                     <th className="px-4 py-3">Guest</th>
                     <th className="px-4 py-3">Property</th>
                     <th className="px-4 py-3">Stay</th>
                     <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3 text-right">Updated</th>
+                    <th className="px-4 py-3">Waiting</th>
+                    <th className="px-4 py-3 text-right">Reply</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -392,6 +417,7 @@ export default async function AdminInquiriesPage({
                           .filter(Boolean)
                           .join(", ")
                       : [villa?.city, villa?.state].filter(Boolean).join(", ");
+                    const awaiting = NEEDS_REPLY.includes(e.normalized);
                     const haystack = [
                       e.q.name,
                       e.q.phone,
@@ -500,13 +526,50 @@ export default async function AdminInquiriesPage({
                         </td>
 
                         <td className="px-4 py-3">
-                          <Link
-                            href={rowHref}
-                            className="flex items-center justify-end gap-1.5 whitespace-nowrap text-[11px] text-[#8A8072]"
-                          >
-                            {relativeTime(e.lastFollowUp)}
-                            <ChevronRight className="h-4 w-4 text-[#C4BCAD]" />
+                          <Link href={rowHref} className="block whitespace-nowrap">
+                            <span
+                              className={`text-[11px] ${
+                                awaiting
+                                  ? "font-medium text-[#B84A45]"
+                                  : "text-[#8A8072]"
+                              }`}
+                            >
+                              {relativeTime(e.lastFollowUp)}
+                            </span>
                           </Link>
+                        </td>
+                        {/* Replying is the whole job — put it one click from
+                            the list instead of behind the detail panel. */}
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-end gap-1">
+                            <a
+                              href={`https://wa.me/${e.q.phone.replace(/\D/g, "")}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label={`WhatsApp ${e.q.name}`}
+                              title={`WhatsApp ${e.q.name}`}
+                              className="grid h-7 w-7 place-items-center rounded-full bg-[#D8E9DD] text-[#3E6B4C] transition-opacity hover:opacity-75"
+                            >
+                              <svg viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5">
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.198-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347M12.05 21.785h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z" />
+                              </svg>
+                            </a>
+                            <a
+                              href={telHref(e.q.phone)}
+                              aria-label={`Call ${e.q.name}`}
+                              title={`Call ${e.q.name}`}
+                              className="grid h-7 w-7 place-items-center rounded-full bg-[#F9DAC8] text-[#D9855A] transition-opacity hover:opacity-75"
+                            >
+                              <Phone className="h-3.5 w-3.5" />
+                            </a>
+                            <Link
+                              href={rowHref}
+                              aria-label={`Open ${e.q.name}`}
+                              className="grid h-7 w-7 place-items-center rounded-full text-[#C4BCAD] hover:bg-[hsl(38_30%_93%)]"
+                            >
+                              <ChevronRight className="h-4 w-4" />
+                            </Link>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -682,7 +745,7 @@ function DetailPanel({
           }
         />
         <ActionBtn
-          href={`tel:${q.phone}`}
+          href={telHref(q.phone)}
           bg="bg-[#F9DAC8]"
           tone="text-[#D9855A]"
           label="Call"

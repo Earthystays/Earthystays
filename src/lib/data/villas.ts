@@ -613,21 +613,45 @@ export function searchVillas(filters: VillaFilters = {}) {
 export const CARD_IMAGE_COUNT = 5;
 
 /**
- * Trim a property's image list to what a card will render.
+ * Project a property down to what a card actually renders.
  *
- * Server Components serialize every prop they hand to a Client Component
- * into the RSC payload embedded in the HTML. Passing whole Villa objects
- * therefore ships each property's entire images array — 20+ entries for
- * some listings — while the card shows at most five. On the homepage that
- * was ~1,140 image paths in the HTML for ~100 rendered images.
+ * Server Components serialize every prop handed to a Client Component into
+ * the RSC payload embedded in the HTML. Passing whole Villa objects ships
+ * each property's full record — descriptions, amenities, house rules,
+ * policies — none of which a card displays. Measured on production data,
+ * 53% of the serialized property bytes were fields VillaCard never reads,
+ * dominated by `description` (~98KB across 23 properties).
  *
- * Slicing here is purely a payload optimisation: the carousel already
- * capped what it displayed, so the rendered output is unchanged.
+ * VillaCard reads: slug, name, city, state, images, rating, reviewCount,
+ * bedrooms, bathrooms, maxGuests, pricePerNight, tagline. LocationChipsFilter
+ * additionally needs city/slug/type for its chips and filtering, and
+ * destinationSlug/collections drive the counts. Everything else is dropped.
+ *
+ * This is purely a payload optimisation — rendered output is unchanged.
+ * Do NOT feed the result to anything that renders a full listing (the
+ * property detail page), which needs the untrimmed record.
  */
-export function trimImagesForCard<T extends { images: Villa["images"] }>(
-  property: T,
-): T {
-  return property.images.length <= CARD_IMAGE_COUNT
-    ? property
-    : { ...property, images: property.images.slice(0, CARD_IMAGE_COUNT) };
+export function trimForCard(villa: Villa): Villa {
+  const {
+    // Optional heavy fields — omitted entirely.
+    facilities: _facilities,
+    latitude: _latitude,
+    longitude: _longitude,
+    cancellationPolicy: _cancellationPolicy,
+    meals: _meals,
+    video: _video,
+    externalListings: _externalListings,
+    brochure: _brochure,
+    ...rest
+  } = villa;
+
+  return {
+    ...rest,
+    images: villa.images.slice(0, CARD_IMAGE_COUNT),
+    // Required by the Villa type but never rendered on a card.
+    description: "",
+    amenities: [],
+    houseRules: [],
+    locationNote: "",
+  };
 }

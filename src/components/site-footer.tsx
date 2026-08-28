@@ -30,6 +30,11 @@ export function SiteFooter() {
             <TrackedTelLink href="tel:+919657100004" source="footer" className="inline-flex items-center gap-2.5 hover:text-foreground">
               <Phone className="h-4 w-4 shrink-0" /> +91 9657100004
             </TrackedTelLink>
+            {/* Second line kept on its own tracking source so the two numbers
+                stay distinguishable in the Contact event. */}
+            <TrackedTelLink href="tel:+919657200004" source="footer-alt" className="inline-flex items-center gap-2.5 hover:text-foreground">
+              <Phone className="h-4 w-4 shrink-0" /> +91 9657200004
+            </TrackedTelLink>
           </div>
         </div>
 
